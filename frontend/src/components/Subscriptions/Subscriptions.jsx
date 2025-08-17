@@ -1,41 +1,15 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { CreditCard, Check, X } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import axios from 'axios';
-import toast from 'react-hot-toast';
-import API_BASE_URL from '../../config/api';
+import { CreditCard, Calendar, CheckCircle } from 'lucide-react';
 
 const Subscriptions = () => {
-  const { user } = useAuth();
   const [subscriptions, setSubscriptions] = useState([]);
-  const [currentSubscription, setCurrentSubscription] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const plans = [
-    {
-      id: 'basic',
-      name: 'Basic Plan',
-      price: 999,
-      duration: 30,
-      features: ['Unlimited Basic Forms', 'Email Support', 'Basic Analytics'],
-      formTypes: ['basic']
-    },
-    {
-      id: 'premium',
-      name: 'Premium Plan', 
-      price: 2999,
-      duration: 30,
-      features: ['Unlimited All Forms', 'Priority Support', 'Advanced Analytics', 'Realtime Validation'],
-      formTypes: ['basic', 'realtime_validation']
-    },
-    {
-      id: 'enterprise',
-      name: 'Enterprise Plan',
-      price: 9999,
-      duration: 30,
-      features: ['Everything in Premium', 'Dedicated Support', 'Custom Integrations', 'API Access'],
-      formTypes: ['basic', 'realtime_validation', 'custom']
-    }
+    { id: 'basic', name: 'Basic Plan', price: 999, duration: 30, features: ['Unlimited Basic Forms', 'Email Support'] },
+    { id: 'premium', name: 'Premium Plan', price: 1999, duration: 30, features: ['Unlimited All Forms', 'Priority Support', 'Analytics'] }
   ];
 
   useEffect(() => {
@@ -45,138 +19,111 @@ const Subscriptions = () => {
   const fetchSubscriptions = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/subscription/current`, {
+      const response = await axios.get('http://localhost:5000/api/subscription/list', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setCurrentSubscription(response.data);
+      setSubscriptions(response.data);
     } catch (error) {
-      console.error('Failed to fetch subscriptions:', error);
+      console.error('Failed to fetch subscriptions');
+    }
+  };
+
+  const subscribeToPlan = async (plan) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        'http://localhost:5000/api/subscription/create',
+        { planName: plan.name, amount: plan.price, duration: plan.duration },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.success('Subscription created successfully!');
+      fetchSubscriptions();
+    } catch (error) {
+      toast.error('Failed to create subscription');
     } finally {
       setLoading(false);
     }
   };
 
-  const subscribeToPlan = async (plan) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(`${API_BASE_URL}/subscription/create`, {
-        planName: plan.name,
-        amount: plan.price,
-        duration: plan.duration
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      // Redirect to payment
-      window.location.href = response.data.paymentUrl;
-    } catch (error) {
-      toast.error('Failed to create subscription');
-    }
-  };
-
-  const cancelSubscription = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post(`${API_BASE_URL}/subscription/cancel`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      toast.success('Subscription cancelled successfully');
-      fetchSubscriptions();
-    } catch (error) {
-      toast.error('Failed to cancel subscription');
-    }
-  };
-
-  if (loading) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>;
-  }
-
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Subscription Plans</h1>
-        <p className="text-gray-600">Choose the plan that best fits your needs</p>
+    <div className="space-y-6">
+      <div className="bg-white shadow rounded-lg p-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Subscription Plans</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {plans.map((plan) => (
+            <div key={plan.id} className="border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
+                <div className="text-2xl font-bold text-indigo-600">₹{plan.price}</div>
+              </div>
+              
+              <div className="mb-4">
+                <div className="flex items-center text-sm text-gray-500 mb-2">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  {plan.duration} days validity
+                </div>
+                
+                <ul className="space-y-2">
+                  {plan.features.map((feature, index) => (
+                    <li key={index} className="flex items-center text-sm text-gray-600">
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              <button
+                onClick={() => subscribeToPlan(plan)}
+                disabled={loading}
+                className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Subscribe Now
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Current Subscription */}
-      {currentSubscription && (
-        <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-2">Current Subscription</h3>
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="font-medium">{currentSubscription.plan_name}</p>
-              <p className="text-sm text-gray-600">
-                Valid until: {new Date(currentSubscription.end_date).toLocaleDateString()}
-              </p>
-              <p className="text-sm text-gray-600">
-                Status: <span className="capitalize">{currentSubscription.status}</span>
-              </p>
-            </div>
-            <button
-              onClick={cancelSubscription}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-            >
-              Cancel Subscription
-            </button>
+      {subscriptions.length > 0 && (
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Subscriptions</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Start Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">End Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {subscriptions.map((sub) => (
+                  <tr key={sub.sub_id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{sub.plan_name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹{sub.amount}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(sub.start_date).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(sub.end_date).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        sub.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {sub.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
-
-      {/* Subscription Plans */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {plans.map((plan) => (
-          <div key={plan.id} className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
-            <div className="text-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
-              <div className="mt-4">
-                <span className="text-3xl font-bold text-gray-900">₹{plan.price}</span>
-                <span className="text-gray-600">/{plan.duration} days</span>
-              </div>
-            </div>
-
-            <ul className="space-y-3 mb-6">
-              {plan.features.map((feature, index) => (
-                <li key={index} className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-2" />
-                  <span className="text-gray-700">{feature}</span>
-                </li>
-              ))}
-            </ul>
-
-            <button
-              onClick={() => subscribeToPlan(plan)}
-              disabled={currentSubscription?.status === 'active'}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {currentSubscription?.status === 'active' ? 'Current Plan' : 'Subscribe Now'}
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {/* Prepaid Option */}
-      <div className="mt-8 bg-gray-50 rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-4">Prefer Pay-Per-Use?</h3>
-        <p className="text-gray-600 mb-4">
-          You can also use our prepaid wallet system:
-        </p>
-        <ul className="space-y-2 mb-4">
-          <li className="flex items-center">
-            <Check className="h-4 w-4 text-green-500 mr-2" />
-            <span>Basic Form: ₹5 per submission</span>
-          </li>
-          <li className="flex items-center">
-            <Check className="h-4 w-4 text-green-500 mr-2" />
-            <span>Realtime Validation: ₹50 per submission</span>
-          </li>
-        </ul>
-        <button
-          onClick={() => window.location.href = '/wallet'}
-          className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700"
-        >
-          Recharge Wallet
-        </button>
-      </div>
     </div>
   );
 };

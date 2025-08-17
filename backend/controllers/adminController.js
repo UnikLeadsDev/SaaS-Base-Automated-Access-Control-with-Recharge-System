@@ -1,13 +1,41 @@
 import db from "../config/db.js";
 
-// Get all users
+// Get admin dashboard stats
+export const getAdminStats = async (req, res) => {
+  try {
+    // Total users
+    const [totalUsers] = await db.query("SELECT COUNT(*) as count FROM users WHERE role != 'admin'");
+    
+    // Total revenue
+    const [totalRevenue] = await db.query("SELECT SUM(amount) as total FROM transactions WHERE type = 'credit'");
+    
+    // Total applications
+    const [totalApplications] = await db.query("SELECT COUNT(*) as count FROM applications");
+    
+    // Low balance users
+    const lowBalanceThreshold = parseFloat(process.env.LOW_BALANCE_THRESHOLD) || 100;
+    const [lowBalanceUsers] = await db.query("SELECT COUNT(*) as count FROM wallets WHERE balance < ?", [lowBalanceThreshold]);
+
+    res.json({
+      totalUsers: totalUsers[0].count,
+      totalRevenue: totalRevenue[0].total || 0,
+      totalApplications: totalApplications[0].count,
+      lowBalanceUsers: lowBalanceUsers[0].count
+    });
+  } catch (error) {
+    console.error("Admin Stats Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Get all users with wallet info
 export const getAllUsers = async (req, res) => {
   try {
     const [users] = await db.query(`
-      SELECT u.user_id, u.name, u.email, u.role, u.status, u.created_at,
-             w.balance, w.status as wallet_status
+      SELECT u.user_id, u.name, u.email, u.role, u.status, u.created_at, w.balance
       FROM users u
       LEFT JOIN wallets w ON u.user_id = w.user_id
+      WHERE u.role != 'admin'
       ORDER BY u.created_at DESC
     `);
 
@@ -18,67 +46,20 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-// Get user details
-export const getUserDetails = async (req, res) => {
-  const { id } = req.params;
+// Update user status
+export const updateUserStatus = async (req, res) => {
+  const { userId } = req.params;
+  const { status } = req.body;
 
-  try {
-    const [user] = await db.query(`
-      SELECT u.*, w.balance, w.status as wallet_status, w.valid_until
-      FROM users u
-      LEFT JOIN wallets w ON u.user_id = w.user_id
-      WHERE u.user_id = ?
-    `, [id]);
-
-    if (user.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Get recent transactions
-    const [transactions] = await db.query(
-      "SELECT * FROM transactions WHERE user_id = ? ORDER BY date DESC LIMIT 10",
-      [id]
-    );
-
-    // Get recent applications
-    const [applications] = await db.query(
-      "SELECT * FROM applications WHERE user_id = ? ORDER BY submitted_at DESC LIMIT 10",
-      [id]
-    );
-
-    res.json({
-      user: user[0],
-      recentTransactions: transactions,
-      recentApplications: applications
-    });
-  } catch (error) {
-    console.error("Get User Details Error:", error);
-    res.status(500).json({ message: "Server error" });
+  if (!['active', 'blocked'].includes(status)) {
+    return res.status(400).json({ message: "Invalid status" });
   }
-};
-
-// Block user
-export const blockUser = async (req, res) => {
-  const { id } = req.params;
 
   try {
-    await db.query("UPDATE users SET status = 'blocked' WHERE user_id = ?", [id]);
-    res.json({ message: "User blocked successfully" });
+    await db.query("UPDATE users SET status = ? WHERE user_id = ?", [status, userId]);
+    res.json({ message: "User status updated successfully" });
   } catch (error) {
-    console.error("Block User Error:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// Unblock user
-export const unblockUser = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    await db.query("UPDATE users SET status = 'active' WHERE user_id = ?", [id]);
-    res.json({ message: "User unblocked successfully" });
-  } catch (error) {
-    console.error("Unblock User Error:", error);
+    console.error("Update User Status Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
