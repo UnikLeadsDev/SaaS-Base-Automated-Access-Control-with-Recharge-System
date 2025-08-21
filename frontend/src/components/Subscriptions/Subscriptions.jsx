@@ -2,48 +2,108 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import { CreditCard, Calendar, CheckCircle } from 'lucide-react';
+import API_BASE_URL from '../../config/api.js';
 
 const Subscriptions = () => {
   const [subscriptions, setSubscriptions] = useState([]);
+  const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  const plans = [
-    { id: 'basic', name: 'Basic Plan', price: 999, duration: 30, features: ['Unlimited Basic Forms', 'Email Support'] },
-    { id: 'premium', name: 'Premium Plan', price: 1999, duration: 30, features: ['Unlimited All Forms', 'Priority Support', 'Analytics'] }
-  ];
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   useEffect(() => {
     fetchSubscriptions();
+    fetchPlans();
   }, []);
 
   const fetchSubscriptions = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/subscription/list', {
+      const response = await axios.get(`${API_BASE_URL}/subscription/list`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setSubscriptions(response.data);
+      setSubscriptions(response.data.subscriptions || []);
     } catch (error) {
       console.error('Failed to fetch subscriptions');
     }
   };
 
-  const subscribeToPlan = async (plan) => {
-    setLoading(true);
+  const fetchPlans = async () => {
     try {
       const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/subscription/plans`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPlans(response.data.plans || []);
+    } catch (error) {
+      console.error('Failed to fetch plans');
+    }
+  };
+
+  const subscribeToPlan = async (plan) => {
+    setPaymentLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Create Razorpay order
       const response = await axios.post(
-        'http://localhost:5000/api/subscription/create',
-        { planName: plan.name, amount: plan.price, duration: plan.duration },
+        `${API_BASE_URL}/subscription/create`,
+        { planName: plan.name, amount: plan.amount, duration: plan.duration },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      const { orderId, amount, currency, key } = response.data;
+
+      // Initialize Razorpay
+      const options = {
+        key: key,
+        amount: amount,
+        currency: currency,
+        name: 'SaaS Base',
+        description: `Subscription to ${plan.name}`,
+        order_id: orderId,
+        handler: async function (response) {
+          try {
+            // Verify payment
+            const verifyResponse = await axios.post(
+              `${API_BASE_URL}/subscription/verify-payment`,
+              {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                planName: plan.name,
+                duration: plan.duration
+              },
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (verifyResponse.data.success) {
+              toast.success(`Subscription activated! ₹${verifyResponse.data.amount} added to wallet`);
+              fetchSubscriptions();
+            }
+          } catch (error) {
+            toast.error('Payment verification failed');
+          }
+        },
+        prefill: {
+          name: localStorage.getItem('userName') || '',
+          email: localStorage.getItem('userEmail') || ''
+        },
+        theme: {
+          color: '#4F46E5'
+        },
+        modal: {
+          ondismiss: function() {
+            setPaymentLoading(false);
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
       
-      toast.success('Subscription created successfully!');
-      fetchSubscriptions();
     } catch (error) {
-      toast.error('Failed to create subscription');
-    } finally {
-      setLoading(false);
+      toast.error('Failed to initiate payment');
+      setPaymentLoading(false);
     }
   };
 
@@ -57,7 +117,7 @@ const Subscriptions = () => {
             <div key={plan.id} className="border border-gray-200 rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
-                <div className="text-2xl font-bold text-indigo-600">₹{plan.price}</div>
+                <div className="text-2xl font-bold text-indigo-600">₹{plan.amount}</div>
               </div>
               
               <div className="mb-4">
@@ -78,7 +138,7 @@ const Subscriptions = () => {
               
               <button
                 onClick={() => subscribeToPlan(plan)}
-                disabled={loading}
+                disabled={paymentLoading || loading}
                 className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
               >
                 <CreditCard className="h-4 w-4 mr-2" />
