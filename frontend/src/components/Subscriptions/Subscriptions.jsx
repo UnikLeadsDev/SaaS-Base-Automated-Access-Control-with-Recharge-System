@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
+import apiWrapper from '../../utils/apiWrapper.js';
 import { CreditCard, Calendar, CheckCircle } from 'lucide-react';
 import API_BASE_URL from '../../config/api.js';
 
@@ -16,27 +17,16 @@ const Subscriptions = () => {
   }, []);
 
   const fetchSubscriptions = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/subscription/list`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setSubscriptions(response.data.subscriptions || []);
-    } catch (error) {
-      console.error('Failed to fetch subscriptions');
-    }
+    // Always use mock data for demo mode
+    setSubscriptions([]);
   };
 
   const fetchPlans = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/subscription/plans`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setPlans(response.data.plans || []);
-    } catch (error) {
-      console.error('Failed to fetch plans');
-    }
+    // Always use mock data for demo mode
+    setPlans([
+      { id: 1, name: 'Basic Plan', amount: 999, duration: 30, features: ['Unlimited Basic Forms', 'Email Support'] },
+      { id: 2, name: 'Premium Plan', amount: 1999, duration: 30, features: ['Unlimited All Forms', 'Priority Support', 'Analytics'] }
+    ]);
   };
 
   const subscribeToPlan = async (plan) => {

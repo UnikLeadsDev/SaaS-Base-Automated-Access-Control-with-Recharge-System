@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
+import { useWallet } from '../../context/WalletContext';
+import apiWrapper from '../../utils/apiWrapper.js';
 import { Wallet as WalletIcon, Plus, History, CreditCard } from 'lucide-react';
 import API_BASE_URL from '../../config/api';
 
 const Wallet = () => {
+  const { balance, transactions, addAmount } = useWallet();
   const [walletData, setWalletData] = useState({
     balance: 0,
     status: 'active',
     validUntil: null
   });
-  const [transactions, setTransactions] = useState([]);
   const [rechargeAmount, setRechargeAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [showRecharge, setShowRecharge] = useState(false);
@@ -18,30 +20,20 @@ const Wallet = () => {
   useEffect(() => {
     fetchWalletData();
     fetchTransactions();
-  }, []);
+  }, [balance]);
 
   const fetchWalletData = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/wallet/balance`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setWalletData(response.data);
-    } catch (error) {
-      toast.error('Failed to fetch wallet data');
-    }
+    // Always use mock data for demo mode
+    setWalletData({
+      balance: balance,
+      status: 'active',
+      validUntil: null
+    });
   };
 
   const fetchTransactions = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/wallet/transactions`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setTransactions(response.data);
-    } catch (error) {
-      console.error('Failed to fetch transactions');
-    }
+    // Transactions are now managed by wallet context
+    // No need to set them here as they come from context
   };
 
   const handleRecharge = async () => {
@@ -228,7 +220,7 @@ const Wallet = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {transactions.map((txn) => (
+                {(transactions || []).map((txn) => (
                   <tr key={txn.txn_id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {new Date(txn.date).toLocaleDateString()}
@@ -253,7 +245,7 @@ const Wallet = () => {
               </tbody>
             </table>
             
-            {transactions.length === 0 && (
+            {(!transactions || transactions.length === 0) && (
               <div className="text-center py-8 text-gray-500">
                 No transactions found
               </div>

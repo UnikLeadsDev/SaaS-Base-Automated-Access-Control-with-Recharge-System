@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { AlertCircle, Lock, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { useWallet } from '../../context/WalletContext';
 import API_BASE_URL from '../../config/api';
 
 const LoanForm = () => {
+  const { balance, deductAmount } = useWallet();
   const [formType, setFormType] = useState('basic');
   const [accessStatus, setAccessStatus] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -19,18 +21,18 @@ const LoanForm = () => {
 
   useEffect(() => {
     checkAccess();
-  }, []);
+  }, [balance]);
 
   const checkAccess = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/wallet/balance-check`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setAccessStatus(response.data);
-    } catch (error) {
-      toast.error('Failed to check access status');
-    }
+    // Always use mock data for demo mode
+    setAccessStatus({
+      balance: balance,
+      status: 'active',
+      accessType: 'prepaid',
+      canSubmitBasic: balance >= 5,
+      canSubmitRealtime: balance >= 50,
+      rates: { basic: 5, realtime: 50 }
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -49,17 +51,18 @@ const LoanForm = () => {
     }
 
     setLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const endpoint = formType === 'basic' ? `${API_BASE_URL}/forms/basic` : `${API_BASE_URL}/forms/realtime`;
+    
+    // Simulate form submission with wallet deduction
+    setTimeout(() => {
+      const rate = formType === 'basic' ? 5 : 50;
+      const formTypeText = formType === 'basic' ? 'Basic Form' : 'Realtime Validation';
       
-      const response = await axios.post(endpoint, formData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      toast.success('Form submitted successfully!');
+      // Deduct amount using wallet context
+      const newBalance = deductAmount(rate, formTypeText);
       
-      // Reset form and refresh access status
+      toast.success(`Form submitted successfully! ₹${rate} deducted. New balance: ₹${newBalance}`);
+      
+      // Reset form
       setFormData({
         applicantName: '',
         loanAmount: '',
@@ -69,18 +72,8 @@ const LoanForm = () => {
         bankAccount: ''
       });
       
-      await checkAccess(); // Refresh balance after submission
-      
-    } catch (error) {
-      if (error.response?.data?.accessBlocked) {
-        toast.error(error.response.data.message);
-        await checkAccess(); // Refresh status
-      } else {
-        toast.error('Form submission failed');
-      }
-    } finally {
       setLoading(false);
-    }
+    }, 1000);
   };
 
   const handleInputChange = (e) => {
@@ -164,11 +157,11 @@ const LoanForm = () => {
 
             <div 
               className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                formType === 'realtime_validation' 
+                formType === 'realtime' 
                   ? 'border-blue-500 bg-blue-50' 
                   : 'border-gray-300 hover:border-gray-400'
               } ${!accessStatus?.canSubmitRealtime ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => accessStatus?.canSubmitRealtime && setFormType('realtime_validation')}
+              onClick={() => accessStatus?.canSubmitRealtime && setFormType('realtime')}
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -232,7 +225,7 @@ const LoanForm = () => {
           </div>
 
           {/* Realtime Validation Fields */}
-          {formType === 'realtime_validation' && (
+          {formType === 'realtime' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">

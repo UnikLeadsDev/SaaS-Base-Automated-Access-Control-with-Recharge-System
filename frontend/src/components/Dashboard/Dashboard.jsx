@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useWallet } from '../../context/WalletContext';
 import { Wallet, FileText, AlertCircle, TrendingUp } from 'lucide-react';
-import axios from 'axios';
+import apiWrapper from '../../utils/apiWrapper.js';
 import toast from 'react-hot-toast';
 import API_BASE_URL from '../../config/api';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { balance, transactions } = useWallet();
   const [stats, setStats] = useState({
     balance: 0,
     totalApplications: 0,
@@ -19,29 +21,20 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [balance, transactions]);
 
   const fetchDashboardData = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
-
-      const [balanceRes, appsRes, transRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/wallet/balance-check`, { headers }),
-        axios.get(`${API_BASE_URL}/forms/applications`, { headers }),
-        axios.get(`${API_BASE_URL}/wallet/transactions`, { headers })
-      ]);
-
-      setStats({
-        ...balanceRes.data,
-        totalApplications: appsRes.data.length,
-        recentTransactions: transRes.data.slice(0, 5)
-      });
-    } catch (error) {
-      toast.error('Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
+    // Always use mock data for demo mode
+    setStats({
+      balance: balance,
+      accessType: 'prepaid',
+      canSubmitBasic: balance >= 5,
+      canSubmitRealtime: balance >= 50,
+      rates: { basic: 5, realtime: 50 },
+      totalApplications: 0,
+      recentTransactions: transactions.slice(0, 5)
+    });
+    setLoading(false);
   };
 
   if (loading) {

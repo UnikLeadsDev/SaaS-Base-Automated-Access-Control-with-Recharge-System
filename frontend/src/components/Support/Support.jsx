@@ -17,15 +17,8 @@ const Support = () => {
   }, []);
 
   const fetchTickets = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/support/tickets', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setTickets(response.data);
-    } catch (error) {
-      console.error('Failed to fetch tickets');
-    }
+    // Always use mock data for demo mode
+    setTickets([]);
   };
 
   const createTicket = async () => {

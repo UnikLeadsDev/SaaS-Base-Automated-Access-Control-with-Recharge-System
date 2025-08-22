@@ -11,6 +11,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import subscriptionRoutes from "./routes/subscriptionRoutes.js";
 import billingRoutes from "./routes/billingRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
+import testRoutes from "./routes/testRoutes.js";
 import { checkLowBalanceAndExpiry } from "./controllers/notificationController.js";
 
 dotenv.config();
@@ -45,40 +46,9 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/subscription", subscriptionRoutes);
 app.use("/api/billing", billingRoutes);
 app.use("/api/support", supportRoutes);
+app.use("/api/test", testRoutes);
 
-// Debug route to check wallet routes
-app.get("/api/debug/routes", (req, res) => {
-    res.json({ message: "Routes loaded", timestamp: new Date().toISOString() });
-});
 
-// Direct wallet routes as fallback
-app.get("/api/wallet/balance", (req, res) => {
-    res.json({ balance: 0, status: 'active', validUntil: null });
-});
-
-app.get("/api/wallet/balance-check", (req, res) => {
-    res.json({ 
-        balance: 0, 
-        status: 'active', 
-        validUntil: null,
-        accessType: 'prepaid',
-        canSubmitBasic: false,
-        canSubmitRealtime: false,
-        rates: { basic: 5, realtime: 50 }
-    });
-});
-
-app.get("/api/wallet/transactions", (req, res) => {
-    res.json([]);
-});
-
-app.get("/api/subscription/current", (req, res) => {
-    res.json(null);
-});
-
-app.get("/api/support/tickets", (req, res) => {
-    res.json([]);
-});
 
 // Test API
 app.get("/", (req, res) => {
@@ -101,8 +71,9 @@ cron.schedule('0 * * * *', async () => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/health`);
     console.log(`🔔 Automated alerts scheduled every hour`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });

@@ -1,6 +1,7 @@
 import db from "../config/db.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import notificationService from "../services/notificationService.js";
 
 // Register Controller
 export const registerUser = async (req, res) => {
@@ -25,6 +26,11 @@ export const registerUser = async (req, res) => {
       "INSERT INTO users (name, email, mobile, role, status, password) VALUES (?, ?, ?, ?, 'active', ?)",
       [name, email, mobile, role, hashedPassword]
     );
+
+    // Send welcome SMS
+    if (mobile) {
+      await notificationService.sendWelcomeMessage(mobile, name);
+    }
 
     res.status(201).json({ message: "User registered successfully" });
 

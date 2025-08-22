@@ -1,4 +1,5 @@
 import db from "../config/db.js";
+import notificationService from "../services/notificationService.js";
 
 // Get wallet balance
 export const getWalletBalance = async (req, res) => {
@@ -91,6 +92,27 @@ export const deductFromWallet = async (userId, amount, txnRef = null) => {
     );
 
     await connection.commit();
+    
+    // Send low balance alert if balance is below threshold
+    const [updatedWallet] = await connection.query(
+      "SELECT balance FROM wallets WHERE user_id = ?",
+      [userId]
+    );
+    
+    const newBalance = updatedWallet[0].balance;
+    const threshold = parseFloat(process.env.LOW_BALANCE_THRESHOLD) || 100;
+    
+    if (newBalance <= threshold) {
+      const [user] = await connection.query(
+        "SELECT mobile FROM users WHERE user_id = ?",
+        [userId]
+      );
+      
+      if (user[0]?.mobile) {
+        await notificationService.sendLowBalanceAlert(user[0].mobile, newBalance);
+      }
+    }
+    
     return true;
   } catch (error) {
     await connection.rollback();
@@ -135,6 +157,22 @@ export const addToWallet = async (userId, amount, txnRef = null) => {
     );
 
     await connection.commit();
+    
+    // Send payment success SMS
+    const [updatedWallet] = await connection.query(
+      "SELECT balance FROM wallets WHERE user_id = ?",
+      [userId]
+    );
+    
+    const [user] = await connection.query(
+      "SELECT mobile FROM users WHERE user_id = ?",
+      [userId]
+    );
+    
+    if (user[0]?.mobile) {
+      await notificationService.sendPaymentSuccess(user[0].mobile, amount, updatedWallet[0].balance);
+    }
+    
     return true;
   } catch (error) {
     await connection.rollback();
