@@ -8,33 +8,45 @@ import API_BASE_URL from '../../config/api';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const { balance, transactions } = useWallet();
+  const { transactions } = useWallet(); // keep transactions from context if you want
   const [stats, setStats] = useState({
     balance: 0,
     totalApplications: 0,
     recentTransactions: [],
     accessType: 'prepaid',
     canSubmitBasic: false,
-    canSubmitRealtime: false
+    canSubmitRealtime: false,
+    rates: { basic: 5, realtime: 50 }
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDashboardData();
-  }, [balance, transactions]);
+  }, [transactions]); // re-run when transactions change
 
   const fetchDashboardData = async () => {
-    // Always use mock data for demo mode
-    setStats({
-      balance: balance,
-      accessType: 'prepaid',
-      canSubmitBasic: balance >= 5,
-      canSubmitRealtime: balance >= 50,
-      rates: { basic: 5, realtime: 50 },
-      totalApplications: 0,
-      recentTransactions: transactions.slice(0, 5)
-    });
-    setLoading(false);
+    try {
+      const response = await apiWrapper.get(`${API_BASE_URL}/wallet/balance`);
+      // backend returns: { balance: "105.00", status: "active", validUntil: null }
+      const data = response.data;
+
+      const balance = parseFloat(data.balance); // convert string → number
+
+      setStats({
+        balance: balance,
+        accessType: data.status === 'active' ? 'prepaid' : 'blocked',
+        canSubmitBasic: balance >= 5,
+        canSubmitRealtime: balance >= 50,
+        rates: { basic: 5, realtime: 50 },
+        totalApplications: 0, // if you have API for this, replace here
+        recentTransactions: transactions.slice(0, 5) // still using context for txn
+      });
+    } catch (err) {
+      toast.error("Failed to fetch wallet balance");
+      console.error("Error fetching wallet balance:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -115,14 +127,6 @@ const Dashboard = () => {
               </span>
             </div>
           </div>
-          
-          {!stats.canSubmitBasic && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-              <p className="text-sm text-yellow-800">
-                Insufficient balance. Please recharge your wallet to continue.
-              </p>
-            </div>
-          )}
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow">
