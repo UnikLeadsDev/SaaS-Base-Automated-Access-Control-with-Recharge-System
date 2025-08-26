@@ -10,13 +10,16 @@ import {
   CreditCard,
 } from "lucide-react";
 import API_BASE_URL from "../../config/api";
+import { useNavigate, useNavigation } from "react-router-dom";
+
 
 const Wallet = () => {
+
   const { balance, transactions, deductAmount, addAmount } = useWallet();
   const [rechargeAmount, setRechargeAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [showRecharge, setShowRecharge] = useState(false);
-
+  const navigate = useNavigate();
   const handleRecharge = async () => {
     console.log(transactions);
     if (!rechargeAmount || rechargeAmount < 1) {
@@ -58,6 +61,13 @@ const Wallet = () => {
             toast.success("Payment successful! Wallet recharged.");
             setRechargeAmount("");
             setShowRecharge(false);
+            navigate("/receipt", {
+              state: {
+                txnId: response.razorpay_payment_id,
+                amount: parseFloat(amount) / 100,
+                paymentMode: "razorpay",
+                // userName: user?.name || "—",
+              },});
 
             // ✅ Update balance in context
             addAmount(parseFloat(amount) / 100, "Wallet Recharge");

@@ -7,6 +7,7 @@ import Register from './components/Auth/Register';
 import Dashboard from './components/Dashboard/Dashboard';
 import LoanForm from './components/Forms/LoanForm';
 import Wallet from './components/Wallet/Wallet';
+import Receipt from './components/Receipt/Receipt';
 import Subscriptions from './components/Subscriptions/Subscriptions';
 import Support from './components/Support/Support';
 import AdminDashboard from './components/Admin/AdminDashboard';
@@ -25,10 +26,10 @@ function ProtectedRoute({ children, adminOnly = false }) {
 
 function App() {
   return (
-    <AuthProvider>
+    <AuthProvider >
       <WalletProvider>
         <Router>
-        <div className="min-h-screen  bg-gray-50">
+        <div className=" min-h-screen w-screen bg-gray-50">
           <Toaster position="top-right" />
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -50,6 +51,12 @@ function App() {
             <Route path="/wallet" element={
               <ProtectedRoute>
                 <Layout><Wallet /></Layout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/receipt" element={
+              <ProtectedRoute>
+                <Layout><Receipt /></Layout>
               </ProtectedRoute>
             } />
             
