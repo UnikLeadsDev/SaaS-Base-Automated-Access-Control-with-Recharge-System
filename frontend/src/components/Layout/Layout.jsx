@@ -11,7 +11,8 @@ import {
   LogOut,
   Menu,
   X,
-  Bell
+  Bell,
+  Receipt 
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
@@ -24,8 +25,10 @@ const Layout = ({ children }) => {
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Loan Forms', href: '/forms', icon: FileText },
     { name: 'Wallet', href: '/wallet', icon: Wallet },
+    { name: 'Receipt', href: '/receipt', icon: Receipt }, 
     { name: 'Subscriptions', href: '/subscriptions', icon: CreditCard },
     { name: 'Support', href: '/support', icon: HelpCircle },
+
   ];
 
   if (user?.role === 'admin') {
@@ -65,46 +68,35 @@ const Layout = ({ children }) => {
       {/* Main content */}
       <div className="flex flex-col w-0 flex-1 overflow-hidden">
         {/* Top bar */}
-        <div className="relative z-10 flex-shrink-0 flex h-16 bg-white shadow">
-          <button
-            className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 md:hidden"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="h-6 w-6" />
-          </button>
-          <div className="flex-1 px-4 flex justify-between">
-            <div className="flex-1 flex">
-              <div className="w-full flex md:ml-0">
-                <div className="relative w-full text-gray-400 focus-within:text-gray-600">
-                  <div className="flex items-center h-16">
-                    <h1 className="text-xl font-semibold text-gray-900">
-                      SaaS Base
-                    </h1>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="ml-4 flex items-center md:ml-6">
-              <button className="bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                <Bell className="h-6 w-6" />
-              </button>
-              <div className="ml-3 relative">
-                <div className="flex items-center space-x-3">
-                  <span className="text-sm font-medium text-gray-700">{user?.name}</span>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    {user?.role}
-                  </span>
-                  <button
-                    onClick={handleLogout}
-                    className="bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    <LogOut className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <div className="relative z-10 flex-shrink-0 flex h-16 bg-white shadow-sm border-b border-gray-200">
+  <button
+    className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 md:hidden"
+    onClick={() => setSidebarOpen(true)}
+  >
+    <Menu className="h-6 w-6" />
+  </button>
+  <div className="flex-1 px-4 flex justify-between items-center">
+    <h1 className="text-lg font-semibold text-gray-800">SaaS Base</h1>
+    <div className="flex items-center space-x-4">
+      <button className="bg-white p-1 rounded-full text-gray-400 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        <Bell className="h-6 w-6" />
+      </button>
+      <div className="flex items-center space-x-2">
+        <span className="text-sm font-medium text-gray-700">{user?.name}</span>
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 capitalize">
+          {user?.role}
+        </span>
+        <button
+          onClick={handleLogout}
+          className="bg-white p-1 rounded-full text-gray-400 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+        >
+          <LogOut className="h-5 w-5" />
+        </button>
+      </div>
+    </div>
+  </div>
+ </div>
+
 
         {/* Page content */}
         <main className="flex-1 relative overflow-y-auto focus:outline-none">
@@ -121,34 +113,49 @@ const Layout = ({ children }) => {
 
 const SidebarContent = ({ navigation, currentPath }) => (
   <div className="flex flex-col h-full pt-5 pb-4 overflow-y-auto bg-white border-r border-gray-200">
-    <div className="flex items-center flex-shrink-0 px-4">
-      <h2 className="text-lg font-semibold text-gray-900">SaaS Base</h2>
+    {/* Branding */}
+    <div className="flex items-center justify-center px-4 mb-6">
+      <h2 className="text-2xl font-bold text-indigo-600 tracking-tight">SaaS Base</h2>
     </div>
-    <nav className="mt-5 flex-1 px-2 space-y-1">
+
+    {/* Navigation */}
+    <nav className="flex-1 px-3 space-y-2">
       {navigation.map((item) => {
         const Icon = item.icon;
         const isActive = currentPath === item.href;
+
         return (
           <Link
             key={item.name}
             to={item.href}
-            className={`${
+            className={`group flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
               isActive
-                ? 'bg-indigo-100 text-indigo-900'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-            } group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
+                ? 'bg-indigo-100 text-indigo-900 font-semibold shadow-sm'
+                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+            }`}
           >
-            <Icon
-              className={`${
-                isActive ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500'
-              } mr-3 flex-shrink-0 h-6 w-6`}
-            />
-            {item.name}
+            <div className="flex items-center">
+              <Icon
+                className={`mr-3 h-5 w-5 transition-colors duration-150 ${
+                  isActive ? 'text-indigo-500' : 'text-gray-400 group-hover:text-indigo-400'
+                }`}
+              />
+              {item.name}
+            </div>
+
+            {/* Optional label (e.g., "New") */}
+            {item.name === 'Editor' && (
+              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                New
+              </span>
+            )}
           </Link>
         );
       })}
     </nav>
   </div>
 );
+
+
 
 export default Layout;

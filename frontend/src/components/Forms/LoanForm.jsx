@@ -6,7 +6,7 @@ import { useWallet } from '../../context/WalletContext';
 import API_BASE_URL from '../../config/api';
 
 const LoanForm = () => {
-  const { balance, deductAmount } = useWallet();
+  const { balance, transactions, deductAmount, addAmount } = useWallet();
   const [formType, setFormType] = useState('basic');
   const [accessStatus, setAccessStatus] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -25,6 +25,7 @@ const LoanForm = () => {
 
   const checkAccess = async () => {
     // Always use mock data for demo mode
+    console.log("balance in wallet is ",balance);
     setAccessStatus({
       balance: balance,
       status: 'active',
