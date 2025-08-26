@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import previewImage from '../../assets/preview.webp';
+import companyLogo from '../../assets/Unik leads png.png';
+import './Login.css';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +12,7 @@ const Login = () => {
     password: ''
   });
   const [loading, setLoading] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -21,6 +25,12 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!agreeToTerms) {
+      toast.error('Please agree to the Terms & Conditions');
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -35,58 +45,107 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            SaaS Base Login
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Access your automated loan processing system
-          </p>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <input
-                name="email"
-                type="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-                value={formData.email}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <input
-                name="password"
-                type="password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
-              />
-            </div>
+    <div className="login-container">
+      <div className="login-wrapper">
+        {/* Left Side - Form Section */}
+        <div className="form-section">
+          <div className="form-header">
+            <img src={companyLogo} alt="Unik Leads" className="company-logo" />
+            <h1 className="welcome-text">
+              Welcome to <span className="brand-name">SaaS Base</span>
+            </h1>
+            <p className="subtitle">Login to your Dashboard</p>
           </div>
-
-          <div>
-            <button
+          
+          <form onSubmit={handleSubmit} className="login-form">
+            <div className="form-group">
+              <label htmlFor="email" className="form-label">
+                Email Address <span className="required">*</span>
+              </label>
+              <div className="input-wrapper">
+                <input 
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="Enter your email address" 
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="form-input"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="password" className="form-label">
+                Password <span className="required">*</span>
+              </label>
+              <div className="input-wrapper">
+                <input 
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="Enter your password" 
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="form-input"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            
+            <div className="form-options">
+              <label className="checkbox-label">
+                <input 
+                  type="checkbox" 
+                  checked={agreeToTerms}
+                  onChange={(e) => setAgreeToTerms(e.target.checked)}
+                  className="checkbox-input"
+                />
+                <span className="checkbox-text">
+                  I agree to the <Link to="/terms" className="terms-link">Terms & Conditions</Link>
+                </span>
+              </label>
+            </div>
+            
+            <button 
               type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              disabled={loading || !formData.email || !formData.password}
+              className={`login-button ${loading ? 'loading' : ''}`}
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? (
+                <>
+                  <span className="spinner"></span>
+                  Signing in...
+                </>
+              ) : (
+                'Sign in'
+              )}
             </button>
+            
+            <div className="signup-section">
+              <p className="signup-text">
+                Don't have an account? {' '}
+                <Link to="/register" className="signup-link">
+                  Create Account
+                </Link>
+              </p>
+            </div>
+          </form>
+        </div>
+        
+        {/* Right Side - Image Section */}
+        <div className="image-section">
+          <div className="image-wrapper">
+            <img 
+              src={previewImage}
+              alt="Login Illustration" 
+              className="login-image"
+            />
           </div>
-
-          <div className="text-center">
-            <Link to="/register" className="text-indigo-600 hover:text-indigo-500">
-              Don't have an account? Register here
-            </Link>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );

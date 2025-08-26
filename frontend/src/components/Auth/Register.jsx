@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
+import previewImage from '../../assets/preview.webp';
+import companyLogo from '../../assets/Unik leads png.png';
+import './Register.css';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -48,90 +51,169 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create your account
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Join SaaS Base for automated loan processing
-          </p>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm space-y-4">
-            <input
-              name="name"
-              type="text"
-              required
-              value={formData.name}
-              onChange={handleChange}
-              className="relative block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Full Name"
-            />
-            <input
-              name="email"
-              type="email"
-              required
-              value={formData.email}
-              onChange={handleChange}
-              className="relative block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Email address"
-            />
-            <input
-              name="mobile"
-              type="tel"
-              value={formData.mobile}
-              onChange={handleChange}
-              className="relative block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Mobile Number"
-            />
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="relative block w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              <option value="DSA">DSA</option>
-              <option value="NBFC">NBFC</option>
-              <option value="Co-op">Co-op Bank</option>
-            </select>
-            <input
-              name="password"
-              type="password"
-              required
-              value={formData.password}
-              onChange={handleChange}
-              className="relative block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Password"
-            />
-            <input
-              name="confirmPassword"
-              type="password"
-              required
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className="relative block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Confirm Password"
-            />
+    <div className="register-container">
+      <div className="register-wrapper">
+        {/* Left Side - Form Section */}
+        <div className="form-section">
+          <div className="form-header">
+            <img src={companyLogo} alt="Unik Leads" className="company-logo" />
+            <h1 className="welcome-text">
+              Join <span className="brand-name">SaaS Base</span>
+            </h1>
+            <p className="subtitle">Create your account</p>
           </div>
-
-          <div>
-            <button
+          
+          <form onSubmit={handleSubmit} className="register-form">
+            <div className="form-group">
+              <label htmlFor="name" className="form-label">
+                Full Name <span className="required">*</span>
+              </label>
+              <div className="input-wrapper">
+                <input 
+                  id="name"
+                  name="name"
+                  type="text"
+                  placeholder="Enter your full name" 
+                  required
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="form-input"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="email" className="form-label">
+                Email Address <span className="required">*</span>
+              </label>
+              <div className="input-wrapper">
+                <input 
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="Enter your email address" 
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="form-input"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="mobile" className="form-label">
+                Mobile Number
+              </label>
+              <div className="input-wrapper">
+                <input 
+                  id="mobile"
+                  name="mobile"
+                  type="tel"
+                  placeholder="Enter your mobile number" 
+                  value={formData.mobile}
+                  onChange={handleChange}
+                  className="form-input"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="role" className="form-label">
+                Role <span className="required">*</span>
+              </label>
+              <div className="input-wrapper">
+                <select 
+                  id="role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className="form-select"
+                  disabled={loading}
+                >
+                  <option value="DSA">DSA</option>
+                  <option value="NBFC">NBFC</option>
+                  <option value="Co-op">Co-op Bank</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="password" className="form-label">
+                Password <span className="required">*</span>
+              </label>
+              <div className="input-wrapper">
+                <input 
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="Enter your password" 
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="form-input"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="confirmPassword" className="form-label">
+                Confirm Password <span className="required">*</span>
+              </label>
+              <div className="input-wrapper">
+                <input 
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  placeholder="Confirm your password" 
+                  required
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className="form-input"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            
+            <button 
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              className={`register-button ${loading ? 'loading' : ''}`}
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? (
+                <>
+                  <span className="spinner"></span>
+                  Creating Account...
+                </>
+              ) : (
+                'Create Account'
+              )}
             </button>
+            
+            <div className="login-section">
+              <p className="login-text">
+                Already have an account? {' '}
+                <Link to="/login" className="login-link">
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          </form>
+        </div>
+        
+        {/* Right Side - Image Section */}
+        <div className="image-section">
+          <div className="image-wrapper">
+            <img 
+              src={previewImage}
+              alt="Register Illustration" 
+              className="register-image"
+            />
           </div>
-
-          <div className="text-center">
-            <Link to="/login" className="text-indigo-600 hover:text-indigo-500">
-              Already have an account? Sign in
-            </Link>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );
