@@ -1,56 +1,80 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
-import { HelpCircle, Plus, MessageSquare } from 'lucide-react';
+import { HelpCircle, Plus, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
 
 const Support = () => {
   const [tickets, setTickets] = useState([]);
   const [showCreateTicket, setShowCreateTicket] = useState(false);
   const [newTicket, setNewTicket] = useState({
+    category: '',
     subject: '',
     description: '',
-    priority: 'medium'
+    attachment: null,
   });
+  const [openFaq, setOpenFaq] = useState(null);
+
+  const faqs = [
+    {
+      question: 'How do I recharge my wallet?',
+      answer: 'Go to the Wallet section and click "Recharge Wallet". You can pay securely using Razorpay.',
+    },
+    {
+      question: 'What are the form processing rates?',
+      answer: 'Basic forms cost ₹5 each, and realtime validation forms cost ₹50 each.',
+    },
+    {
+      question: 'How do I get low balance alerts?',
+      answer: 'Alerts are sent automatically via SMS and email when your balance falls below ₹100.',
+    },
+    {
+      question: 'Can I update my subscription plan?',
+      answer: 'Yes, go to the Subscription section in your dashboard to upgrade or change your plan.',
+    },
+  ];
 
   useEffect(() => {
     fetchTickets();
   }, []);
 
   const fetchTickets = async () => {
-    // Always use mock data for demo mode
+    // Mocked data until backend ready
     setTickets([]);
   };
 
   const createTicket = async () => {
-    if (!newTicket.subject || !newTicket.description) {
-      toast.error('Please fill all fields');
+    if (!newTicket.category || !newTicket.subject || !newTicket.description) {
+      toast.error('Please fill all required fields');
       return;
     }
 
     try {
       const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('category', newTicket.category);
+      formData.append('subject', newTicket.subject);
+      formData.append('description', newTicket.description);
+      if (newTicket.attachment) {
+        formData.append('attachment', newTicket.attachment);
+      }
+
       await axios.post(
         'http://localhost:5000/api/support/create',
-        newTicket,
-        { headers: { Authorization: `Bearer ${token}` } }
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
       );
-      
+
       toast.success('Support ticket created successfully');
-      setNewTicket({ subject: '', description: '', priority: 'medium' });
+      setNewTicket({ category: '', subject: '', description: '', attachment: null });
       setShowCreateTicket(false);
       fetchTickets();
     } catch (error) {
       toast.error('Failed to create ticket');
-    }
-  };
-
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -67,6 +91,7 @@ const Support = () => {
   return (
     <div className="space-y-6">
       <div className="bg-white shadow rounded-lg p-6">
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <HelpCircle className="h-6 w-6 text-gray-400 mr-2" />
@@ -77,31 +102,12 @@ const Support = () => {
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Create Ticket
+            Raise Ticket
           </button>
         </div>
 
-        {/* FAQ Section */}
+        {/* Tickets List */}
         <div className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Frequently Asked Questions</h3>
-          <div className="space-y-4">
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2">How do I recharge my wallet?</h4>
-              <p className="text-gray-600">Go to the Wallet section and click "Recharge Wallet". You can pay using Razorpay.</p>
-            </div>
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2">What are the form processing rates?</h4>
-              <p className="text-gray-600">Basic forms cost ₹5 each, and realtime validation forms cost ₹50 each.</p>
-            </div>
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2">How do I get low balance alerts?</h4>
-              <p className="text-gray-600">Alerts are sent automatically via SMS and email when your balance falls below ₹100.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Support Tickets */}
-        <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Support Tickets</h3>
           {tickets.length > 0 ? (
             <div className="overflow-x-auto">
@@ -109,8 +115,8 @@ const Support = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ticket ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
                   </tr>
@@ -121,12 +127,8 @@ const Support = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         #{ticket.ticket_id}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{ticket.category}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{ticket.subject}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(ticket.priority)}`}>
-                          {ticket.priority}
-                        </span>
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(ticket.status)}`}>
                           {ticket.status.replace('_', ' ')}
@@ -147,15 +149,40 @@ const Support = () => {
             </div>
           )}
         </div>
+
+        {/* FAQ Section */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Frequently Asked Questions</h3>
+          <div className="space-y-2">
+            {faqs.map((faq, index) => (
+              <div key={index} className="border rounded-lg">
+                <button
+                  className="w-full flex justify-between items-center px-4 py-3 text-left text-gray-800 font-medium hover:bg-gray-50"
+                  onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                >
+                  {faq.question}
+                  {openFaq === index ? (
+                    <ChevronUp className="h-5 w-5 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-gray-500" />
+                  )}
+                </button>
+                {openFaq === index && (
+                  <div className="px-4 pb-4 text-gray-600 text-sm">{faq.answer}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Create Ticket Modal */}
       {showCreateTicket && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Create Support Ticket</h3>
+                <h3 className="text-lg font-medium text-gray-900">Raise Support Ticket</h3>
                 <button
                   onClick={() => setShowCreateTicket(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -163,8 +190,26 @@ const Support = () => {
                   ×
                 </button>
               </div>
-              
+
               <div className="space-y-4">
+                {/* Category */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <select
+                    value={newTicket.category}
+                    onChange={(e) => setNewTicket({ ...newTicket, category: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">Select a category</option>
+                    <option value="Billing">Billing / Payment Issue</option>
+                    <option value="Wallet">Wallet Recharge Issue</option>
+                    <option value="Access">Access / Login Issue</option>
+                    <option value="Technical">Technical Error</option>
+                    <option value="General">General Query</option>
+                  </select>
+                </div>
+
+                {/* Subject */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
                   <input
@@ -172,24 +217,11 @@ const Support = () => {
                     value={newTicket.subject}
                     onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Brief description of the issue"
+                    placeholder="Brief summary of the issue"
                   />
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-                  <select
-                    value={newTicket.priority}
-                    onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
-                </div>
-                
+
+                {/* Description */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                   <textarea
@@ -197,17 +229,27 @@ const Support = () => {
                     onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
                     rows={4}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Detailed description of the issue"
+                    placeholder="Explain your issue in detail"
+                  />
+                </div>
+
+                {/* Attachment */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Attachment (optional)</label>
+                  <input
+                    type="file"
+                    onChange={(e) => setNewTicket({ ...newTicket, attachment: e.target.files[0] })}
+                    className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
                   />
                 </div>
               </div>
-              
+
               <div className="flex space-x-3 mt-6">
                 <button
                   onClick={createTicket}
                   className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
                 >
-                  Create Ticket
+                  Submit Ticket
                 </button>
                 <button
                   onClick={() => setShowCreateTicket(false)}
