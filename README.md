@@ -455,6 +455,10 @@ REALTIME_VALIDATION_RATE=50
 # Alert Thresholds
 LOW_BALANCE_THRESHOLD=100
 EXPIRY_ALERT_DAYS=7
+
+#email credentials
+EMAIL_USER=organization_email
+EMAIL_PASS=organization_Email_passkey
 ```
 
 ## 🚀 Usage
