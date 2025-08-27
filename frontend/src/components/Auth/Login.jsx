@@ -10,6 +10,7 @@ const Login = () => {
     password: ''
   });
   const [loading, setLoading] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -22,6 +23,12 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!agreeToTerms) {
+      toast.error('Please agree to the Terms & Conditions');
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -47,11 +54,9 @@ const Login = () => {
         >
           {/* Branding */}
           <div className="text-center">
-             <h1 className="text-3xl font-bold text-indigo-600">SaaS Base Registration</h1>
-            
+            <h1 className="text-3xl font-bold text-indigo-600">SaaS Base</h1>
             <h2 className="mt-2 text-xl font-semibold text-gray-800">Welcome back</h2>
-            <p className="mt-2 text- font-semibold text-gray-800">Keep your Wallet Updated</p>
-            
+            <p className="mt-2 text-sm text-gray-600">Login to your Dashboard</p>
           </div>
 
           {/* Google Sign-in (placeholder) */}
@@ -77,13 +82,36 @@ const Login = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + index * 0.1 }}
+                disabled={loading}
               />
             ))}
+
+            {/* Terms & Conditions Checkbox */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="flex items-center"
+            >
+              <input
+                id="agreeToTerms"
+                type="checkbox"
+                checked={agreeToTerms}
+                onChange={(e) => setAgreeToTerms(e.target.checked)}
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              />
+              <label htmlFor="agreeToTerms" className="ml-2 block text-sm text-gray-900">
+                I agree to the{' '}
+                <Link to="/terms" className="text-indigo-600 hover:underline">
+                  Terms & Conditions
+                </Link>
+              </label>
+            </motion.div>
 
             <motion.button
               whileTap={{ scale: 0.95 }}
               type="submit"
-              disabled={loading}
+              disabled={loading || !formData.email || !formData.password || !agreeToTerms}
               className="w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
             >
               {loading ? 'Signing in...' : 'Sign in'}
@@ -100,37 +128,34 @@ const Login = () => {
 
       {/* Right: Stats Section */}
       <div className="hidden md:flex flex-col justify-center items-center bg-gradient-to-br from-purple-600 to-pink-500 text-white px-8 space-y-6">
+        {/* Wallet & Access Control */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="bg-white/10 backdrop-blur-md rounded-xl p-6 w-full max-w-sm shadow-lg"
+        >
+          <h3 className="text-lg font-semibold">WALLET & ACCESS CONTROL</h3>
+          <p className="text-sm mt-2">
+            Prepaid wallet with Razorpay integration and automated access control.  
+            Submissions are allowed only if balance or subscription is valid.
+          </p>
+        </motion.div>
 
-  {/* Wallet & Access Control */}
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.5 }}
-    className="bg-white/10 backdrop-blur-md rounded-xl p-6 w-full max-w-sm shadow-lg"
-  >
-    <h3 className="text-lg font-semibold">WALLET & ACCESS CONTROL</h3>
-    <p className="text-sm mt-2">
-      Prepaid wallet with Razorpay integration and automated access control.  
-      Submissions are allowed only if balance or subscription is valid.
-    </p>
-  </motion.div>
-
-  {/* Notifications & Billing */}
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.7 }}
-    className="bg-white/10 backdrop-blur-md rounded-xl p-6 w-full max-w-sm shadow-lg"
-  >
-    <h3 className="text-lg font-semibold">NOTIFICATIONS & BILLING</h3>
-    <p className="text-sm mt-2">
-      Automated SMS/Email/WhatsApp alerts via MSG91 for low balance, expiry,  
-      and payments. Includes detailed reports and invoice generation.
-    </p>
-  </motion.div>
-
-</div>
-
+        {/* Notifications & Billing */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="bg-white/10 backdrop-blur-md rounded-xl p-6 w-full max-w-sm shadow-lg"
+        >
+          <h3 className="text-lg font-semibold">NOTIFICATIONS & BILLING</h3>
+          <p className="text-sm mt-2">
+            Automated SMS/Email/WhatsApp alerts via MSG91 for low balance, expiry,  
+            and payments. Includes detailed reports and invoice generation.
+          </p>
+        </motion.div>
+      </div>
     </div>
   );
 };
