@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import axios from 'axios';
-import { motion } from 'framer-motion';
 import API_BASE_URL from '../../config/api';
+import previewImage from '../../assets/preview.webp';
+import companyLogo from '../../assets/Unik leads png.png';
+import './Register.css';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -23,6 +25,7 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
       return;
@@ -30,7 +33,14 @@ const Register = () => {
 
     setLoading(true);
     try {
-      await axios.post(`${API_BASE_URL}/auth/register`, formData);
+      await axios.post(`${API_BASE_URL}/auth/register`, {
+        name: formData.name,
+        email: formData.email,
+        mobile: formData.mobile,
+        role: formData.role,
+        password: formData.password
+      });
+      
       toast.success('Registration successful! Please login.');
       navigate('/login');
     } catch (error) {
@@ -41,167 +51,169 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:grid md:grid-cols-2 bg-gray-100">
-      {/* Left: Form Section */}
-      <div className="flex items-center justify-center px-4 sm:px-6 lg:px-8 py-6 bg-white">
-        <motion.div
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
-          className="w-full max-w-md space-y-6"
-        >
-          {/* Branding */}
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-indigo-600">SaaS Base Registration</h1>
-            <h2 className="mt-2 text-xl font-semibold text-gray-800">Create your account</h2>
-            <p className="mt-2 text-sm text-gray-600">Join our platform today</p>
+    <div className="register-container">
+      <div className="register-wrapper">
+        {/* Left Side - Form Section */}
+        <div className="form-section">
+          <div className="form-header">
+            <img src={companyLogo} alt="Unik Leads" className="company-logo" />
+            <h1 className="welcome-text">
+              Join <span className="brand-name">SaaS Base</span>
+            </h1>
+            <p className="subtitle">Create your account</p>
           </div>
-
-          {/* Google Sign-in */}
-          <button
-            type="button"
-            className="w-full py-2 px-4 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 transition"
-          >
-            Sign up with Google
-          </button>
-
-          {/* Form */}
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            {/* Name Field */}
-            <motion.input
-              name="name"
-              type="text"
-              required
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Full Name"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              disabled={loading}
-            />
-
-            {/* Email Field */}
-            <motion.input
-              name="email"
-              type="email"
-              required
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Email Address"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              disabled={loading}
-            />
-
-            {/* Mobile Field */}
-            <motion.input
-              name="mobile"
-              type="tel"
-              value={formData.mobile}
-              onChange={handleChange}
-              placeholder="Mobile Number"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              disabled={loading}
-            />
-
-            {/* Role Field */}
-            <motion.select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              disabled={loading}
-            >
-              <option value="DSA">DSA</option>
-              <option value="NBFC">NBFC</option>
-              <option value="Co-op">Co-op Bank</option>
-            </motion.select>
-
-            {/* Password Field */}
-            <motion.input
-              name="password"
-              type="password"
-              required
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Password"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              disabled={loading}
-            />
-
-            {/* Confirm Password Field */}
-            <motion.input
-              name="confirmPassword"
-              type="password"
-              required
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="Confirm Password"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
-              disabled={loading}
-            />
-
-            <motion.button
-              whileTap={{ scale: 0.95 }}
+          
+          <form onSubmit={handleSubmit} className="register-form">
+            <div className="form-group">
+              <label htmlFor="name" className="form-label">
+                Full Name <span className="required">*</span>
+              </label>
+              <div className="input-wrapper">
+                <input 
+                  id="name"
+                  name="name"
+                  type="text"
+                  placeholder="Enter your full name" 
+                  required
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="form-input"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="email" className="form-label">
+                Email Address <span className="required">*</span>
+              </label>
+              <div className="input-wrapper">
+                <input 
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="Enter your email address" 
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="form-input"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="mobile" className="form-label">
+                Mobile Number
+              </label>
+              <div className="input-wrapper">
+                <input 
+                  id="mobile"
+                  name="mobile"
+                  type="tel"
+                  placeholder="Enter your mobile number" 
+                  value={formData.mobile}
+                  onChange={handleChange}
+                  className="form-input"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="role" className="form-label">
+                Role <span className="required">*</span>
+              </label>
+              <div className="input-wrapper">
+                <select 
+                  id="role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className="form-select"
+                  disabled={loading}
+                >
+                  <option value="DSA">DSA</option>
+                  <option value="NBFC">NBFC</option>
+                  <option value="Co-op">Co-op Bank</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="password" className="form-label">
+                Password <span className="required">*</span>
+              </label>
+              <div className="input-wrapper">
+                <input 
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="Enter your password" 
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="form-input"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="confirmPassword" className="form-label">
+                Confirm Password <span className="required">*</span>
+              </label>
+              <div className="input-wrapper">
+                <input 
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  placeholder="Confirm your password" 
+                  required
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className="form-input"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            
+            <button 
               type="submit"
               disabled={loading}
-              className="w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
+              className={`register-button ${loading ? 'loading' : ''}`}
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
-            </motion.button>
-
-            <div className="text-center text-sm">
-              <Link to="/login" className="text-indigo-600 hover:underline">
-                Already have an account? Login Here
-              </Link>
+              {loading ? (
+                <>
+                  <span className="spinner"></span>
+                  Creating Account...
+                </>
+              ) : (
+                'Create Account'
+              )}
+            </button>
+            
+            <div className="login-section">
+              <p className="login-text">
+                Already have an account? {' '}
+                <Link to="/login" className="login-link">
+                  Sign in
+                </Link>
+              </p>
             </div>
           </form>
-        </motion.div>
-      </div>
-
-      {/* Right: Stats Section */}
-      <div className="hidden md:flex flex-col justify-center items-center bg-gradient-to-br from-purple-600 to-pink-500 text-white px-8 py-6 space-y-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="bg-white/10 backdrop-blur-md rounded-xl p-6 w-full max-w-sm shadow-lg"
-        >
-          <h3 className="text-lg font-semibold">WALLET & ACCESS CONTROL</h3>
-          <p className="text-sm mt-2">
-            Prepaid wallet with Razorpay integration and automated access control.  
-            Submissions are allowed only if balance or subscription is valid.
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="bg-white/10 backdrop-blur-md rounded-xl p-6 w-full max-w-sm shadow-lg"
-        >
-          <h3 className="text-lg font-semibold">NOTIFICATIONS & BILLING</h3>
-          <p className="text-sm mt-2">
-            Automated SMS/Email/WhatsApp alerts via MSG91 for low balance, expiry,  
-            and payments. Includes detailed reports and invoice generation.
-          </p>
-        </motion.div>
+        </div>
+        
+        {/* Right Side - Image Section */}
+        <div className="image-section">
+          <div className="image-wrapper">
+            <img 
+              src={previewImage}
+              alt="Register Illustration" 
+              className="register-image"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
