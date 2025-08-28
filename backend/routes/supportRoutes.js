@@ -5,10 +5,16 @@ import {
   getUserTickets, 
   updateTicketStatus 
 } from "../controllers/supportController.js";
+import multer from "multer";
+
+// Configure multer (memory storage)
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 const router = express.Router();
 
-router.post("/create", verifyToken, createSupportTicket);
+// Use multer for create ticket route
+router.post("/create", verifyToken, upload.single("attachment"), createSupportTicket);
 router.get("/tickets", verifyToken, getUserTickets);
 router.put("/tickets/:ticketId/status", verifyToken, checkRole(['admin']), updateTicketStatus);
 
