@@ -1,89 +1,172 @@
-import React, { useRef, useEffect, useState } from "react";
-import { useReactToPrint } from "react-to-print";
-import { useLocation } from "react-router-dom";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import API_BASE_URL from "../../config/api";
 
 function Receipt() {
-  const receiptRef = useRef(null);
-  const { state } = useLocation();
-  const { txnId, amount, paymentMode } = state || {};
   const { user } = useAuth();
-  const [date, setDate] = useState("");
 
-  const handlePrint = useReactToPrint({
-    content: () => receiptRef.current,
-    documentTitle: `receipt-${txnId}`,
-  });
+  const [loading, setLoading] = useState(true);
+  const [receipts, setReceipts] = useState([]);
 
+  const token = localStorage.getItem("token");
+
+  // Fetch all receipts
   useEffect(() => {
-    const today = new Date();
-    const formatted = today.toLocaleDateString("en-IN", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    setDate(formatted);
-  }, []);
+    const fetchReceipts = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/receipts/receipts`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        setReceipts(data);
+      } catch (err) {
+        console.error("Error fetching receipts:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (!txnId || !amount) {
-    return (
-      <div className="text-center py-10 text-gray-500">
-        No receipt data found.
-      </div>
-    );
+    fetchReceipts();
+  }, [token]);
+
+  // PDF generation
+  const generatePDF = (receipt) => {
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.setTextColor(40, 40, 160);
+    doc.text("SaaS Base", 105, 15, { align: "center" });
+
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text("Recharge Wallet Receipt", 105, 25, { align: "center" });
+
+    autoTable(doc, {
+      startY: 40,
+      head: [["Field", "Details"]],
+      body: [
+        ["Transaction ID", receipt.txn_id],
+        ["Name", user?.name || "—"],
+        ["Date", new Date(receipt.receipt_date).toLocaleDateString("en-IN")],
+        ["Payment Mode", receipt.payment_mode],
+        ["Amount Added", `₹${receipt.amount}`],
+      ],
+      theme: "grid",
+      headStyles: { fillColor: [63, 81, 181] },
+      bodyStyles: { textColor: 50 },
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 15;
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text("Thank you for using SaaS Base.", 105, finalY, { align: "center" });
+    doc.text("For support, contact support@saasbase.com", 105, finalY + 6, { align: "center" });
+
+    doc.save(`receipt-${receipt.txn_id}.pdf`);
+  };
+
+  // Email receipt
+  const sendEmail = async (receipt) => {
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.setTextColor(40, 40, 160);
+    doc.text("SaaS Base", 105, 15, { align: "center" });
+
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text("Recharge Wallet Receipt", 105, 25, { align: "center" });
+
+    autoTable(doc, {
+      startY: 40,
+      head: [["Field", "Details"]],
+      body: [
+        ["Transaction ID", receipt.txn_id],
+        ["Name", user?.name || "—"],
+        ["Date", new Date(receipt.receipt_date).toLocaleDateString("en-IN")],
+        ["Payment Mode", receipt.payment_mode],
+        ["Amount Added", `₹${receipt.amount}`],
+      ],
+      theme: "grid",
+      headStyles: { fillColor: [63, 81, 181] },
+      bodyStyles: { textColor: 50 },
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 15;
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text("Thank you for using SaaS Base.", 105, finalY, { align: "center" });
+    doc.text("For support, contact support@saasbase.com", 105, finalY + 6, { align: "center" });
+
+    const pdfBase64 = doc.output("datauristring");
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/receipts/send-receipt`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          email: user?.email,
+          pdfBase64,
+          txnId: receipt.txn_id,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert("Receipt sent to your email!");
+      } else {
+        alert("Failed to send email.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error sending email.");
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-10 text-gray-500">Loading...</div>;
+  }
+
+  if (receipts.length === 0) {
+    return <div className="text-center py-10 text-gray-500">No receipts found.</div>;
   }
 
   return (
-    <div className="flex flex-col items-center p-6">
-      <div
-        ref={receiptRef}
-        className="bg-white shadow-lg rounded-xl w-full max-w-md border border-gray-200 p-6"
-      >
-        {/* Header */}
-        <div className="text-center border-b pb-4 mb-4">
-          <h2 className="text-2xl font-bold text-indigo-600">SaaS Base</h2>
-          <p className="text-sm text-gray-500">Recharge Wallet Receipt</p>
-        </div>
-
-        {/* Body */}
-        <div className="space-y-3 text-gray-700">
-          <div className="flex justify-between">
-            <span className="font-medium">Transaction ID:</span>
-            <span>{txnId}</span>
+    <div className="flex flex-col items-center p-6 w-full max-w-2xl">
+      <h2 className="text-xl font-bold text-indigo-600 mb-4">Your Receipts</h2>
+      <div className="space-y-4 w-full flex flex-row gap-6">
+        {receipts.map((receipt) => (
+          <div
+            key={receipt.receipt_id}
+            className="bg-white shadow rounded-lg gap-5 p-4 border flex justify-between items-center"
+          >
+            <div>
+              <p className="font-semibold">Txn ID: {receipt.txn_id}</p>
+              <p className="text-sm text-gray-500">
+                {new Date(receipt.receipt_date).toLocaleDateString("en-IN")} — ₹{receipt.amount}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => generatePDF(receipt)}
+                className="px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600"
+              >
+                PDF
+              </button>
+              <button
+                onClick={() => sendEmail(receipt)}
+                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+              >
+                Mail
+              </button>
+            </div>
           </div>
-          <div className="flex justify-between">
-            <span className="font-medium">Name:</span>
-            <span>{user?.name || "—"}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="font-medium">Date:</span>
-            <span>{date}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="font-medium">Payment Mode:</span>
-            <span className="capitalize">{paymentMode}</span>
-          </div>
-          <div className="flex justify-between text-lg font-semibold border-t pt-3">
-            <span>Amount Added:</span>
-            <span className="text-green-600">₹{amount}</span>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-6 border-t pt-4 text-center text-sm text-gray-500">
-          <p>Thank you for using SaaS Base.</p>
-          <p>For support, contact support@saasbase.com</p>
-        </div>
-      </div>
-
-      {/* Download Button */}
-      <div className="mt-6">
-        <button
-          onClick={handlePrint}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition"
-        >
-          Download Receipt
-        </button>
+        ))}
       </div>
     </div>
   );

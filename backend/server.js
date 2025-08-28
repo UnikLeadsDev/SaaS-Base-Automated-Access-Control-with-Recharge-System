@@ -9,9 +9,9 @@ import formRoutes from "./routes/formRoutes.js";
 import walletRoutes from "./routes/walletRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import subscriptionRoutes from "./routes/subscriptionRoutes.js";
-import billingRoutes from "./routes/billingRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
 import testRoutes from "./routes/testRoutes.js";
+import receiptRoutes from "./routes/receiptRoutes.js"
 import { checkLowBalanceAndExpiry } from "./controllers/notificationController.js";
 
 dotenv.config();
@@ -48,9 +48,10 @@ app.use("/api/forms", formRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/subscription", subscriptionRoutes);
-app.use("/api/billing", billingRoutes);
+
 app.use("/api/support", supportRoutes);
 app.use("/api/test", testRoutes);
+app.use("/api/receipts",receiptRoutes);
 
 
 

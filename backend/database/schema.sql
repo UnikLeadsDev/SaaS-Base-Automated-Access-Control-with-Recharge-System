@@ -87,19 +87,21 @@ CREATE TABLE support_tickets (
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
--- Invoices table
-CREATE TABLE invoices (
-    invoice_id INT PRIMARY KEY AUTO_INCREMENT,
+-- Receipt table
+CREATE TABLE receipts (
+    receipt_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
-    invoice_number VARCHAR(50) UNIQUE NOT NULL,
-    amount DECIMAL(10,2) NOT NULL,
-    tax_amount DECIMAL(10,2) DEFAULT 0.00,
-    total_amount DECIMAL(10,2) NOT NULL,
-    status ENUM('pending', 'paid', 'overdue', 'cancelled') DEFAULT 'pending',
-    due_date DATE NOT NULL,
+    txn_id VARCHAR(100) UNIQUE NOT NULL,   -- Transaction ID from frontend
+    user_name VARCHAR(100),                -- Name of the user at the time of transaction
+    email VARCHAR(150),                    -- Email of the user
+    amount DECIMAL(10,2) NOT NULL,         -- Amount added
+    payment_mode ENUM('upi', 'card', 'netbanking', 'wallet', 'cash', 'other') NOT NULL,
+    status ENUM('success', 'failed', 'pending') DEFAULT 'success',
+    receipt_date DATE NOT NULL,            -- Transaction date
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
+
 
 -- Create wallet for each user after registration
 DELIMITER //
