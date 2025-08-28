@@ -72,6 +72,7 @@ export const loginUser = async (req, res) => {
     const [wallet] = await db.query("SELECT balance, status FROM wallets WHERE user_id = ?", [user[0].user_id]);
 
     res.json({ 
+      success: true,
       message: "Login successful", 
       token,
       user: {

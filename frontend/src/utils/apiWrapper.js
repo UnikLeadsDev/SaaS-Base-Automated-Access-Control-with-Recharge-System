@@ -17,8 +17,14 @@ const apiWrapper = {
         console.error = originalConsoleError;
         throw error;
       }
-      
+
       console.error = originalConsoleError;
+
+      // For auth endpoints, do not mock 404 either; surface the error
+      const isAuthEndpoint = url.includes('/auth/');
+      if (isAuthEndpoint && (error.response?.status === 404)) {
+        throw error;
+      }
       
       if (error.code === 'ERR_NETWORK' || error.response?.status === 404 || !error.response) {
         return {
@@ -38,6 +44,12 @@ const apiWrapper = {
     } catch (error) {
       // Don't use mock data for auth errors - let them propagate
       if (error.response?.status === 401) {
+        throw error;
+      }
+
+      // For auth endpoints, do not mock 404 either; surface the error
+      const isAuthEndpoint = url.includes('/auth/');
+      if (isAuthEndpoint && (error.response?.status === 404)) {
         throw error;
       }
       

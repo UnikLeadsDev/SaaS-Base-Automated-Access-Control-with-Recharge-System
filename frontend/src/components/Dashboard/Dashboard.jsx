@@ -20,13 +20,26 @@ const Dashboard = () => {
   });
   const [loading, setLoading] = useState(true);
 
+  const isMockToken = () => {
+    const token = localStorage.getItem('token');
+    return token && token.startsWith('mock_jwt_token_');
+  };
+
   useEffect(() => {
-    fetchDashboardData();
-  }, [transactions]); // re-run when transactions change
+    const token = localStorage.getItem('token');
+    if (token && user && !isMockToken()) {
+      fetchDashboardData();
+    } else {
+      setLoading(false);
+    }
+  }, [transactions, user]); // re-run when transactions change
 
   const fetchDashboardData = async () => {
     try {
-      const response = await apiWrapper.get(`${API_BASE_URL}/wallet/balance`);
+      const token = localStorage.getItem('token');
+      const response = await apiWrapper.get(`${API_BASE_URL}/wallet/balance`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       // backend returns: { balance: "105.00", status: "active", validUntil: null }
       const data = response.data;
 
@@ -42,8 +55,14 @@ const Dashboard = () => {
         recentTransactions: transactions.slice(0, 5) // still using context for txn
       });
     } catch (err) {
-      toast.error("Failed to fetch wallet balance");
-      console.error("Error fetching wallet balance:", err);
+      if (err?.response?.status === 401) {
+        toast.error('Session expired or unauthorized. Please log in again.');
+      } else if (err?.response?.status === 404) {
+        toast.error('Wallet not found.');
+      } else {
+        toast.error('Failed to fetch wallet balance');
+      }
+      console.error('Error fetching wallet balance:', err);
     } finally {
       setLoading(false);
     }

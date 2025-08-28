@@ -17,10 +17,20 @@ export const WalletProvider = ({ children }) => {
   const [balance, setBalance] = useState(0);
   const [transactions, setTransactions] = useState([]);
 
+  // 🔹 Detect mock token (from demo mode in AuthContext)
+  const isMockToken = () => {
+    const token = localStorage.getItem("token");
+    return token && token.startsWith("mock_jwt_token_");
+  };
+
   // 🔹 Fetch wallet balance + transactions
   const fetchWalletData = async () => {
     try {
       const token = localStorage.getItem("token");
+      if (!token || isMockToken()) {
+        // In demo mode or no token: skip hitting protected endpoints
+        return;
+      }
 
       // balance
       const balanceRes = await axios.get(`${API_BASE_URL}/wallet/balance`, {
@@ -30,10 +40,9 @@ export const WalletProvider = ({ children }) => {
 
       // transactions
       const txnRes = await axios.get(`${API_BASE_URL}/wallet/transactions`, {
-        
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("these are transaction",txnRes.data);
+      console.log("these are transaction", txnRes.data);
       setTransactions(txnRes.data || []);
     } catch (error) {
       console.error("Failed to fetch wallet data:", error);
@@ -41,7 +50,10 @@ export const WalletProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    fetchWalletData();
+    const token = localStorage.getItem("token");
+    if (token) {
+      fetchWalletData();
+    }
   }, []);
 
   // ✅ Deduct amount
@@ -65,6 +77,7 @@ export const WalletProvider = ({ children }) => {
     // 🔹 Persist to backend
     try {
       const token = localStorage.getItem("token");
+      if (!token || isMockToken()) return true; // skip in demo mode
       await axios.post(`${API_BASE_URL}/wallet/transactions`, newTxn, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -91,7 +104,8 @@ export const WalletProvider = ({ children }) => {
     // 🔹 Persist to backend
     try {
       const token = localStorage.getItem("token");
-      await axios.post("http://localhost:5000/api/wallet/transactions", newTxn, {
+      if (!token || isMockToken()) return; // skip in demo mode
+      await axios.post(`${API_BASE_URL}/wallet/transactions`, newTxn, {
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch (err) {

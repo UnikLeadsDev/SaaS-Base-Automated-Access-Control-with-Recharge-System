@@ -14,17 +14,18 @@ import AdminDashboard from './components/Admin/AdminDashboard';
 import Layout from './components/Layout/Layout';
 import './App.css';
 
-function ProtectedRoute({ children, adminOnly = false }) {
-  const { user, loading } = useAuth();
-  
-  if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
-  if (!user) return <Navigate to="/login" />;
-  if (adminOnly && user.role !== 'admin') return <Navigate to="/dashboard" />;
-  
-  return children;
-}
-
 function App() {
+  // Move ProtectedRoute inside App function so it has access to context
+  function ProtectedRoute({ children, adminOnly = false }) {
+    const { user, loading } = useAuth();
+    
+    if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
+    if (!user) return <Navigate to="/login" />;
+    if (adminOnly && user.role !== 'admin') return <Navigate to="/dashboard" />;
+    
+    return children;
+  }
+
   return (
     <AuthProvider >
       <WalletProvider>

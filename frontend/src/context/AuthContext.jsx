@@ -17,11 +17,31 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const isMockToken = () => {
+    const token = localStorage.getItem('token');
+    return token && token.startsWith('mock_jwt_token_');
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUserProfile();
+      if (isMockToken()) {
+        // Use stored user data for demo mode
+        const userName = localStorage.getItem('userName');
+        const userEmail = localStorage.getItem('userEmail');
+        if (userName && userEmail) {
+          setUser({
+            id: 1,
+            name: userName,
+            email: userEmail,
+            role: 'DSA'
+          });
+        }
+        setLoading(false);
+      } else {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        fetchUserProfile();
+      }
     } else {
       setLoading(false);
     }
@@ -29,13 +49,22 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await apiWrapper.get(`${API_BASE_URL}/auth/profile`);
+      const token = localStorage.getItem('token');
+      console.log('Fetching user profile with token:', token ? 'exists' : 'missing');
+      
+      const response = await apiWrapper.get(`${API_BASE_URL}/auth/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log('Profile response:', response);
       setUser(response.data);
     } catch (error) {
+      console.log('Profile fetch error:', error.response?.status, error.message);
+      
       // Use stored user data if available
       const userName = localStorage.getItem('userName');
       const userEmail = localStorage.getItem('userEmail');
       if (userName && userEmail) {
+        console.log('Using stored user data for demo mode');
         setUser({
           id: 1,
           name: userName,
@@ -43,6 +72,7 @@ export const AuthProvider = ({ children }) => {
           role: 'DSA'
         });
       } else {
+        console.log('No stored user data, clearing token');
         localStorage.removeItem('token');
         delete axios.defaults.headers.common['Authorization'];
       }
@@ -107,6 +137,8 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userEmail');
     delete axios.defaults.headers.common['Authorization'];
     setUser(null);
   };
