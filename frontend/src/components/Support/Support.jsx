@@ -2,35 +2,25 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import { HelpCircle, Plus, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
+import API_BASE_URL from '../../config/api';
 
 const Support = () => {
   const [tickets, setTickets] = useState([]);
   const [showCreateTicket, setShowCreateTicket] = useState(false);
   const [newTicket, setNewTicket] = useState({
-    category: '',
+    category: '', // added category
     subject: '',
     description: '',
+    // priority: 'medium', // default priority
     attachment: null,
   });
   const [openFaq, setOpenFaq] = useState(null);
 
   const faqs = [
-    {
-      question: 'How do I recharge my wallet?',
-      answer: 'Go to the Wallet section and click "Recharge Wallet". You can pay securely using Razorpay.',
-    },
-    {
-      question: 'What are the form processing rates?',
-      answer: 'Basic forms cost ₹5 each, and realtime validation forms cost ₹50 each.',
-    },
-    {
-      question: 'How do I get low balance alerts?',
-      answer: 'Alerts are sent automatically via SMS and email when your balance falls below ₹100.',
-    },
-    {
-      question: 'Can I update my subscription plan?',
-      answer: 'Yes, go to the Subscription section in your dashboard to upgrade or change your plan.',
-    },
+    { question: 'How do I recharge my wallet?', answer: 'Go to the Wallet section and click "Recharge Wallet". You can pay securely using Razorpay.' },
+    { question: 'What are the form processing rates?', answer: 'Basic forms cost ₹5 each, and realtime validation forms cost ₹50 each.' },
+    { question: 'How do I get low balance alerts?', answer: 'Alerts are sent automatically via SMS and email when your balance falls below ₹100.' },
+    { question: 'Can I update my subscription plan?', answer: 'Yes, go to the Subscription section in your dashboard to upgrade or change your plan.' },
   ];
 
   useEffect(() => {
@@ -38,12 +28,20 @@ const Support = () => {
   }, []);
 
   const fetchTickets = async () => {
-    // Mocked data until backend ready
-    setTickets([]);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get( `${API_BASE_URL}/support/tickets`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setTickets(res.data);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to fetch tickets');
+    }
   };
 
   const createTicket = async () => {
-    if (!newTicket.category || !newTicket.subject || !newTicket.description) {
+    if (!newTicket.subject || !newTicket.description) {
       toast.error('Please fill all required fields');
       return;
     }
@@ -51,29 +49,27 @@ const Support = () => {
     try {
       const token = localStorage.getItem('token');
       const formData = new FormData();
-      formData.append('category', newTicket.category);
+      formData.append('category', newTicket.category); // append category
       formData.append('subject', newTicket.subject);
       formData.append('description', newTicket.description);
+      // formData.append('priority', newTicket.priority);
       if (newTicket.attachment) {
         formData.append('attachment', newTicket.attachment);
       }
 
-      await axios.post(
-        'http://localhost:5000/api/support/create',
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      await axios.post(`${API_BASE_URL}/support/create`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
       toast.success('Support ticket created successfully');
-      setNewTicket({ category: '', subject: '', description: '', attachment: null });
+      setNewTicket({ subject: '', description: '', priority: 'medium', attachment: null });
       setShowCreateTicket(false);
       fetchTickets();
-    } catch (error) {
+    } catch (err) {
+      console.error(err);
       toast.error('Failed to create ticket');
     }
   };
@@ -84,6 +80,16 @@ const Support = () => {
       case 'in_progress': return 'bg-yellow-100 text-yellow-800';
       case 'resolved': return 'bg-green-100 text-green-800';
       case 'closed': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'low': return 'bg-green-100 text-green-800';
+      case 'medium': return 'bg-blue-100 text-blue-800';
+      case 'high': return 'bg-yellow-100 text-yellow-800';
+      case 'urgent': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -115,23 +121,25 @@ const Support = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ticket ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {tickets.map((ticket) => (
                     <tr key={ticket.ticket_id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        #{ticket.ticket_id}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{ticket.category}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{ticket.ticket_id}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{ticket.subject}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(ticket.status)}`}>
                           {ticket.status.replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(ticket.priority)}`}>
+                          {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -161,15 +169,9 @@ const Support = () => {
                   onClick={() => setOpenFaq(openFaq === index ? null : index)}
                 >
                   {faq.question}
-                  {openFaq === index ? (
-                    <ChevronUp className="h-5 w-5 text-gray-500" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-gray-500" />
-                  )}
+                  {openFaq === index ? <ChevronUp className="h-5 w-5 text-gray-500" /> : <ChevronDown className="h-5 w-5 text-gray-500" />}
                 </button>
-                {openFaq === index && (
-                  <div className="px-4 pb-4 text-gray-600 text-sm">{faq.answer}</div>
-                )}
+                {openFaq === index && <div className="px-4 pb-4 text-gray-600 text-sm">{faq.answer}</div>}
               </div>
             ))}
           </div>
@@ -183,32 +185,27 @@ const Support = () => {
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900">Raise Support Ticket</h3>
-                <button
-                  onClick={() => setShowCreateTicket(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ×
-                </button>
+                <button onClick={() => setShowCreateTicket(false)} className="text-gray-400 hover:text-gray-600">×</button>
               </div>
 
               <div className="space-y-4">
                 {/* Category */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                  <select
-                    value={newTicket.category}
-                    onChange={(e) => setNewTicket({ ...newTicket, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="">Select a category</option>
-                    <option value="Billing">Billing / Payment Issue</option>
-                    <option value="Wallet">Wallet Recharge Issue</option>
-                    <option value="Access">Access / Login Issue</option>
-                    <option value="Technical">Technical Error</option>
-                    <option value="General">General Query</option>
-                  </select>
-                </div>
-
+                {/* Category */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                        <select
+                          value={newTicket.category}
+                          onChange={(e) => setNewTicket({ ...newTicket, category: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        >
+                          <option value="">Select a category</option>
+                          <option value="Billing">Billing / Payment Issue</option>
+                          <option value="Wallet">Wallet Recharge Issue</option>
+                          <option value="Access">Access / Login Issue</option>
+                          <option value="Technical">Technical Error</option>
+                          <option value="General">General Query</option>
+                        </select>
+                      </div>
                 {/* Subject */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
@@ -232,6 +229,21 @@ const Support = () => {
                     placeholder="Explain your issue in detail"
                   />
                 </div>
+
+                {/* Priority */}
+                {/* <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                  <select
+                    value={newTicket.priority}
+                    onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div> */}
 
                 {/* Attachment */}
                 <div>
