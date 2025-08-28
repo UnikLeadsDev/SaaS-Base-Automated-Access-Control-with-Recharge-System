@@ -16,13 +16,17 @@ const Subscriptions = () => {
     fetchPlans();
   }, []);
 
+  const isMockToken = () => {
+    const token = localStorage.getItem('token');
+    return token && token.startsWith('mock_jwt_token_');
+  };
+
   const fetchSubscriptions = async () => {
-    // Always use mock data for demo mode
+    // In this UI, we keep it simple; real backend listing can be wired later
     setSubscriptions([]);
   };
 
   const fetchPlans = async () => {
-    // Always use mock data for demo mode
     setPlans([
       { id: 1, name: 'Basic Plan', amount: 999, duration: 30, features: ['Unlimited Basic Forms', 'Email Support'] },
       { id: 2, name: 'Premium Plan', amount: 1999, duration: 30, features: ['Unlimited All Forms', 'Priority Support', 'Analytics'] }
@@ -33,8 +37,15 @@ const Subscriptions = () => {
     setPaymentLoading(true);
     try {
       const token = localStorage.getItem('token');
+
+      // Block demo mode: require real payment
+      if (!token || isMockToken()) {
+        toast.error('Real payment required. Please log in against the backend to subscribe.');
+        setPaymentLoading(false);
+        return;
+      }
       
-      // Create Razorpay order
+      // Create Razorpay order (real flow)
       const response = await axios.post(
         `${API_BASE_URL}/subscription/create`,
         { planName: plan.name, amount: plan.amount, duration: plan.duration },
@@ -53,7 +64,7 @@ const Subscriptions = () => {
         order_id: orderId,
         handler: async function (response) {
           try {
-            // Verify payment
+            // Verify payment (activates subscription and credits wallet server-side)
             const verifyResponse = await axios.post(
               `${API_BASE_URL}/subscription/verify-payment`,
               {
@@ -66,12 +77,16 @@ const Subscriptions = () => {
               { headers: { Authorization: `Bearer ${token}` } }
             );
 
-            if (verifyResponse.data.success) {
-              toast.success(`Subscription activated! ₹${verifyResponse.data.amount} added to wallet`);
+            if (verifyResponse.data?.success) {
+              toast.success('Subscription activated successfully');
               fetchSubscriptions();
+            } else {
+              toast.error('Payment verification failed');
             }
           } catch (error) {
             toast.error('Payment verification failed');
+          } finally {
+            setPaymentLoading(false);
           }
         },
         prefill: {

@@ -1,22 +1,35 @@
 import db from "../config/db.js";
 import notificationService from "../services/notificationService.js";
 
+// Ensure wallet exists for a user and return current wallet row
+const ensureWalletForUser = async (userId) => {
+  const [wallet] = await db.query(
+    "SELECT balance, status FROM wallets WHERE user_id = ?",
+    [userId]
+  );
+  if (wallet.length === 0) {
+    await db.query(
+      "INSERT INTO wallets (user_id, balance, status) VALUES (?, 0, 'active')",
+      [userId]
+    );
+    const [created] = await db.query(
+      "SELECT balance, status FROM wallets WHERE user_id = ?",
+      [userId]
+    );
+    return created[0];
+  }
+  return wallet[0];
+};
+
 // Get wallet balance
 export const getWalletBalance = async (req, res) => {
   try {
-    const [wallet] = await db.query(
-      "SELECT balance, status, valid_until FROM wallets WHERE user_id = ?",
-      [req.user.id]
-    );
-
-    if (wallet.length === 0) {
-      return res.status(404).json({ message: "Wallet not found" });
-    }
+    const wallet = await ensureWalletForUser(req.user.id);
 
     res.json({
-      balance: wallet[0].balance,
-      status: wallet[0].status,
-      validUntil: wallet[0].valid_until
+      balance: wallet.balance,
+      status: wallet.status,
+      validUntil: null
     });
   } catch (error) {
     console.error("Get Wallet Error:", error);
@@ -27,25 +40,18 @@ export const getWalletBalance = async (req, res) => {
 // Get wallet balance with access check for dashboard
 export const getWalletBalanceCheck = async (req, res) => {
   try {
-    const [wallet] = await db.query(
-      "SELECT balance, status, valid_until FROM wallets WHERE user_id = ?",
-      [req.user.id]
-    );
-
-    if (wallet.length === 0) {
-      return res.status(404).json({ message: "Wallet not found" });
-    }
+    const wallet = await ensureWalletForUser(req.user.id);
 
     const basicRate = parseFloat(process.env.BASIC_FORM_RATE);
     const realtimeRate = parseFloat(process.env.REALTIME_VALIDATION_RATE);
     
     res.json({
-      balance: wallet[0].balance,
-      status: wallet[0].status,
-      validUntil: wallet[0].valid_until,
+      balance: wallet.balance,
+      status: wallet.status,
+      validUntil: null,
       accessType: 'prepaid',
-      canSubmitBasic: wallet[0].balance >= basicRate,
-      canSubmitRealtime: wallet[0].balance >= realtimeRate,
+      canSubmitBasic: wallet.balance >= basicRate,
+      canSubmitRealtime: wallet.balance >= realtimeRate,
       rates: {
         basic: basicRate,
         realtime: realtimeRate
@@ -141,7 +147,10 @@ export const addToWallet = async (userId, amount, txnRef = null) => {
     );
     
     if (wallet.length === 0) {
-      throw new Error('Wallet not found for user');
+      await connection.query(
+        "INSERT INTO wallets (user_id, balance, status) VALUES (?, 0, 'active')",
+        [userId]
+      );
     }
 
     // Add to wallet
