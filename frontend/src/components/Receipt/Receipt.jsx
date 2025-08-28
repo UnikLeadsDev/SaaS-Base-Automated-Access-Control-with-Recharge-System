@@ -11,25 +11,35 @@ function Receipt() {
   const [receipts, setReceipts] = useState([]);
 
   const token = localStorage.getItem("token");
+  const isMockToken = token && token.startsWith("mock_jwt_token_");
 
   // Fetch all receipts
   useEffect(() => {
     const fetchReceipts = async () => {
       try {
+        if (!token || isMockToken) {
+          setReceipts([]);
+          return;
+        }
         const res = await fetch(`${API_BASE_URL}/receipts/receipts`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        if (!res.ok) {
+          setReceipts([]);
+          return;
+        }
         const data = await res.json();
-        setReceipts(data);
+        setReceipts(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Error fetching receipts:", err);
+        setReceipts([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchReceipts();
-  }, [token]);
+  }, [token, isMockToken]);
 
   // PDF generation
   const generatePDF = (receipt) => {
@@ -103,6 +113,10 @@ function Receipt() {
     const pdfBase64 = doc.output("datauristring");
 
     try {
+      if (!token || isMockToken) {
+        alert("Email sending is unavailable in demo mode.");
+        return;
+      }
       const res = await fetch(`${API_BASE_URL}/receipts/send-receipt`, {
         method: "POST",
         headers: {
@@ -132,7 +146,7 @@ function Receipt() {
     return <div className="text-center py-10 text-gray-500">Loading...</div>;
   }
 
-  if (receipts.length === 0) {
+  if (!receipts || receipts.length === 0) {
     return <div className="text-center py-10 text-gray-500">No receipts found.</div>;
   }
 
@@ -142,7 +156,7 @@ function Receipt() {
       <div className="space-y-4 w-full flex flex-row gap-6">
         {receipts.map((receipt) => (
           <div
-            key={receipt.receipt_id}
+            key={receipt.receipt_id || receipt.txn_id}
             className="bg-white shadow rounded-lg gap-5 p-4 border flex justify-between items-center"
           >
             <div>

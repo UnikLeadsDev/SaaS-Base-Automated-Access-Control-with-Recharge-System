@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import previewImage from '../../assets/preview.webp';
 import companyLogo from '../../assets/Unik leads png.png';
 import './Login.css';
+import { motion } from 'framer-motion';
 
 const Login = () => {
   const [formData, setFormData] = useState({

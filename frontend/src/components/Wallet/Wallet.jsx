@@ -22,6 +22,12 @@ const Wallet = () => {
   const [loading, setLoading] = useState(false);
   const [showRecharge, setShowRecharge] = useState(false);
   const navigate = useNavigate();
+
+  const isMockToken = () => {
+    const token = localStorage.getItem("token");
+    return token && token.startsWith("mock_jwt_token_");
+  };
+
   const handleRecharge = async () => {
     console.log(transactions);
     if (!rechargeAmount || rechargeAmount < 1) {
@@ -32,6 +38,26 @@ const Wallet = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
+
+      // Demo mode: simulate a successful recharge without backend calls
+      if (isMockToken()) {
+        const simulatedTxnId = "demo_txn_" + Date.now();
+        const amountNum = parseFloat(rechargeAmount);
+
+        addAmount(amountNum, "Wallet Recharge (Demo)");
+        toast.success("Payment successful! Wallet recharged (Demo)");
+        setRechargeAmount("");
+        setShowRecharge(false);
+
+        navigate("/receipt", {
+          state: {
+            txnId: simulatedTxnId,
+            amount: amountNum,
+            paymentMode: "demo",
+          },
+        });
+        return;
+      }
 
       const orderResponse = await axios.post(
         `${API_BASE_URL}/payment/create-order`,

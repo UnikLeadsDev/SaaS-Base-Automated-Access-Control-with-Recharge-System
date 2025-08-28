@@ -87,6 +87,8 @@ CREATE TABLE support_tickets (
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
+ALTER TABLE support_tickets
+  ADD COLUMN category VARCHAR(100) NULL AFTER ticket_id;
 -- Receipt table
 CREATE TABLE receipts (
     receipt_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -101,7 +103,19 @@ CREATE TABLE receipts (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
-
+CREATE TABLE IF NOT EXISTS receipts (
+  receipt_id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  txn_id VARCHAR(100) UNIQUE NOT NULL,
+  user_name VARCHAR(100),
+  email VARCHAR(150),
+  amount DECIMAL(10,2) NOT NULL,
+  payment_mode ENUM('upi','card','netbanking','wallet','cash','other') NOT NULL,
+  status ENUM('success','failed','pending') DEFAULT 'success',
+  receipt_date DATE NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
 
 -- Create wallet for each user after registration
 DELIMITER //
