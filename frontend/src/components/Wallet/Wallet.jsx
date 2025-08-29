@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 import { useWallet } from "../../context/WalletContext";
+import { handleApiError } from "../../utils/errorHandler";
 import {
   Wallet as WalletIcon,
   Plus,
@@ -25,8 +26,10 @@ const Wallet = () => {
 
   const isMockToken = () => {
     const token = localStorage.getItem("token");
-    return token && token.startsWith("mock_jwt_token_");
+    return token && (token.startsWith("mock_jwt_token_") || token.includes('demo'));
   };
+
+  const isDemoMode = isMockToken();
 
   const handleRecharge = async () => {
     console.log(transactions);
@@ -40,7 +43,7 @@ const Wallet = () => {
       const token = localStorage.getItem("token");
 
       // Demo mode: simulate a successful recharge without backend calls
-      if (isMockToken()) {
+      if (isDemoMode) {
         const simulatedTxnId = "demo_txn_" + Date.now();
         const amountNum = parseFloat(rechargeAmount);
 
@@ -119,8 +122,7 @@ await axios.post(
       },
     });
   } catch (error) {
-    console.error(error);
-    toast.error("Payment verification or receipt creation failed");
+    handleApiError(error);
   }
 },
 
@@ -134,8 +136,7 @@ await axios.post(
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to initiate payment");
+      handleApiError(error);
     } finally {
       setLoading(false);
     }
@@ -163,10 +164,21 @@ await axios.post(
         <div className="px-4 py-3">
           <button
             onClick={() => setShowRecharge(true)}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md shadow hover:bg-indigo-700"
+            className={`px-4 py-2 rounded-md shadow ${
+              isDemoMode 
+                ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+            }`}
+            disabled={isDemoMode}
           >
-            <Plus className="h-4 w-4 mr-2 inline" /> Recharge Wallet
+            <Plus className="h-4 w-4 mr-2 inline" /> 
+            {isDemoMode ? 'Recharge (Demo Mode)' : 'Recharge Wallet'}
           </button>
+          {isDemoMode && (
+            <p className="text-xs text-orange-600 mt-2">
+              Payments disabled in demo mode
+            </p>
+          )}
         </div>
       </div>
 
@@ -186,11 +198,15 @@ await axios.post(
             <div className="flex space-x-3">
               <button
                 onClick={handleRecharge}
-                disabled={loading}
-                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                disabled={loading || isDemoMode}
+                className={`flex-1 px-4 py-2 rounded-md disabled:opacity-50 ${
+                  isDemoMode 
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                }`}
               >
                 <CreditCard className="h-4 w-4 mr-2 inline" />
-                {loading ? "Processing..." : "Pay Now"}
+                {loading ? "Processing..." : isDemoMode ? "Demo Mode" : "Pay Now"}
               </button>
               <button
                 onClick={() => setShowRecharge(false)}

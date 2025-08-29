@@ -3,12 +3,15 @@ import { AlertCircle, Lock, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useWallet } from '../../context/WalletContext';
+import { handleApiError } from '../../utils/errorHandler';
+import apiWrapper from '../../utils/apiWrapper';
+import FormEligibilityCheck from './FormEligibilityCheck';
 import API_BASE_URL from '../../config/api';
 
 const LoanForm = () => {
   const { balance, transactions, deductAmount, addAmount } = useWallet();
   const [formType, setFormType] = useState('basic');
-  const [accessStatus, setAccessStatus] = useState(null);
+  const [eligibility, setEligibility] = useState(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     applicantName: '',
@@ -19,62 +22,57 @@ const LoanForm = () => {
     bankAccount: ''
   });
 
-  useEffect(() => {
-    checkAccess();
-  }, [balance]);
-
-  const checkAccess = async () => {
-    // Always use mock data for demo mode
-    console.log("balance in wallet is ",balance);
-    setAccessStatus({
-      balance: balance,
-      status: 'active',
-      accessType: 'prepaid',
-      canSubmitBasic: balance >= 5,
-      canSubmitRealtime: balance >= 50,
-      rates: { basic: 5, realtime: 50 }
-    });
+  const handleEligibilityChange = (eligibilityData) => {
+    setEligibility(eligibilityData);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!accessStatus) {
-      toast.error('Please wait while we check your access status');
+    if (!eligibility) {
+      toast.error('Please wait while we check your eligibility');
       return;
     }
 
-    const canSubmit = formType === 'basic' ? accessStatus.canSubmitBasic : accessStatus.canSubmitRealtime;
-    
-    if (!canSubmit) {
-      toast.error('Insufficient balance. Please recharge your wallet.');
+    if (!eligibility.eligible) {
+      toast.error('Form submission blocked. Please check eligibility requirements.');
       return;
     }
 
     setLoading(true);
     
-    // Simulate form submission with wallet deduction
-    setTimeout(() => {
-      const rate = formType === 'basic' ? 5 : 50;
-      const formTypeText = formType === 'basic' ? 'Basic Form' : 'Realtime Validation';
+    try {
+      const endpoint = formType === 'basic' ? '/forms/basic' : '/forms/realtime';
+      const token = localStorage.getItem('token');
       
-      // Deduct amount using wallet context
-      const newBalance = deductAmount(rate, formTypeText);
-      
-      toast.success(`Form submitted successfully! ₹${rate} deducted. New balance: ₹${newBalance}`);
-      
-      // Reset form
-      setFormData({
-        applicantName: '',
-        loanAmount: '',
-        purpose: '',
-        aadhaar: '',
-        pan: '',
-        bankAccount: ''
+      const response = await apiWrapper.post(`${API_BASE_URL}${endpoint}`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       
+      if (response.data.success) {
+        const rate = eligibility.rates?.[formType] || (formType === 'basic' ? 5 : 50);
+        const formTypeText = formType === 'basic' ? 'Basic Form' : 'Realtime Validation';
+        
+        // Deduct amount using wallet context
+        const newBalance = deductAmount(rate, formTypeText);
+        
+        toast.success(`Form submitted successfully! ₹${rate} deducted. New balance: ₹${newBalance}`);
+        
+        // Reset form
+        setFormData({
+          applicantName: '',
+          loanAmount: '',
+          purpose: '',
+          aadhaar: '',
+          pan: '',
+          bankAccount: ''
+        });
+      }
+    } catch (error) {
+      handleApiError(error);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -85,13 +83,18 @@ const LoanForm = () => {
   };
 
   const isFormDisabled = () => {
-    if (!accessStatus) return true;
-    return formType === 'basic' ? !accessStatus.canSubmitBasic : !accessStatus.canSubmitRealtime;
+    return !eligibility?.eligible;
   };
 
   const getFormRate = () => {
-    if (!accessStatus?.rates) return 0;
-    return formType === 'basic' ? accessStatus.rates.basic : accessStatus.rates.realtime;
+    if (!eligibility?.rates) return formType === 'basic' ? 5 : 50;
+    return eligibility.rates[formType];
+  };
+
+  const canSelectFormType = (type) => {
+    if (!eligibility) return false;
+    return type === 'basic' ? eligibility.eligible || eligibility.balance >= (eligibility.rates?.basic || 5) : 
+           eligibility.eligible || eligibility.balance >= (eligibility.rates?.realtime || 50);
   };
 
   return (
@@ -99,38 +102,11 @@ const LoanForm = () => {
       <div className="bg-white rounded-lg shadow-lg p-6">
         <h2 className="text-2xl font-bold mb-6">Loan Application Form</h2>
 
-        {/* Access Status Banner */}
-        {accessStatus && (
-          <div className={`mb-6 p-4 rounded-lg border ${
-            accessStatus.accessType === 'subscription' 
-              ? 'bg-green-50 border-green-200' 
-              : accessStatus.balance > 0 
-                ? 'bg-blue-50 border-blue-200' 
-                : 'bg-red-50 border-red-200'
-          }`}>
-            <div className="flex items-center">
-              {accessStatus.accessType === 'subscription' ? (
-                <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
-              ) : accessStatus.balance > 0 ? (
-                <AlertCircle className="h-5 w-5 text-blue-600 mr-2" />
-              ) : (
-                <Lock className="h-5 w-5 text-red-600 mr-2" />
-              )}
-              <div>
-                <p className="font-medium">
-                  {accessStatus.accessType === 'subscription' 
-                    ? 'Subscription Active - Unlimited Forms' 
-                    : `Wallet Balance: ₹${accessStatus.balance}`}
-                </p>
-                {accessStatus.accessType !== 'subscription' && (
-                  <p className="text-sm text-gray-600">
-                    Basic Form: ₹{accessStatus.rates?.basic} | Realtime Validation: ₹{accessStatus.rates?.realtime}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Live Eligibility Check */}
+        <FormEligibilityCheck 
+          formType={formType} 
+          onEligibilityChange={handleEligibilityChange} 
+        />
 
         {/* Form Type Selection */}
         <div className="mb-6">
@@ -143,16 +119,16 @@ const LoanForm = () => {
                 formType === 'basic' 
                   ? 'border-blue-500 bg-blue-50' 
                   : 'border-gray-300 hover:border-gray-400'
-              } ${!accessStatus?.canSubmitBasic ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => accessStatus?.canSubmitBasic && setFormType('basic')}
+              } ${!canSelectFormType('basic') ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={() => canSelectFormType('basic') && setFormType('basic')}
             >
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-medium">Basic Form</h3>
                   <p className="text-sm text-gray-600">Standard loan processing</p>
-                  <p className="text-lg font-bold text-green-600">₹{accessStatus?.rates?.basic || 5}</p>
+                  <p className="text-lg font-bold text-green-600">₹{eligibility?.rates?.basic || 5}</p>
                 </div>
-                {!accessStatus?.canSubmitBasic && <Lock className="h-5 w-5 text-red-500" />}
+                {!canSelectFormType('basic') && <Lock className="h-5 w-5 text-red-500" />}
               </div>
             </div>
 
@@ -161,16 +137,16 @@ const LoanForm = () => {
                 formType === 'realtime' 
                   ? 'border-blue-500 bg-blue-50' 
                   : 'border-gray-300 hover:border-gray-400'
-              } ${!accessStatus?.canSubmitRealtime ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => accessStatus?.canSubmitRealtime && setFormType('realtime')}
+              } ${!canSelectFormType('realtime') ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={() => canSelectFormType('realtime') && setFormType('realtime')}
             >
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-medium">Realtime Validation</h3>
                   <p className="text-sm text-gray-600">Aadhaar, PAN, Bank verification</p>
-                  <p className="text-lg font-bold text-blue-600">₹{accessStatus?.rates?.realtime || 50}</p>
+                  <p className="text-lg font-bold text-blue-600">₹{eligibility?.rates?.realtime || 50}</p>
                 </div>
-                {!accessStatus?.canSubmitRealtime && <Lock className="h-5 w-5 text-red-500" />}
+                {!canSelectFormType('realtime') && <Lock className="h-5 w-5 text-red-500" />}
               </div>
             </div>
           </div>
@@ -277,10 +253,13 @@ const LoanForm = () => {
 
           <div className="flex justify-between items-center pt-4">
             <div className="text-sm text-gray-600">
-              {accessStatus?.accessType === 'subscription' ? (
+              {eligibility?.accessType === 'subscription' ? (
                 'No charge - Subscription active'
               ) : (
                 `This form will cost ₹${getFormRate()}`
+              )}
+              {eligibility?.demoMode && (
+                <span className="ml-2 text-orange-600">(Demo Mode)</span>
               )}
             </div>
             
@@ -293,14 +272,6 @@ const LoanForm = () => {
             </button>
           </div>
         </form>
-
-        {isFormDisabled() && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded">
-            <p className="text-sm text-red-800">
-              Form submission is blocked due to insufficient balance. Please recharge your wallet to continue.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );

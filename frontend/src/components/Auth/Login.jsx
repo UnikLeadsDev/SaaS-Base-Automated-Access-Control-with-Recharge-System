@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import { Smartphone } from 'lucide-react';
+import OTPLogin from './OTPLogin';
 import previewImage from '../../assets/preview.webp';
 import companyLogo from '../../assets/Unik leads png.png';
 import './Login.css';
@@ -14,7 +16,8 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
-  const { login } = useAuth();
+  const [showOTPLogin, setShowOTPLogin] = useState(false);
+  const { login, setUser } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -44,6 +47,20 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  const handleOTPSuccess = (user, token) => {
+    setUser(user);
+    navigate('/dashboard');
+  };
+
+  if (showOTPLogin) {
+    return (
+      <OTPLogin 
+        onSuccess={handleOTPSuccess}
+        onBack={() => setShowOTPLogin(false)}
+      />
+    );
+  }
 
   return (
     <div className="h-screen grid grid-cols-1 md:grid-cols-2 bg-gray-100 overflow-hidden">
@@ -129,6 +146,17 @@ const Login = () => {
                 'Sign in'
               )}
             </button>
+            
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setShowOTPLogin(true)}
+                className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mb-4"
+              >
+                <Smartphone className="h-4 w-4 mr-2" />
+                Login with OTP
+              </button>
+            </div>
             
             <div className="signup-section">
               <p className="signup-text">
