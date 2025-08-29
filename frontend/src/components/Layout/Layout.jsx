@@ -14,6 +14,7 @@ import {
   Bell,
   Receipt 
 } from 'lucide-react';
+ // replace with your logo path
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -116,6 +117,7 @@ const SidebarContent = ({ navigation, currentPath }) => (
     {/* Branding */}
     <div className="flex items-center justify-center px-4 mb-6">
       <h2 className="text-2xl font-bold text-indigo-600 tracking-tight">SaaS Base</h2>
+
     </div>
 
     {/* Navigation */}
