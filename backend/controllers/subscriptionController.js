@@ -1,48 +1,33 @@
 import db from "../config/db.js";
 import Razorpay from "razorpay";
 import crypto from "crypto";
-import { addToWallet } from "./walletController.js";
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// Create subscription payment order
+// Create subscription order
 export const createSubscription = async (req, res) => {
   const { planId } = req.body;
 
-  if (!planId) {
-    return res.status(400).json({ message: "Plan ID is required" });
-  }
-
   try {
-    // Get plan details
     const [plans] = await db.query(
       "SELECT * FROM subscription_plans WHERE plan_id = ? AND status = 'active'",
       [planId]
     );
 
-    if (plans.length === 0) {
+    if (!plans.length) {
       return res.status(404).json({ message: "Plan not found" });
     }
 
     const plan = plans[0];
-
-    // Create Razorpay order for subscription
-    const options = {
-      amount: plan.amount * 100, // Convert to paise
+    const order = await razorpay.orders.create({
+      amount: plan.amount * 100,
       currency: "INR",
       receipt: `sub_${req.user.id}_${Date.now()}`,
-      notes: {
-        user_id: req.user.id,
-        plan_id: planId,
-        plan_name: plan.plan_name,
-        type: 'subscription'
-      }
-    };
-
-    const order = await razorpay.orders.create(options);
+      notes: { user_id: req.user.id, plan_id: planId, type: 'subscription' }
+    });
     
     res.json({
       success: true,
@@ -53,15 +38,14 @@ export const createSubscription = async (req, res) => {
       plan
     });
   } catch (error) {
-    console.error("Create Subscription Order Error:", error);
+    console.error("Create Subscription Error:", error);
     res.status(500).json({ message: "Failed to create subscription order" });
   }
 };
 
-// Verify subscription payment and activate subscription
+// Verify subscription payment
 export const verifySubscriptionPayment = async (req, res) => {
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature, planId } = req.body;
-
   const connection = await db.getConnection();
   
   try {
@@ -71,45 +55,38 @@ export const verifySubscriptionPayment = async (req, res) => {
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(body.toString())
+      .update(body)
       .digest("hex");
 
     if (expectedSignature !== razorpay_signature) {
       throw new Error("Invalid payment signature");
     }
 
-    // Get plan details
     const [plans] = await connection.query(
-      "SELECT * FROM subscription_plans WHERE plan_id = ?",
-      [planId]
+      "SELECT * FROM subscription_plans WHERE plan_id = ?", [planId]
     );
 
-    if (plans.length === 0) {
-      throw new Error("Plan not found");
-    }
+    if (!plans.length) throw new Error("Plan not found");
 
     const plan = plans[0];
     const payment = await razorpay.payments.fetch(razorpay_payment_id);
     const amount = payment.amount / 100;
 
-    // Deactivate existing active subscriptions
+    // Deactivate existing subscriptions
     await connection.query(
       "UPDATE subscriptions SET status = 'cancelled' WHERE user_id = ? AND status IN ('active', 'grace')",
       [req.user.id]
     );
 
-    // Create new subscription with validity dates
+    // Create new subscription
     const startDate = new Date();
-    const endDate = new Date();
-    endDate.setDate(startDate.getDate() + plan.duration_days);
-    
-    const graceEndDate = new Date(endDate);
-    graceEndDate.setDate(graceEndDate.getDate() + plan.grace_period_days);
+    const endDate = new Date(startDate.getTime() + plan.duration_days * 24 * 60 * 60 * 1000);
+    const graceEndDate = new Date(endDate.getTime() + plan.grace_period_days * 24 * 60 * 60 * 1000);
 
     const [result] = await connection.query(
-      `INSERT INTO subscriptions (user_id, plan_id, plan_name, amount, start_date, end_date, grace_end_date, status) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'active')`,
-      [req.user.id, plan.plan_id, plan.plan_name, amount, 
+      `INSERT INTO subscriptions (user_id, plan_id, amount, start_date, end_date, grace_end_date) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [req.user.id, plan.plan_id, amount, 
        startDate.toISOString().split('T')[0], 
        endDate.toISOString().split('T')[0],
        graceEndDate.toISOString().split('T')[0]]
@@ -136,67 +113,40 @@ export const verifySubscriptionPayment = async (req, res) => {
     });
   } catch (error) {
     await connection.rollback();
-    console.error("Subscription Payment Verification Error:", error);
-    res.status(500).json({ message: error.message || "Subscription payment verification failed" });
+    console.error("Subscription Payment Error:", error);
+    res.status(500).json({ message: error.message || "Payment verification failed" });
   } finally {
     connection.release();
   }
 };
 
-// Get user subscriptions
-export const getUserSubscriptions = async (req, res) => {
-  try {
-    const [subscriptions] = await db.query(
-      "SELECT * FROM subscriptions WHERE user_id = ? ORDER BY created_at DESC",
-      [req.user.id]
-    );
-
-    res.json({ success: true, subscriptions });
-  } catch (error) {
-    console.error("Get Subscriptions Error:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// Get available subscription plans
+// Get subscription plans
 export const getSubscriptionPlans = async (req, res) => {
   try {
     const [plans] = await db.query(
       "SELECT * FROM subscription_plans WHERE status = 'active' ORDER BY amount ASC"
     );
 
-    const formattedPlans = plans.map(plan => ({
-      id: plan.plan_id,
-      name: plan.plan_name,
-      amount: plan.amount,
-      duration: plan.duration_days,
-      gracePeriod: plan.grace_period_days,
-      basicFormRate: plan.basic_form_rate,
-      realtimeFormRate: plan.realtime_form_rate,
-      features: getFeaturesByPlan(plan.plan_name)
-    }));
-
-    res.json({ success: true, plans: formattedPlans });
+    res.json({ success: true, plans });
   } catch (error) {
     console.error("Get Plans Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-// Get current user subscription status
+// Get subscription status
 export const getSubscriptionStatus = async (req, res) => {
   try {
     const [subscriptions] = await db.query(
-      `SELECT s.*, sp.plan_name, sp.duration_days, sp.grace_period_days
-       FROM subscriptions s
-       LEFT JOIN subscription_plans sp ON s.plan_id = sp.plan_id
+      `SELECT s.*, sp.plan_name FROM subscriptions s
+       JOIN subscription_plans sp ON s.plan_id = sp.plan_id
        WHERE s.user_id = ? AND s.status IN ('active', 'grace')
-       AND (s.end_date >= CURDATE() OR s.grace_end_date >= CURDATE())
+       AND CURDATE() <= COALESCE(s.grace_end_date, s.end_date)
        ORDER BY s.end_date DESC LIMIT 1`,
       [req.user.id]
     );
 
-    if (subscriptions.length === 0) {
+    if (!subscriptions.length) {
       return res.json({ 
         success: true, 
         hasActiveSubscription: false,
@@ -232,17 +182,7 @@ export const getSubscriptionStatus = async (req, res) => {
   }
 };
 
-// Helper function to get features by plan name
-const getFeaturesByPlan = (planName) => {
-  const features = {
-    'Basic Monthly': ['Unlimited Basic Forms', 'Email Support', 'Basic Analytics'],
-    'Premium Monthly': ['Unlimited All Forms', 'Priority Support', 'Advanced Analytics', 'API Access'],
-    'Basic Yearly': ['Unlimited Basic Forms', 'Email Support', 'Basic Analytics', 'Annual Discount']
-  };
-  return features[planName] || ['Standard Features'];
-};
-
-// Check subscription access for form submission
+// Check subscription access
 export const checkSubscriptionAccess = async (req, res) => {
   const { formType } = req.params;
   
@@ -258,65 +198,26 @@ export const checkSubscriptionAccess = async (req, res) => {
       formType 
     });
   } catch (error) {
-    console.error("Check Subscription Access Error:", error);
+    console.error("Check Access Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-// Get subscription usage statistics
-export const getSubscriptionUsage = async (req, res) => {
-  try {
-    const [usage] = await db.query(
-      `SELECT 
-        su.form_type,
-        SUM(su.forms_used) as total_used,
-        sp.basic_form_limit,
-        sp.realtime_form_limit,
-        s.end_date
-      FROM subscription_usage su
-      JOIN subscriptions s ON su.subscription_id = s.sub_id
-      JOIN subscription_plans sp ON s.plan_id = sp.plan_id
-      WHERE su.user_id = ? AND s.status IN ('active', 'grace')
-      GROUP BY su.form_type, sp.basic_form_limit, sp.realtime_form_limit, s.end_date`,
-      [req.user.id]
-    );
-    
-    res.json({ success: true, usage });
-  } catch (error) {
-    console.error("Get Subscription Usage Error:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// Update subscription preferences
-export const updateSubscriptionPreferences = async (req, res) => {
+// Update preferences
+export const updatePreferences = async (req, res) => {
   const { autoRenewal, preferredPlanId, notificationDays } = req.body;
   
   try {
     await db.query(
-      `UPDATE user_subscription_preferences 
+      `UPDATE user_preferences 
        SET auto_renewal = ?, preferred_plan_id = ?, notification_days_before = ?
        WHERE user_id = ?`,
       [autoRenewal, preferredPlanId, notificationDays, req.user.id]
     );
     
-    res.json({ success: true, message: "Preferences updated successfully" });
+    res.json({ success: true, message: "Preferences updated" });
   } catch (error) {
     console.error("Update Preferences Error:", error);
     res.status(500).json({ message: "Server error" });
-  }
-};
-
-// Helper function to send subscription notifications
-const sendSubscriptionNotification = async (userId, planName, amount) => {
-  try {
-    const message = `Subscription to ${planName} activated successfully! Amount: ₹${amount}.`;
-    
-    await db.query(
-      "INSERT INTO notifications (user_id, channel, message_type, message) VALUES (?, 'sms', 'payment_success', ?)",
-      [userId, message]
-    );
-  } catch (error) {
-    console.error("Subscription Notification Error:", error);
   }
 };
