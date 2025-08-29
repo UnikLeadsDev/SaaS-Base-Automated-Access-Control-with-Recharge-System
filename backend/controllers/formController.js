@@ -1,6 +1,7 @@
 import db from "../config/db.js";
 import { deductFromWallet } from "./walletController.js";
 import notificationService from "../services/notificationService.js";
+import { autoGenerateInvoice } from "./billingController.js";
 
 // Submit basic form
 export const submitBasicForm = async (req, res) => {
@@ -13,10 +14,17 @@ export const submitBasicForm = async (req, res) => {
     await deductFromWallet(userId, rate, 'Basic Form');
 
     // Save form submission
-    await db.query(
+    const [formResult] = await db.query(
       "INSERT INTO form_submissions (user_id, form_type, applicant_name, loan_amount, purpose, amount_charged) VALUES (?, 'basic', ?, ?, ?, ?)",
       [userId, applicantName, loanAmount, purpose, rate]
     );
+
+    // Auto-generate invoice
+    try {
+      await autoGenerateInvoice(userId, 'basic', rate, `FORM_${formResult.insertId}`);
+    } catch (invoiceError) {
+      console.error('Invoice generation failed:', invoiceError);
+    }
 
     // Get user mobile for SMS
     const [user] = await db.query("SELECT mobile FROM users WHERE user_id = ?", [userId]);
@@ -50,10 +58,17 @@ export const submitRealtimeForm = async (req, res) => {
     await deductFromWallet(userId, rate, 'Realtime Validation');
 
     // Save form submission
-    await db.query(
+    const [formResult] = await db.query(
       "INSERT INTO form_submissions (user_id, form_type, applicant_name, loan_amount, purpose, aadhaar, pan, bank_account, amount_charged) VALUES (?, 'realtime', ?, ?, ?, ?, ?, ?, ?)",
       [userId, applicantName, loanAmount, purpose, aadhaar, pan, bankAccount, rate]
     );
+
+    // Auto-generate invoice
+    try {
+      await autoGenerateInvoice(userId, 'realtime_validation', rate, `FORM_${formResult.insertId}`);
+    } catch (invoiceError) {
+      console.error('Invoice generation failed:', invoiceError);
+    }
 
     // Get user mobile for SMS
     const [user] = await db.query("SELECT mobile FROM users WHERE user_id = ?", [userId]);
