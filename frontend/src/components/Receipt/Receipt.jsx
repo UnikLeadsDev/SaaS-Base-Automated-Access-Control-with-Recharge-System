@@ -151,38 +151,40 @@ function Receipt() {
   }
 
   return (
-    <div className="flex flex-col items-center p-6 w-full max-w-2xl">
-      <h2 className="text-xl font-bold text-indigo-600 mb-4">Your Receipts</h2>
-      <div className="space-y-4 w-full flex flex-row gap-6">
-        {receipts.map((receipt) => (
-          <div
-            key={receipt.receipt_id || receipt.txn_id}
-            className="bg-white shadow rounded-lg gap-5 p-4 border flex justify-between items-center"
+    <div className="flex flex-col items-center p-6 w-full">
+  <h2 className="text-xl font-bold text-indigo-600 mb-4">Your Receipts</h2>
+  
+  <div className="grid grid-cols-3 gap-6 w-full">
+    {receipts.map((receipt) => (
+      <div
+        key={receipt.receipt_id || receipt.txn_id}
+        className="bg-white shadow rounded-lg gap-5 p-4 border flex justify-between items-center"
+      >
+        <div>
+          <p className="font-semibold">Txn ID: {receipt.txn_id}</p>
+          <p className="text-sm text-gray-500">
+            {new Date(receipt.receipt_date).toLocaleDateString("en-IN")} — ₹{receipt.amount}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => generatePDF(receipt)}
+            className="px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600"
           >
-            <div>
-              <p className="font-semibold">Txn ID: {receipt.txn_id}</p>
-              <p className="text-sm text-gray-500">
-                {new Date(receipt.receipt_date).toLocaleDateString("en-IN")} — ₹{receipt.amount}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => generatePDF(receipt)}
-                className="px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600"
-              >
-                PDF
-              </button>
-              <button
-                onClick={() => sendEmail(receipt)}
-                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-              >
-                Mail
-              </button>
-            </div>
-          </div>
-        ))}
+            PDF
+          </button>
+          <button
+            onClick={() => sendEmail(receipt)}
+            className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+          >
+            Mail
+          </button>
+        </div>
       </div>
-    </div>
+    ))}
+  </div>
+</div>
+
   );
 }
 

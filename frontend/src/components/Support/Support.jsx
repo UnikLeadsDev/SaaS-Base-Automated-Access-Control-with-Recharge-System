@@ -57,12 +57,14 @@ const Support = () => {
         formData.append('attachment', newTicket.attachment);
       }
 
-      await axios.post(`${API_BASE_URL}/support/create`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const res = await axios.post(`${API_BASE_URL}/support/create`, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    const { ticketId } = res.data; // ✅ capture created ticketId
 
       toast.success('Support ticket created successfully');
       setNewTicket({ subject: '', description: '', priority: 'medium', attachment: null });
