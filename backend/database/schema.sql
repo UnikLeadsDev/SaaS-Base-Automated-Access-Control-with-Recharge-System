@@ -1,4 +1,4 @@
--- SaaS Base Database Schema
+-- Optimized SaaS Base Database Schema
 CREATE DATABASE IF NOT EXISTS saas_base;
 USE saas_base;
 
@@ -12,7 +12,9 @@ CREATE TABLE users (
     role ENUM('DSA', 'NBFC', 'Co-op', 'admin') NOT NULL,
     status ENUM('active', 'blocked') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_email_status (email, status),
+    INDEX idx_role_status (role, status)
 );
 
 -- Wallets table
@@ -20,11 +22,11 @@ CREATE TABLE wallets (
     wallet_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL UNIQUE,
     balance DECIMAL(10,2) DEFAULT 0.00 CHECK (balance >= 0),
-    valid_until DATE NULL,
     status ENUM('active', 'expired') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_user_balance (user_id, balance)
 );
 
 -- Transactions table
@@ -36,9 +38,42 @@ CREATE TABLE transactions (
     payment_mode VARCHAR(50) DEFAULT 'razorpay',
     txn_ref VARCHAR(255) UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     INDEX idx_user_date (user_id, created_at),
+    INDEX idx_type_date (type, created_at),
     INDEX idx_txn_ref (txn_ref)
+);
+
+-- Subscription plans
+CREATE TABLE subscription_plans (
+    plan_id INT PRIMARY KEY AUTO_INCREMENT,
+    plan_name VARCHAR(100) UNIQUE NOT NULL,
+    amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
+    duration_days INT NOT NULL CHECK (duration_days > 0),
+    grace_period_days INT DEFAULT 7 CHECK (grace_period_days >= 0),
+    basic_form_limit INT DEFAULT -1 COMMENT '-1 means unlimited',
+    realtime_form_limit INT DEFAULT -1 COMMENT '-1 means unlimited',
+    api_access BOOLEAN DEFAULT FALSE,
+    priority_support BOOLEAN DEFAULT FALSE,
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Subscriptions table
+CREATE TABLE subscriptions (
+    sub_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    plan_id INT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    grace_end_date DATE NOT NULL,
+    status ENUM('active', 'expired', 'cancelled', 'grace') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (plan_id) REFERENCES subscription_plans(plan_id),
+    INDEX idx_user_status (user_id, status, end_date),
+    INDEX idx_status_dates (status, end_date, grace_end_date)
 );
 
 -- Applications table
@@ -49,24 +84,12 @@ CREATE TABLE applications (
     amount_charged DECIMAL(10,2) NOT NULL CHECK (amount_charged >= 0),
     status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    INDEX idx_user_submitted (user_id, submitted_at)
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_user_submitted (user_id, submitted_at),
+    INDEX idx_status_date (status, submitted_at)
 );
 
--- Notifications table
-CREATE TABLE notifications (
-    notif_id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
-    channel ENUM('sms', 'whatsapp', 'email') NOT NULL,
-    message_type ENUM('expiry_alert', 'low_balance', 'payment_success') NOT NULL,
-    message TEXT NOT NULL,
-    status ENUM('sent', 'failed') DEFAULT 'sent',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    INDEX idx_user_created (user_id, created_at)
-);
-
--- Notification queue for reliable delivery
+-- Notifications queue (consolidated)
 CREATE TABLE notification_queue (
     queue_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -74,60 +97,19 @@ CREATE TABLE notification_queue (
     message_type VARCHAR(50) NOT NULL,
     recipient VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
-    template_id VARCHAR(100),
-    status ENUM('pending', 'processing', 'sent', 'failed') DEFAULT 'pending',
+    status ENUM('pending', 'sent', 'failed') DEFAULT 'pending',
     retry_count INT DEFAULT 0,
     max_retries INT DEFAULT 3,
-    next_retry_at TIMESTAMP NULL,
     sent_at TIMESTAMP NULL,
-    error_message TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-    INDEX idx_status_retry (status, next_retry_at),
+    INDEX idx_status_retry (status, retry_count),
     INDEX idx_user_type (user_id, message_type)
 );
 
--- Subscription plans metadata
-CREATE TABLE subscription_plans (
-    plan_id INT PRIMARY KEY AUTO_INCREMENT,
-    plan_name VARCHAR(100) UNIQUE NOT NULL,
-    amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
-    duration_days INT NOT NULL CHECK (duration_days > 0),
-    grace_period_days INT DEFAULT 7 CHECK (grace_period_days >= 0),
-    basic_form_rate DECIMAL(10,2) DEFAULT 0.00,
-    realtime_form_rate DECIMAL(10,2) DEFAULT 0.00,
-    status ENUM('active', 'inactive') DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Insert default plans
-INSERT INTO subscription_plans (plan_name, amount, duration_days, grace_period_days, basic_form_rate, realtime_form_rate) VALUES
-('Basic Monthly', 999.00, 30, 7, 0.00, 0.00),
-('Premium Monthly', 1999.00, 30, 7, 0.00, 0.00),
-('Basic Yearly', 9999.00, 365, 15, 0.00, 0.00);
-
--- Subscriptions table for subscription model
-CREATE TABLE subscriptions (
-    sub_id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
-    plan_id INT NOT NULL,
-    plan_name VARCHAR(100) NOT NULL,
-    amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    grace_end_date DATE,
-    status ENUM('active', 'expired', 'cancelled', 'grace') DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (plan_id) REFERENCES subscription_plans(plan_id),
-    INDEX idx_user_end_date (user_id, end_date),
-    INDEX idx_status_end_date (status, end_date)
-);
-
--- Support tickets table
+-- Support tickets
 CREATE TABLE support_tickets (
     ticket_id INT PRIMARY KEY AUTO_INCREMENT,
-    category VARCHAR(100) NULL,
     user_id INT NOT NULL,
     subject VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
@@ -135,25 +117,25 @@ CREATE TABLE support_tickets (
     priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_status_priority (status, priority)
 );
--- Receipts table
+
+-- Payment receipts
 CREATE TABLE receipts (
     receipt_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
-    txn_id VARCHAR(100) UNIQUE NOT NULL,
-    user_name VARCHAR(100),
-    email VARCHAR(150),
+    txn_ref VARCHAR(255) UNIQUE NOT NULL,
     amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
-    payment_mode ENUM('upi', 'card', 'netbanking', 'wallet', 'cash', 'other') NOT NULL,
+    payment_mode ENUM('upi', 'card', 'netbanking', 'wallet', 'razorpay') NOT NULL,
     status ENUM('success', 'failed', 'pending') DEFAULT 'success',
     receipt_date DATE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    INDEX idx_user_receipt_date (user_id, receipt_date)
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_user_date (user_id, receipt_date)
 );
 
--- Webhook events table for audit and idempotency
+-- Webhook events for idempotency
 CREATE TABLE webhook_events (
     event_id INT PRIMARY KEY AUTO_INCREMENT,
     webhook_id VARCHAR(255) UNIQUE NOT NULL,
@@ -164,40 +146,86 @@ CREATE TABLE webhook_events (
     processed BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_webhook_id (webhook_id),
-    INDEX idx_payment_id (payment_id),
     INDEX idx_processed (processed, created_at)
 );
 
--- Processed payments for idempotency
-CREATE TABLE processed_payments (
-    payment_id VARCHAR(255) PRIMARY KEY,
-    user_id INT NOT NULL,
-    amount DECIMAL(10,2) NOT NULL,
-    txn_ref VARCHAR(255),
-    processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_user_processed (user_id, processed_at)
-);
-
--- OTP verification table for MSG91 integration
-CREATE TABLE otp_verifications (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    mobile VARCHAR(15) NOT NULL,
-    otp VARCHAR(6) NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
-    attempts INT DEFAULT 0,
-    status ENUM('pending', 'verified', 'expired', 'blocked') DEFAULT 'pending',
+-- User preferences
+CREATE TABLE user_preferences (
+    pref_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL UNIQUE,
+    auto_renewal BOOLEAN DEFAULT FALSE,
+    preferred_plan_id INT,
+    notification_days_before INT DEFAULT 7,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_mobile_pending (mobile, status),
-    INDEX idx_mobile_status (mobile, status),
-    INDEX idx_expires_at (expires_at)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (preferred_plan_id) REFERENCES subscription_plans(plan_id)
 );
 
--- Create wallet for each user after registration
+-- Usage tracking
+CREATE TABLE usage_tracking (
+    usage_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    subscription_id INT NOT NULL,
+    form_type ENUM('basic', 'realtime_validation') NOT NULL,
+    forms_used INT DEFAULT 1,
+    usage_date DATE NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (subscription_id) REFERENCES subscriptions(sub_id) ON DELETE CASCADE,
+    UNIQUE KEY unique_daily_usage (user_id, subscription_id, usage_date, form_type),
+    INDEX idx_usage_date (usage_date)
+);
+
+-- Insert default subscription plans
+INSERT INTO subscription_plans (plan_name, amount, duration_days, grace_period_days, basic_form_limit, realtime_form_limit, api_access, priority_support) VALUES
+('Basic Monthly', 999.00, 30, 7, -1, 100, FALSE, FALSE),
+('Premium Monthly', 1999.00, 30, 7, -1, -1, TRUE, TRUE),
+('Basic Yearly', 9999.00, 365, 15, -1, 1200, FALSE, FALSE);
+
+-- Function to check subscription access
+DELIMITER //
+CREATE FUNCTION check_subscription_access(p_user_id INT, p_form_type VARCHAR(50))
+RETURNS BOOLEAN
+READS SQL DATA
+DETERMINISTIC
+BEGIN
+    DECLARE v_has_access BOOLEAN DEFAULT FALSE;
+    
+    SELECT COUNT(*) > 0 INTO v_has_access
+    FROM subscriptions s
+    JOIN subscription_plans sp ON s.plan_id = sp.plan_id
+    WHERE s.user_id = p_user_id 
+    AND s.status IN ('active', 'grace')
+    AND CURDATE() <= COALESCE(s.grace_end_date, s.end_date)
+    AND sp.status = 'active'
+    AND (
+        (p_form_type = 'basic' AND sp.basic_form_limit != 0)
+        OR 
+        (p_form_type = 'realtime_validation' AND sp.realtime_form_limit != 0)
+    );
+    
+    RETURN v_has_access;
+END//
+DELIMITER ;
+
+-- Triggers
 DELIMITER //
 CREATE TRIGGER create_wallet_after_user_insert
 AFTER INSERT ON users
 FOR EACH ROW
 BEGIN
-    INSERT INTO wallets (user_id, balance, status) VALUES (NEW.user_id, 0.00, 'active');
+    INSERT INTO wallets (user_id) VALUES (NEW.user_id);
+    INSERT INTO user_preferences (user_id) VALUES (NEW.user_id);
+END//
+
+CREATE TRIGGER update_subscription_status
+BEFORE UPDATE ON subscriptions
+FOR EACH ROW
+BEGIN
+    IF NEW.end_date < CURDATE() AND NEW.grace_end_date >= CURDATE() THEN
+        SET NEW.status = 'grace';
+    ELSEIF NEW.grace_end_date < CURDATE() THEN
+        SET NEW.status = 'expired';
+    END IF;
 END//
 DELIMITER ;
