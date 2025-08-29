@@ -242,10 +242,75 @@ const getFeaturesByPlan = (planName) => {
   return features[planName] || ['Standard Features'];
 };
 
+// Check subscription access for form submission
+export const checkSubscriptionAccess = async (req, res) => {
+  const { formType } = req.params;
+  
+  try {
+    const [result] = await db.query(
+      "SELECT check_subscription_access(?, ?) as hasAccess",
+      [req.user.id, formType]
+    );
+    
+    res.json({ 
+      success: true, 
+      hasAccess: Boolean(result[0].hasAccess),
+      formType 
+    });
+  } catch (error) {
+    console.error("Check Subscription Access Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Get subscription usage statistics
+export const getSubscriptionUsage = async (req, res) => {
+  try {
+    const [usage] = await db.query(
+      `SELECT 
+        su.form_type,
+        SUM(su.forms_used) as total_used,
+        sp.basic_form_limit,
+        sp.realtime_form_limit,
+        s.end_date
+      FROM subscription_usage su
+      JOIN subscriptions s ON su.subscription_id = s.sub_id
+      JOIN subscription_plans sp ON s.plan_id = sp.plan_id
+      WHERE su.user_id = ? AND s.status IN ('active', 'grace')
+      GROUP BY su.form_type, sp.basic_form_limit, sp.realtime_form_limit, s.end_date`,
+      [req.user.id]
+    );
+    
+    res.json({ success: true, usage });
+  } catch (error) {
+    console.error("Get Subscription Usage Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Update subscription preferences
+export const updateSubscriptionPreferences = async (req, res) => {
+  const { autoRenewal, preferredPlanId, notificationDays } = req.body;
+  
+  try {
+    await db.query(
+      `UPDATE user_subscription_preferences 
+       SET auto_renewal = ?, preferred_plan_id = ?, notification_days_before = ?
+       WHERE user_id = ?`,
+      [autoRenewal, preferredPlanId, notificationDays, req.user.id]
+    );
+    
+    res.json({ success: true, message: "Preferences updated successfully" });
+  } catch (error) {
+    console.error("Update Preferences Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 // Helper function to send subscription notifications
 const sendSubscriptionNotification = async (userId, planName, amount) => {
   try {
-    const message = `Subscription to ${planName} activated successfully! Amount: ₹${amount} added to your wallet.`;
+    const message = `Subscription to ${planName} activated successfully! Amount: ₹${amount}.`;
     
     await db.query(
       "INSERT INTO notifications (user_id, channel, message_type, message) VALUES (?, 'sms', 'payment_success', ?)",

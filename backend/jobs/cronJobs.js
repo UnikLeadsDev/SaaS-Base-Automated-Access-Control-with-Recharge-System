@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import db from '../config/db.js';
 import notificationService from '../services/notificationService.js';
+import { startSubscriptionJobs } from './subscriptionJobs.js';
 
 // Check for low balance and subscription expiry daily at 9 AM
 export const startCronJobs = () => {
@@ -16,6 +17,9 @@ export const startCronJobs = () => {
     const notificationService = (await import('../services/notificationService.js')).default;
     await notificationService.processQueue();
   });
+
+  // Start subscription management jobs
+  startSubscriptionJobs();
 
   console.log('✅ Cron jobs scheduled');
 };
