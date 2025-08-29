@@ -1,57 +1,47 @@
 import db from "../config/db.js";
+import { addToWallet } from "./walletController.js";
 
-// Add balance to user account
-export const rechargeBalance = async (req, res) => {
-  const { amount, paymentMethod } = req.body;
-
-  if (!amount || amount <= 0) {
-    return res.status(400).json({ message: "Invalid amount" });
+// Validate amount helper
+const validateAmount = (amount) => {
+  if (!amount || isNaN(amount) || amount <= 0) {
+    throw new Error("Amount must be a positive number");
   }
+};
+
+// Add balance to user account - DEPRECATED: Use walletController.addToWallet
+export const rechargeBalance = async (req, res) => {
+  const { amount, paymentMethod, txnRef } = req.body;
 
   try {
-    // Start transaction
-    await db.query("START TRANSACTION");
-
-    // Update user balance
-    await db.query(
-      "UPDATE users SET balance = balance + ?, updated_at = NOW() WHERE user_id = ?",
-      [amount, req.user.id]
+    validateAmount(amount);
+    
+    const result = await addToWallet(
+      req.user.id, 
+      amount, 
+      txnRef || `recharge_${Date.now()}`,
+      paymentMethod || "manual"
     );
-
-    // Record transaction
-    await db.query(
-      "INSERT INTO transactions (user_id, type, amount, payment_method, status, created_at) VALUES (?, ?, ?, ?, ?, NOW())",
-      [req.user.id, "recharge", amount, paymentMethod || "manual", "completed"]
-    );
-
-    // Commit transaction
-    await db.query("COMMIT");
-
-    // Get updated balance
-    const [user] = await db.query("SELECT balance FROM users WHERE user_id = ?", [req.user.id]);
-
+    
     res.json({ 
       message: "Balance recharged successfully", 
-      newBalance: user[0].balance 
+      newBalance: result.newBalance 
     });
-
   } catch (error) {
-    await db.query("ROLLBACK");
     console.error("Recharge Error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(400).json({ message: error.message });
   }
 };
 
 // Get user balance
 export const getBalance = async (req, res) => {
   try {
-    const [user] = await db.query("SELECT balance FROM users WHERE user_id = ?", [req.user.id]);
+    const [wallet] = await db.query("SELECT balance FROM wallets WHERE user_id = ?", [req.user.id]);
     
-    if (user.length === 0) {
-      return res.status(404).json({ message: "User not found" });
+    if (wallet.length === 0) {
+      return res.status(404).json({ message: "Wallet not found" });
     }
 
-    res.json({ balance: user[0].balance });
+    res.json({ balance: wallet[0].balance });
   } catch (error) {
     console.error("Get Balance Error:", error);
     res.status(500).json({ message: "Server error" });
@@ -73,55 +63,27 @@ export const getTransactionHistory = async (req, res) => {
   }
 };
 
-// Deduct balance for service usage
+// Deduct balance for service usage - DEPRECATED: Use walletController.deductFromWallet
 export const deductBalance = async (req, res) => {
-  const { amount, service, description } = req.body;
-
-  if (!amount || amount <= 0) {
-    return res.status(400).json({ message: "Invalid amount" });
-  }
+  const { amount, service, description, txnRef } = req.body;
 
   try {
-    // Check current balance
-    const [user] = await db.query("SELECT balance FROM users WHERE user_id = ?", [req.user.id]);
+    validateAmount(amount);
     
-    if (user.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    if (user[0].balance < amount) {
-      return res.status(400).json({ message: "Insufficient balance" });
-    }
-
-    // Start transaction
-    await db.query("START TRANSACTION");
-
-    // Deduct balance
-    await db.query(
-      "UPDATE users SET balance = balance - ?, updated_at = NOW() WHERE user_id = ?",
-      [amount, req.user.id]
+    const { deductFromWallet } = await import("./walletController.js");
+    const result = await deductFromWallet(
+      req.user.id, 
+      amount, 
+      txnRef || `deduct_${Date.now()}`,
+      description || service
     );
-
-    // Record transaction
-    await db.query(
-      "INSERT INTO transactions (user_id, type, amount, service, description, status, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())",
-      [req.user.id, "deduction", amount, service, description, "completed"]
-    );
-
-    // Commit transaction
-    await db.query("COMMIT");
-
-    // Get updated balance
-    const [updatedUser] = await db.query("SELECT balance FROM users WHERE user_id = ?", [req.user.id]);
-
+    
     res.json({ 
       message: "Balance deducted successfully", 
-      newBalance: updatedUser[0].balance 
+      newBalance: result.newBalance 
     });
-
   } catch (error) {
-    await db.query("ROLLBACK");
     console.error("Deduct Balance Error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(400).json({ message: error.message });
   }
 };

@@ -26,60 +26,6 @@ export const verifyToken = async (req, res, next) => {
   }
 };
 
-// Access control middleware - checks wallet balance or subscription for form submission
-export const checkAccess = (formType) => {
-  return async (req, res, next) => {
-    try {
-      const [wallet] = await db.query(
-        "SELECT balance, status, valid_until FROM wallets WHERE user_id = ?",
-        [req.user.id]
-      );
-
-      if (wallet.length === 0) {
-        return res.status(404).json({ message: "Wallet not found" });
-      }
-
-      const rate = formType === 'realtime_validation' ? 
-        parseFloat(process.env.REALTIME_VALIDATION_RATE) : 
-        parseFloat(process.env.BASIC_FORM_RATE);
-
-      // Check if user has active subscription
-      const [subscription] = await db.query(
-        "SELECT * FROM subscriptions WHERE user_id = ? AND status = 'active' AND end_date >= CURDATE() ORDER BY end_date DESC LIMIT 1",
-        [req.user.id]
-      );
-
-      if (subscription.length > 0) {
-        // User has active subscription, allow access
-        req.formRate = 0; // No charge for subscription users
-        req.accessType = 'subscription';
-        return next();
-      }
-
-      // Check prepaid wallet balance
-      if (wallet[0].balance < rate) {
-        return res.status(403).json({ 
-          message: "Insufficient balance. Please recharge your wallet or subscribe to a plan.",
-          required: rate,
-          current: wallet[0].balance
-        });
-      }
-
-      // Check if wallet is active
-      if (wallet[0].status !== 'active') {
-        return res.status(403).json({ message: "Wallet is inactive" });
-      }
-
-      req.formRate = rate;
-      req.accessType = 'prepaid';
-      next();
-    } catch (error) {
-      console.error("Access Check Error:", error);
-      res.status(500).json({ message: "Server error" });
-    }
-  };
-};
-
 // Role-based access control
 export const checkRole = (allowedRoles) => {
   return (req, res, next) => {

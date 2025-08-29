@@ -4,7 +4,8 @@ import {
   createSubscription, 
   getUserSubscriptions,
   verifySubscriptionPayment,
-  getSubscriptionPlans
+  getSubscriptionPlans,
+  getSubscriptionStatus
 } from "../controllers/subscriptionController.js";
 
 const router = express.Router();
@@ -13,5 +14,6 @@ router.post("/create", verifyToken, createSubscription);
 router.post("/verify-payment", verifyToken, verifySubscriptionPayment);
 router.get("/list", verifyToken, getUserSubscriptions);
 router.get("/plans", verifyToken, getSubscriptionPlans);
+router.get("/status", verifyToken, getSubscriptionStatus);
 
 export default router;

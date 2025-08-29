@@ -196,21 +196,24 @@ export const checkLowBalanceAndExpiry = async () => {
       )
     `, [lowBalanceThreshold]);
 
-    // Send low balance alerts concurrently
-    const lowBalancePromises = lowBalanceUsers.flatMap(user => [
-      sendNotification(user.user_id, 'sms', 'low_balance'),
-      sendNotification(user.user_id, 'email', 'low_balance')
-    ]);
-    await Promise.allSettled(lowBalancePromises);
+    // Send low balance alerts using notification service
+    for (const user of lowBalanceUsers) {
+      try {
+        await sendNotification(user.user_id, 'sms', 'low_balance');
+        await sendNotification(user.user_id, 'email', 'low_balance');
+      } catch (error) {
+        console.error(`Failed to send low balance alert to user ${user.user_id}:`, error);
+      }
+    }
 
     // Check expiring subscriptions
     const [expiringUsers] = await db.query(`
-      SELECT u.user_id, u.name, u.email, u.mobile, w.valid_until 
+      SELECT u.user_id, u.name, u.email, u.mobile, s.end_date, s.plan_name
       FROM users u 
-      JOIN wallets w ON u.user_id = w.user_id 
-      WHERE w.valid_until IS NOT NULL 
-      AND w.valid_until <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
-      AND w.valid_until > CURDATE()
+      JOIN subscriptions s ON u.user_id = s.user_id 
+      WHERE s.status = 'active'
+      AND s.end_date <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
+      AND s.end_date > CURDATE()
       AND u.status = 'active'
       AND u.user_id NOT IN (
         SELECT user_id FROM notifications 
@@ -219,12 +222,16 @@ export const checkLowBalanceAndExpiry = async () => {
       )
     `, [expiryAlertDays]);
 
-    // Send expiry alerts concurrently
-    const expiryPromises = expiringUsers.flatMap(user => [
-      sendNotification(user.user_id, 'sms', 'expiry_alert'),
-      sendNotification(user.user_id, 'email', 'expiry_alert')
-    ]);
-    await Promise.allSettled(expiryPromises);
+    // Send expiry alerts using notification service
+    for (const user of expiringUsers) {
+      try {
+        const message = `Hi ${user.name}, your ${user.plan_name} subscription expires on ${user.end_date}. Please renew to continue.`;
+        await sendNotification(user.user_id, 'sms', 'expiry_alert', message);
+        await sendNotification(user.user_id, 'email', 'expiry_alert', message);
+      } catch (error) {
+        console.error(`Failed to send expiry alert to user ${user.user_id}:`, error);
+      }
+    }
 
     console.log(`Processed ${lowBalanceUsers.length} low balance alerts and ${expiringUsers.length} expiry alerts`);
   } catch (error) {
