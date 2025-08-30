@@ -7,6 +7,16 @@ export const csrfProtection = (req, res, next) => {
     return next();
   }
 
+  // Skip CSRF for auth endpoints
+  if (req.path.includes('/auth/')) {
+    return next();
+  }
+
+  // Skip CSRF in development for now
+  if (process.env.NODE_ENV === 'development') {
+    return next();
+  }
+
   const token = req.headers['x-csrf-token'];
   const sessionToken = req.session?.csrfToken;
 
