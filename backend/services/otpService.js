@@ -8,55 +8,50 @@ class OTPService {
     this.otpTemplateId = process.env.MSG91_OTP_TEMPLATE_ID;
   }
 
-  // Send OTP via MSG91
-  async sendOTP(mobile, otp = null) {
-    try {
-      // Generate 6-digit OTP if not provided
-      const generatedOTP = otp || Math.floor(100000 + Math.random() * 900000).toString();
-      
-      // Store OTP in database with expiry
-      const expiryTime = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-      await db.query(`
-        INSERT INTO otp_verifications (mobile, otp, expires_at, attempts, status) 
-        VALUES (?, ?, ?, 0, 'pending')
-        ON DUPLICATE KEY UPDATE 
-        otp = VALUES(otp), 
-        expires_at = VALUES(expires_at), 
-        attempts = 0, 
-        status = 'pending'
-      `, [mobile, generatedOTP, expiryTime]);
+async sendOTP(mobile, otp = null) {
+  try {
+    const formattedMobile = mobile.startsWith('91') ? mobile : `91${mobile}`;
+    const generatedOTP = otp || Math.floor(100000 + Math.random() * 900000).toString();
 
-      // Send OTP via MSG91
-      const url = `${this.msg91BaseUrl}/v5/otp`;
-      const payload = {
-        template_id: this.otpTemplateId,
-        mobile: mobile,
-        authkey: this.msg91AuthKey,
-        otp: generatedOTP,
-        otp_expiry: 5 // minutes
-      };
+    const expiryTime = new Date(Date.now() + 5 * 60 * 1000);
+    await db.query(`
+      INSERT INTO otp_verifications (mobile, otp, expires_at, attempts, status) 
+      VALUES (?, ?, ?, 0, 'pending')
+      ON DUPLICATE KEY UPDATE 
+      otp = VALUES(otp), 
+      expires_at = VALUES(expires_at), 
+      attempts = 0, 
+      status = 'pending'
+    `, [formattedMobile, generatedOTP, expiryTime]);
 
-      const response = await axios.post(url, payload, {
-        headers: { 'Content-Type': 'application/json' }
-      });
+    const url = `${this.msg91BaseUrl}/v5/otp`;
+    const payload = {
+      template_id: this.otpTemplateId,
+      mobile: formattedMobile,
+      otp: generatedOTP,
+      otp_expiry: 5
+    };
 
-      if (response.data.type === 'success') {
-        return { 
-          success: true, 
-          message: 'OTP sent successfully',
-          requestId: response.data.request_id 
-        };
-      } else {
-        throw new Error(response.data.message || 'Failed to send OTP');
+    console.log("Sending OTP:", payload); // 👀 Debug
+
+    const response = await axios.post(url, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'authkey': this.msg91AuthKey
       }
-    } catch (error) {
-      console.error('Send OTP Error:', error);
-      return { 
-        success: false, 
-        message: error.message || 'Failed to send OTP' 
-      };
+    });
+
+    if (response.data.type === 'success') {
+      return { success: true, message: 'OTP sent successfully', requestId: response.data.request_id };
+    } else {
+      throw new Error(response.data.message || 'Failed to send OTP');
     }
+  } catch (error) {
+    console.error('Send OTP Error:', error.response?.data || error.message);
+    return { success: false, message: error.message || 'Failed to send OTP' };
   }
+}
+
 
   // Verify OTP
   async verifyOTP(mobile, otp) {

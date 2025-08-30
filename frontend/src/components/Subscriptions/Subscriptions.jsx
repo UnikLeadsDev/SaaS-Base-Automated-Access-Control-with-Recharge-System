@@ -28,6 +28,7 @@ const Subscriptions = () => {
       headers: { Authorization: `Bearer ${token}` }
     });
     if (data.success) setPlans(data.plans || []);
+    console.log("Fetched plans:", data.plans); // 👀 Debug
   } catch (err) { console.error(err); }
 };
 
@@ -135,7 +136,7 @@ const subscribeToPlan = async (plan) => {
           {plans?.map(plan => (
             <div key={plan.id} className="border p-6 rounded-lg">
               <div className="flex justify-between mb-4">
-                <h3 className="font-semibold">{plan.name}</h3>
+                <h3 className="font-semibold">{plan.plan_name}</h3>
                 <span className="text-indigo-600 font-bold">₹{plan.amount}</span>
               </div>
               <div className="mb-4">
