@@ -42,7 +42,7 @@ export const WalletProvider = ({ children }) => {
       const txnRes = await axios.get(`http://localhost:5000/api/wallet/transactions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("these are transaction", txnRes.data);
+      console.log("these are transaction", encodeURIComponent(JSON.stringify(txnRes.data || {})));
       setTransactions(txnRes.data || []);
     } catch (error) {
       console.error("Failed to fetch wallet data:", error);

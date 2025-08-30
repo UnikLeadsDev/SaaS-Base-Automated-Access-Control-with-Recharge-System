@@ -16,7 +16,13 @@ import { checkLowBalanceAndExpiry } from "./controllers/notificationController.j
 import { startCronJobs } from "./jobs/cronJobs.js";
 import { rawBodyMiddleware } from "./middleware/rawBody.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { csrfProtection } from "./middleware/csrf.js";
+import { securityHeaders, generalRateLimit } from "./middleware/security.js";
+import { sanitizeInput } from "./middleware/validation.js";
+import { i18nMiddleware } from "./utils/i18n.js";
 import receiptRoutes from "./routes/receiptRoutes.js";
+import csrfRoutes from "./routes/csrfRoutes.js";
+import session from "express-session";
 
 dotenv.config();
 
@@ -47,6 +53,18 @@ for (const [key, value] of rateEnvPairs) {
 
 const app = express();
 
+// Security middleware
+app.use(securityHeaders);
+app.use(generalRateLimit);
+
+// Session middleware for CSRF
+app.use(session({
+  secret: process.env.SESSION_SECRET || process.env.JWT_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: process.env.NODE_ENV === 'production', httpOnly: true }
+}));
+
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:5173', 
@@ -57,6 +75,13 @@ app.use(cors({
 }));
 app.use(rawBodyMiddleware);
 app.use(express.json());
+
+// Input sanitization and i18n
+app.use(sanitizeInput);
+app.use(i18nMiddleware);
+
+// CSRF protection for state-changing requests
+app.use(csrfProtection);
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -69,11 +94,16 @@ app.use("/api/support", supportRoutes);
 app.use("/api/test", testRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/receipts", receiptRoutes);
+app.use("/api/security", csrfRoutes);
 
 
 
 // Test API
 app.get("/", (req, res) => {
+    // Basic authorization check
+    if (req.headers['user-agent']?.includes('bot') || req.headers['user-agent']?.includes('crawler')) {
+        return res.status(403).json({ error: "Access denied" });
+    }
     res.json({ message: "SaaS Base API is running...", version: "1.0.0" });
 });
 

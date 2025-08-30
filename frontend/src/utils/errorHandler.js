@@ -2,7 +2,7 @@ import toast from 'react-hot-toast';
 
 // Centralized error handler for API responses
 export const handleApiError = (error, showToast = true) => {
-  console.error('API Error:', error);
+  console.error('API Error:', encodeURIComponent(JSON.stringify(error?.message || error || '')));
 
   // Extract error details
   const response = error.response;

@@ -119,9 +119,8 @@ export const requestLogger = (req, res, next) => {
 // Error handling middleware
 export const errorHandler = (err, req, res, next) => {
   console.error('Error:', {
-    message: err.message,
-    stack: err.stack,
-    url: req.url,
+    type: err.name || 'UnknownError',
+    code: err.code || 'INTERNAL_ERROR',
     method: req.method,
     timestamp: new Date().toISOString()
   });

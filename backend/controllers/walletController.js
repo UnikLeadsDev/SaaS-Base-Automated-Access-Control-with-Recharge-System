@@ -1,5 +1,6 @@
 import db from "../config/db.js";
 import notificationService from "../services/notificationService.js";
+import { withTransaction } from "../utils/transaction.js";
 import { v4 as uuidv4 } from "uuid";
 
 // Ensure wallet exists for a user and return current wallet row
@@ -37,7 +38,7 @@ export const getWalletBalance = async (req, res) => {
     });
   } catch (error) {
     console.error("Get Wallet Error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: req.t('error.server') });
   }
 };
 
@@ -63,7 +64,7 @@ export const getWalletBalanceCheck = async (req, res) => {
     });
   } catch (error) {
     console.error("Get Wallet Balance Check Error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: req.t('error.server') });
   }
 };
 
@@ -74,13 +75,7 @@ export const deductFromWallet = async (userId, amount, txnRef, description = nul
     throw new Error('Invalid input: userId and txnRef are required and amount must be positive');
   }
 
-  const connection = await db.getConnection();
-  try {
-    await connection.beginTransaction();
-
-    // // Generate txnRef if not provided
-    // if (!txnRef) txnRef = uuidv4();
-
+  return await withTransaction(async (connection) => {
     // Check for existing transaction (idempotent)
     const [existing] = await connection.query(
       "SELECT amount FROM transactions WHERE txn_ref = ? AND type = 'debit'",
@@ -91,7 +86,6 @@ export const deductFromWallet = async (userId, amount, txnRef, description = nul
         "SELECT balance FROM wallets WHERE user_id = ?",
         [userId]
       );
-      await connection.release();
       return { success: true, newBalance: wallet[0].balance, message: 'Transaction already processed' };
     }
 
@@ -116,8 +110,6 @@ export const deductFromWallet = async (userId, amount, txnRef, description = nul
       [userId, amount, txnRef, description || 'deduction']
     );
 
-    await connection.commit();
-
     // Updated balance
     const [updatedWallet] = await connection.query(
       "SELECT balance FROM wallets WHERE user_id = ?",
@@ -137,12 +129,7 @@ export const deductFromWallet = async (userId, amount, txnRef, description = nul
     }
 
     return { success: true, newBalance: updatedWallet[0].balance };
-  } catch (error) {
-    await connection.rollback();
-    throw error;
-  } finally {
-    connection.release();
-  }
+  });
 };
 
 // Add amount to wallet (atomic & idempotent)
@@ -151,13 +138,7 @@ export const addToWallet = async (userId, amount, txnRef, paymentMode = 'razorpa
     throw new Error('Invalid input: userId required and amount must be positive');
   }
 
-  const connection = await db.getConnection();
-  try {
-    await connection.beginTransaction();
-
-    // Generate txnRef if not provided
-    // if (!txnRef) txnRef = uuidv4();
-
+  return await withTransaction(async (connection) => {
     // Check for existing transaction
     const [existing] = await connection.query(
       "SELECT amount FROM transactions WHERE txn_ref = ? AND type = 'credit'",
@@ -168,7 +149,6 @@ export const addToWallet = async (userId, amount, txnRef, paymentMode = 'razorpa
         "SELECT balance FROM wallets WHERE user_id = ?",
         [userId]
       );
-      await connection.release();
       return { success: true, newBalance: wallet[0].balance, message: 'Transaction already processed' };
     }
 
@@ -196,8 +176,6 @@ export const addToWallet = async (userId, amount, txnRef, paymentMode = 'razorpa
       [userId, amount, txnRef, paymentMode]
     );
 
-    await connection.commit();
-
     // Updated balance
     const [updatedWallet] = await connection.query(
       "SELECT balance FROM wallets WHERE user_id = ?",
@@ -214,25 +192,20 @@ export const addToWallet = async (userId, amount, txnRef, paymentMode = 'razorpa
     }
 
     return { success: true, newBalance: updatedWallet[0].balance };
-  } catch (error) {
-    await connection.rollback();
-    throw error;
-  } finally {
-    connection.release();
-  }
+  });
 };
 
 // Get transaction history
 export const getTransactionHistory = async (req, res) => {
   try {
     const [transactions] = await db.query(
-      "SELECT * FROM transactions WHERE user_id = ? ORDER BY date DESC LIMIT 50",
+      "SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 50",
       [req.user.id]
     );
 
     res.json(transactions);
   } catch (error) {
     console.error("Transaction History Error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: req.t('error.server') });
   }
 };

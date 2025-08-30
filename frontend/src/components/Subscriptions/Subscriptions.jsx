@@ -58,7 +58,12 @@ const subscribeToPlan = async (plan) => {
     const { data } = await axios.post(
       `${API_BASE_URL}/subscription/create`,
       { planId: plan.plan_id }, // note: plan.plan_id
-      { headers: { Authorization: `Bearer ${token}` } }
+      { 
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'X-Requested-With': 'XMLHttpRequest'
+        } 
+      }
     );
 
     const { orderId, amount, currency, key } = data;
@@ -80,7 +85,12 @@ const subscribeToPlan = async (plan) => {
               razorpay_signature: res.razorpay_signature,
               planId: plan.plan_id
             },
-            { headers: { Authorization: `Bearer ${token}` } }
+            { 
+              headers: { 
+                Authorization: `Bearer ${token}`,
+                'X-Requested-With': 'XMLHttpRequest'
+              } 
+            }
           );
           if (verify.data.success) {
             toast.success('Subscription activated!');
