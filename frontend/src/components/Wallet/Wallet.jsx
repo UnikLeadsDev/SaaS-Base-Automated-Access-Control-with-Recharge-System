@@ -143,38 +143,41 @@ await axios.post(
     }
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Wallet Balance */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6 flex justify-between items-center">
+ return (
+  <div className="space-y-6">
+    {/* Wallet Balance */}
+    <div className="bg-white shadow rounded-lg">
+      <div className="px-3 py-4 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+        
+        {/* Left: Wallet Icon + Heading */}
+        <div className="flex items-center space-x-3 mb-4 sm:mb-0">
+          <WalletIcon className="h-10 w-10 text-gray-400" />
           <div>
             <h3 className="text-lg font-medium text-gray-900">Wallet Balance</h3>
             <p className="text-sm text-gray-500">Your current wallet balance</p>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <div className="text-3xl font-bold text-green-600">
-                ₹{balance?.toFixed(2) || "0.00"}
-              </div>
-              <div className="text-sm text-green-600">Status: active</div>
-            </div>
-            <WalletIcon className="h-12 w-12 text-gray-400" />
-          </div>
         </div>
-        <div className="px-4 py-3">
+
+        {/* Right: Balance + Button */}
+        <div className="sm:text-right text-center w-full sm:w-auto">
+          <div className="text-2xl sm:text-3xl font-bold text-green-600">
+            ₹{balance?.toFixed(2) || "0.00"}
+          </div>
+          <div className="text-sm text-green-600 mb-3">Status: active</div>
+
           <button
             onClick={() => setShowRecharge(true)}
-            className={`px-4 py-2 rounded-md shadow ${
+            className={`px-4 py-2 rounded-md shadow flex items-center justify-center w-full sm:w-auto mx-auto ${
               isDemoMode 
                 ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
                 : 'bg-indigo-600 text-white hover:bg-indigo-700'
             }`}
             disabled={isDemoMode}
           >
-            <Plus className="h-4 w-4 mr-2 inline" /> 
+            <Plus className="h-4 w-4 mr-2" /> 
             {isDemoMode ? 'Recharge (Demo Mode)' : 'Recharge Wallet'}
           </button>
+
           {isDemoMode && (
             <p className="text-xs text-orange-600 mt-2">
               Payments disabled in demo mode
@@ -182,52 +185,82 @@ await axios.post(
           )}
         </div>
       </div>
+    </div>
 
-      {/* Recharge Modal */}
-      {showRecharge && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-start pt-20 z-50">
-          <div className="bg-white rounded-md shadow-lg p-6 w-96">
-            <h3 className="text-lg font-medium mb-4">Recharge Wallet</h3>
-            <input
-              type="number"
-              value={rechargeAmount}
-              onChange={(e) => setRechargeAmount(e.target.value)}
-              className="w-full px-3 py-2 border rounded-md mb-4"
-              placeholder="Enter amount"
-              min="1"
-            />
-            <div className="flex space-x-3">
-              <button
-                onClick={handleRecharge}
-                disabled={loading || isDemoMode}
-                className={`flex-1 px-4 py-2 rounded-md disabled:opacity-50 ${
-                  isDemoMode 
-                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
-                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                }`}
-              >
-                <CreditCard className="h-4 w-4 mr-2 inline" />
-                {loading ? "Processing..." : isDemoMode ? "Demo Mode" : "Pay Now"}
-              </button>
-              <button
-                onClick={() => setShowRecharge(false)}
-                className="px-4 py-2 border rounded-md bg-white"
-              >
-                Cancel
-              </button>
-            </div>
+    {/* Recharge Modal */}
+    {showRecharge && (
+      <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-start pt-20 z-50">
+        <div className="bg-white rounded-md shadow-lg p-6 w-11/12 sm:w-96">
+          <h3 className="text-lg font-medium mb-4">Recharge Wallet</h3>
+          <input
+            type="number"
+            value={rechargeAmount}
+            onChange={(e) => setRechargeAmount(e.target.value)}
+            className="w-full px-3 py-2 border rounded-md mb-4"
+            placeholder="Enter amount"
+            min="1"
+          />
+          <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+            <button
+              onClick={handleRecharge}
+              disabled={loading || isDemoMode}
+              className={`flex-1 px-4 py-2 rounded-md disabled:opacity-50 flex items-center justify-center ${
+                isDemoMode 
+                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                  : 'bg-indigo-600 text-white hover:bg-indigo-700'
+              }`}
+            >
+              <CreditCard className="h-4 w-4 mr-2" />
+              {loading ? "Processing..." : isDemoMode ? "Demo Mode" : "Pay Now"}
+            </button>
+            <button
+              onClick={() => setShowRecharge(false)}
+              className="px-4 py-2 border rounded-md bg-white"
+            >
+              Cancel
+            </button>
           </div>
         </div>
-      )}
+      </div>
+    )}
 
-      {/* Transaction History */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="flex items-center mb-4">
-          <History className="h-5 w-5 text-gray-400 mr-2" />
-          <h3 className="text-lg font-medium text-gray-900">
-            Transaction History
-          </h3>
-        </div>
+    {/* Transaction History */}
+    <div className="bg-white shadow rounded-lg p-4 sm:p-6">
+      <div className="flex items-center mb-4">
+        <History className="h-5 w-5 text-gray-400 mr-2" />
+        <h3 className="text-lg font-medium text-gray-900">Transaction History</h3>
+      </div>
+
+      {/* Mobile View: Cards */}
+      <div className="sm:hidden space-y-4">
+        {(transactions || []).map((txn) => (
+          <div key={txn.txn_id} className="border rounded-md p-3">
+            <div className="flex justify-between text-sm">
+              <span className="font-medium">Date:</span>
+              {new Date(txn.date).toLocaleDateString()}
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="font-medium">Type:</span>
+              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                txn.type === "credit"
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
+              }`}>
+                {txn.type}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="font-medium">Amount:</span> ₹{txn.amount}
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="font-medium">Reference:</span> {txn.txn_ref || "-"}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop View: Table */}
+      <div className="hidden sm:block">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -260,14 +293,17 @@ await axios.post(
             ))}
           </tbody>
         </table>
-        {(!transactions || transactions.length === 0) && (
-          <div className="text-center py-6 text-gray-500">
-            No transactions found
-          </div>
-        )}
       </div>
+
+      {(!transactions || transactions.length === 0) && (
+        <div className="text-center py-6 text-gray-500">
+          No transactions found
+        </div>
+      )}
     </div>
-  );
+  </div>
+);
+
 };
 
 export default Wallet;
