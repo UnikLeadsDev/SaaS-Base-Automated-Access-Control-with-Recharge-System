@@ -2,11 +2,16 @@ import express from "express";
 import { registerUser, loginUser, getUserProfile } from "../controllers/authController.js";
 import { sendLoginOTP, verifyLoginOTP, resendOTP } from "../controllers/otpController.js";
 import { verifyToken } from "../middleware/auth.js";
+import { authRateLimit } from "../middleware/security.js";
+import { validate } from "../middleware/validation.js";
 
 const router = express.Router();
 
-router.post("/register", registerUser);
-router.post("/login", loginUser);
+// Apply strict rate limiting to auth endpoints
+router.use(authRateLimit);
+
+router.post("/register", validate('register'), registerUser);
+router.post("/login", validate('login'), loginUser);
 router.post("/send-otp", sendLoginOTP);
 router.post("/verify-otp", verifyLoginOTP);
 router.post("/resend-otp", resendOTP);

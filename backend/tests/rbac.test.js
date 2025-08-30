@@ -2,7 +2,11 @@ import jwt from 'jsonwebtoken';
 
 // Simple RBAC test functions
 const createToken = (role, id = 1) => {
-  return jwt.sign({ id, role }, process.env.JWT_SECRET || 'test_secret');
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET not configured');
+  }
+  return jwt.sign({ id, role }, secret);
 };
 
 const testRoleAccess = (userRole, requiredRoles) => {
@@ -29,7 +33,7 @@ const runRBACTests = () => {
   
   // Test 4: Token validation
   try {
-    const decoded = jwt.verify(adminToken, process.env.JWT_SECRET || 'test_secret');
+    const decoded = jwt.verify(adminToken, process.env.JWT_SECRET);
     const tokenValid = decoded.role === 'admin';
     console.log(`✅ Token validation: ${tokenValid ? 'PASS' : 'FAIL'}`);
   } catch {

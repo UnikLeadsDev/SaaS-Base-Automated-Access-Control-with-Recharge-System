@@ -33,7 +33,10 @@ const sendSMS = async (mobile, message, templateId = null) => {
     };
 
     const response = await axios.post(MSG91_CONFIG.SMS_URL, data, {
-      headers: MSG91_CONFIG.HEADERS
+      headers: {
+        ...MSG91_CONFIG.HEADERS,
+        'X-Requested-With': 'XMLHttpRequest'
+      }
     });
 
     return response.data;
@@ -256,6 +259,11 @@ export const getNotificationHistory = async (req, res) => {
 
 // Manual notification send (admin only)
 export const sendManualNotification = async (req, res) => {
+  // CSRF Protection - Check for custom header
+  if (!req.headers['x-requested-with'] || req.headers['x-requested-with'] !== 'XMLHttpRequest') {
+    return res.status(403).json({ message: "CSRF protection: Invalid request" });
+  }
+
   const { userId, channel, message } = req.body;
 
   if (!userId || !channel || !message) {

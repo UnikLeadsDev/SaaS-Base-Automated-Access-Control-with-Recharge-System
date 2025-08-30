@@ -85,7 +85,7 @@
 
 2. **Upload to S3**:
    ```bash
-   aws s3 sync dist/ s3://your-bucket-name --delete
+   aws s3 sync dist/ s3://your-organization-saas-frontend-prod --delete
    ```
 
 3. **Configure CloudFront**:

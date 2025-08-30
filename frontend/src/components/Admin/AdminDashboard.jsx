@@ -76,7 +76,12 @@ const AdminDashboard = () => {
           source: manualPayment.source,
           reason: manualPayment.reason
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'X-Requested-With': 'XMLHttpRequest'
+          } 
+        }
       );
       
       toast.success('Manual payment updated successfully');
@@ -136,7 +141,12 @@ const AdminDashboard = () => {
           amount: paymentUpdate.amount,
           reason: paymentUpdate.reason
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'X-Requested-With': 'XMLHttpRequest'
+          } 
+        }
       );
       
       toast.success('Payment status updated successfully');
@@ -156,7 +166,12 @@ const AdminDashboard = () => {
       await axios.put(
         `http://localhost:5000/api/admin/users/${userId}/status`,
         { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'X-Requested-With': 'XMLHttpRequest'
+          } 
+        }
       );
       
       toast.success(`User ${newStatus} successfully`);
