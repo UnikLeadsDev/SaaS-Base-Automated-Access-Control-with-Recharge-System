@@ -6,6 +6,7 @@ class OTPService {
     this.msg91AuthKey = process.env.MSG91_AUTH_KEY;
     this.msg91BaseUrl = "https://control.msg91.com/api";
     this.otpTemplateId = process.env.MSG91_OTP_TEMPLATE_ID;
+    this.senderId = process.env.MSG91_SENDER_ID || 'UNIKLD';
   }
 
   // Send OTP via MSG91
@@ -16,41 +17,74 @@ class OTPService {
       
       // Store OTP in database with expiry
       const expiryTime = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-      await db.query(`
-        INSERT INTO otp_verifications (mobile, otp, expires_at, attempts, status) 
-        VALUES (?, ?, ?, 0, 'pending')
-        ON DUPLICATE KEY UPDATE 
-        otp = VALUES(otp), 
-        expires_at = VALUES(expires_at), 
-        attempts = 0, 
-        status = 'pending'
-      `, [mobile, generatedOTP, expiryTime]);
+      // Clear any existing pending OTPs for this mobile
+      await db.query(
+        'DELETE FROM otp_verifications WHERE mobile = ? AND status = "pending"',
+        [mobile]
+      );
+      
+      // Insert new OTP
+      await db.query(
+        'INSERT INTO otp_verifications (mobile, otp, expires_at, attempts, status) VALUES (?, ?, ?, 0, "pending")',
+        [mobile, generatedOTP, expiryTime]
+      );
 
-      // Send OTP via MSG91
-      const url = `${this.msg91BaseUrl}/v5/otp`;
-      const payload = {
-        template_id: this.otpTemplateId,
-        mobile: mobile,
-        authkey: this.msg91AuthKey,
-        otp: generatedOTP,
-        otp_expiry: 5 // minutes
-      };
-
-      const response = await axios.post(url, payload, {
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (response.data.type === 'success') {
+      // For development, skip actual SMS sending
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Development Mode - OTP for ${mobile}: ${generatedOTP}`);
         return { 
           success: true, 
-          message: 'OTP sent successfully',
-          requestId: response.data.request_id 
+          message: 'OTP sent successfully (Development Mode)',
+          otp: generatedOTP // Only in development
+        };
+      }
+
+      // Send OTP via MSG91 in production using DLT template
+      const formattedMobile = mobile.startsWith('91') ? mobile : `91${mobile}`;
+      const url = `https://control.msg91.com/api/v5/flow/`;
+      
+      const payload = {
+        template_id: this.otpTemplateId,
+        sender: this.senderId,
+        short_url: "0",
+        mobiles: formattedMobile,
+        var1: generatedOTP
+      };
+      
+      console.log('MSG91 Request URL:', url);
+      console.log('MSG91 Request Payload:', JSON.stringify(payload, null, 2));
+      console.log('MSG91 Auth Key:', this.msg91AuthKey ? 'Present' : 'Missing');
+      console.log('Sending OTP to:', formattedMobile, 'OTP:', generatedOTP);
+      
+      const response = await axios.post(url, payload, {
+        headers: {
+          'authkey': this.msg91AuthKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('MSG91 API Response Status:', response.status);
+      console.log('MSG91 API Response Data:', JSON.stringify(response.data, null, 2));
+      console.log('MSG91 API Response Headers:', response.headers);
+      
+      if (response.status === 200 && response.data) {
+        return { 
+          success: true, 
+          message: 'OTP sent successfully via MSG91',
+          requestId: response.data.request_id || response.data.data?.request_id
         };
       } else {
-        throw new Error(response.data.message || 'Failed to send OTP');
+        throw new Error(JSON.stringify(response.data) || 'Failed to send OTP');
       }
     } catch (error) {
-      console.error('Send OTP Error:', error);
+      console.error('Send OTP Error Details:', {
+        message: error.message,
+        code: error.code,
+        errno: error.errno,
+        sqlState: error.sqlState,
+        sqlMessage: error.sqlMessage,
+        stack: error.stack
+      });
       return { 
         success: false, 
         message: error.message || 'Failed to send OTP' 

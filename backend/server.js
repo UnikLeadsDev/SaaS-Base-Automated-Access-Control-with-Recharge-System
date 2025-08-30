@@ -10,7 +10,7 @@ import walletRoutes from "./routes/walletRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import subscriptionRoutes from "./routes/subscriptionRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
-import testRoutes from "./routes/testRoutes.js";
+
 import reportRoutes from "./routes/reportRoutes.js";
 import { checkLowBalanceAndExpiry } from "./controllers/notificationController.js";
 import { startCronJobs } from "./jobs/cronJobs.js";
@@ -91,7 +91,7 @@ app.use("/api/wallet", walletRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/subscription", subscriptionRoutes);
 app.use("/api/support", supportRoutes);
-app.use("/api/test", testRoutes);
+
 app.use("/api/reports", reportRoutes);
 app.use("/api/receipts", receiptRoutes);
 app.use("/api/security", csrfRoutes);
@@ -112,16 +112,16 @@ app.get("/health", (req, res) => {
     res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
 
-// Cron job for automated alerts (runs every hour)
-cron.schedule('0 * * * *', async () => {
-    console.log('Running automated alerts check...');
-    try {
-        await checkLowBalanceAndExpiry();
-        await checkSubscriptionExpiry();
-    } catch (error) {
-        console.error('Cron job error:', error);
-    }
-});
+// Cron job for automated alerts (disabled for now)
+// cron.schedule('0 * * * *', async () => {
+//     console.log('Running automated alerts check...');
+//     try {
+//         await checkLowBalanceAndExpiry();
+//         await checkSubscriptionExpiry();
+//     } catch (error) {
+//         console.error('Cron job error:', error);
+//     }
+// });
 
 // Check and update subscription statuses
 const checkSubscriptionExpiry = async () => {
@@ -159,6 +159,6 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`🔔 Automated alerts scheduled every hour`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     
-    // Start cron jobs
-    startCronJobs();
+    // Start cron jobs (disabled for now)
+    // startCronJobs();
 });

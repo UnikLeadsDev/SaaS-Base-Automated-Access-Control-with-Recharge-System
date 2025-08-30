@@ -11,7 +11,7 @@ router.use(generalRateLimit);
 
 router.get("/balance", verifyToken, getWalletBalance);
 router.get("/balance-check", verifyToken, getWalletBalanceCheck);
-router.get("/check-balance", verifyToken, checkBalance);
+router.get("/check-balance", verifyToken, getWalletBalanceCheck);
 router.get("/transactions", verifyToken, getTransactionHistory);
 router.post("/transactions", verifyToken, async (req, res) => {
   try {
