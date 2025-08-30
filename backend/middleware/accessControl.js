@@ -3,6 +3,7 @@ import db from "../config/db.js";
 // Check subscription access for form submissions
 export const checkSubscriptionAccess = (formType) => {
   return async (req, res, next) => {
+    console.log("this is id", req.user.id);
     try {
       const [result] = await db.query(
         "SELECT check_subscription_access(?, ?) as hasAccess",

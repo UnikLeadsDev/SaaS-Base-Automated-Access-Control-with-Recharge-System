@@ -1,6 +1,8 @@
 import Joi from 'joi';
 
-// Validation schemas
+// ----------------------
+// Validation Schemas
+// ----------------------
 const schemas = {
   register: Joi.object({
     name: Joi.string().min(2).max(100).required(),
@@ -42,7 +44,9 @@ const schemas = {
   })
 };
 
-// Validation middleware factory
+// ----------------------
+// Validation Middleware
+// ----------------------
 export const validate = (schemaName) => {
   return (req, res, next) => {
     const schema = schemas[schemaName];
@@ -50,15 +54,15 @@ export const validate = (schemaName) => {
       return res.status(500).json({ message: 'Validation schema not found' });
     }
 
-    const { error, value } = schema.validate(req.body, { 
+    const { error, value } = schema.validate(req.body, {
       abortEarly: false,
-      stripUnknown: true 
+      stripUnknown: true
     });
 
     if (error) {
       return res.status(400).json({
         message: 'Validation failed',
-        errors: error.details.map(detail => ({
+        errors: error.details.map((detail) => ({
           field: detail.path.join('.'),
           message: detail.message
         }))
@@ -70,7 +74,9 @@ export const validate = (schemaName) => {
   };
 };
 
-// Sanitize input middleware
+// ----------------------
+// Sanitize Input Middleware
+// ----------------------
 export const sanitizeInput = (req, res, next) => {
   const sanitize = (obj) => {
     if (typeof obj === 'string') {
@@ -89,9 +95,7 @@ export const sanitizeInput = (req, res, next) => {
     return obj;
   };
 
-  if (req.body) {
-    req.body = sanitize(req.body);
-  }
-  
+  req.body = sanitize(req.body);
+  req.query = sanitize(req.query);
   next();
 };
