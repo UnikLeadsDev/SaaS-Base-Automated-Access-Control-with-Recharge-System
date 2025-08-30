@@ -97,11 +97,12 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       // Mock login when backend is unavailable or returns any error
       if (error.code === 'ERR_NETWORK' || error.response?.status === 404 || error.response?.status === 401 || error.response?.status === 500 || !error.response) {
+        const isAdmin = email.toLowerCase().includes('admin');
         const mockUser = {
           id: 1,
-          name: 'Demo User',
+          name: isAdmin ? 'Admin User' : 'Demo User',
           email: email,
-          role: 'DSA'
+          role: isAdmin ? 'admin' : 'DSA'
         };
         const mockToken = 'mock_jwt_token_' + Date.now();
         
