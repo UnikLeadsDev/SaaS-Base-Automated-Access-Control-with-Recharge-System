@@ -1,24 +1,22 @@
 import axios from 'axios';
 import { getMockResponse } from './mockApi.js';
 
-// Enhanced axios wrapper that falls back to mock data when backend is unavailable
+// Enhanced axios wrapper with centralized error handling
 const apiWrapper = {
   async get(url, config = {}) {
     try {
       const response = await axios.get(url, config);
       return response;
     } catch (error) {
-      // Suppress console errors for expected failures
-      const originalConsoleError = console.error;
-      console.error = () => {};
+      // Handle structured API errors first
+      if (error.response?.data?.errorCode) {
+        throw error; // Let caller handle with centralized error handler
+      }
       
       // Don't use mock data for auth errors - let them propagate
       if (error.response?.status === 401) {
-        console.error = originalConsoleError;
         throw error;
       }
-
-      console.error = originalConsoleError;
 
       // For auth endpoints, do not mock 404 either; surface the error
       const isAuthEndpoint = url.includes('/auth/');
@@ -42,6 +40,11 @@ const apiWrapper = {
       const response = await axios.post(url, data, config);
       return response;
     } catch (error) {
+      // Handle structured API errors first
+      if (error.response?.data?.errorCode) {
+        throw error; // Let caller handle with centralized error handler
+      }
+      
       // Don't use mock data for auth errors - let them propagate
       if (error.response?.status === 401) {
         throw error;

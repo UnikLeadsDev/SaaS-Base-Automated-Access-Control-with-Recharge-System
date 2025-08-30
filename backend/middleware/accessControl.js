@@ -33,13 +33,16 @@ export const checkFormAccess = (formType) => {
           w.status as wallet_status,
           s.sub_id,
           s.end_date as subscription_end,
+          s.grace_end_date,
           s.status as subscription_status,
+          sp.basic_form_rate as sub_basic_rate,
+          sp.realtime_form_rate as sub_realtime_rate,
           u.status as user_status
         FROM users u
         LEFT JOIN wallets w ON u.user_id = w.user_id
         LEFT JOIN subscriptions s ON u.user_id = s.user_id 
-          AND s.status = 'active' 
-          AND s.end_date >= CURDATE()
+          AND s.status IN ('active', 'grace')
+        LEFT JOIN subscription_plans sp ON s.plan_id = sp.plan_id
         WHERE u.user_id = ?
         ORDER BY s.end_date DESC
         LIMIT 1
@@ -62,32 +65,51 @@ export const checkFormAccess = (formType) => {
         });
       }
 
-      // Check for active subscription first
-      if (access.sub_id && access.subscription_status === 'active') {
-        req.formRate = 0;
-        req.accessType = 'subscription';
-        req.accessGranted = true;
-        return next();
+      // Check for active subscription with validity dates
+      if (access.sub_id && access.subscription_status) {
+        const today = new Date();
+        const endDate = new Date(access.subscription_end);
+        const graceEndDate = new Date(access.grace_end_date);
+        
+        let isValidSubscription = false;
+        let subscriptionStatus = 'expired';
+        
+        if (today <= endDate) {
+          isValidSubscription = true;
+          subscriptionStatus = 'active';
+        } else if (today <= graceEndDate) {
+          isValidSubscription = true;
+          subscriptionStatus = 'grace';
+        }
+        
+        if (isValidSubscription) {
+          // Use subscription rates (0 for unlimited) or fallback to plan rates
+          const subRate = formType === 'realtime_validation' ? 
+            (access.sub_realtime_rate || 0) : (access.sub_basic_rate || 0);
+          
+          req.formRate = subRate;
+          req.accessType = 'subscription';
+          req.subscriptionStatus = subscriptionStatus;
+          req.accessGranted = true;
+          return next();
+        }
       }
 
       // Check prepaid wallet access
       const rate = formType === 'realtime_validation' ? REALTIME_RATE : BASIC_RATE;
 
       if (access.wallet_status !== 'active') {
-        return res.status(403).json({ 
-          message: "Wallet is inactive. Please contact support.",
-          accessBlocked: true 
-        });
+        const error = new Error('Wallet is inactive');
+        error.code = 'WALLET_INACTIVE';
+        return next(error);
       }
 
       if (access.balance < rate) {
-        return res.status(403).json({ 
-          message: "Insufficient balance. Please recharge your wallet.",
-          required: rate,
-          current: access.balance,
-          accessBlocked: true,
-          rechargeRequired: true
-        });
+        const error = new Error('Insufficient balance');
+        error.code = 'INSUFFICIENT_BALANCE';
+        error.required = rate;
+        error.current = access.balance;
+        return next(error);
       }
 
       req.formRate = rate;
@@ -108,25 +130,32 @@ export const checkFormAccess = (formType) => {
 // Real-time balance check for UI
 export const checkBalance = async (req, res) => {
   try {
-    // Add authentication check
     if (!req.user || !req.user.id) {
       return res.status(401).json({ message: "Authentication required" });
     }
+
+    // Check if token is demo/mock
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const isDemoMode = token?.startsWith('mock_') || token?.includes('demo');
 
     const [result] = await db.query(`
       SELECT 
         w.balance,
         w.status as wallet_status,
-        CASE 
-          WHEN s.sub_id IS NOT NULL THEN 'subscription'
-          ELSE 'prepaid'
-        END as access_type,
-        s.end_date as subscription_end
+        s.sub_id,
+        s.end_date as subscription_end,
+        s.grace_end_date,
+        s.status as subscription_status,
+        s.plan_name,
+        sp.basic_form_rate as sub_basic_rate,
+        sp.realtime_form_rate as sub_realtime_rate
       FROM wallets w
       LEFT JOIN subscriptions s ON w.user_id = s.user_id 
-        AND s.status = 'active' 
-        AND s.end_date >= CURDATE()
+        AND s.status IN ('active', 'grace')
+      LEFT JOIN subscription_plans sp ON s.plan_id = sp.plan_id
       WHERE w.user_id = ?
+      ORDER BY s.end_date DESC
+      LIMIT 1
     `, [req.user.id]);
 
     if (result.length === 0) {
@@ -134,15 +163,75 @@ export const checkBalance = async (req, res) => {
     }
 
     const rates = getRates();
+    const data = result[0];
+    
+    // Check subscription validity
+    let hasActiveSubscription = false;
+    let subscriptionStatus = null;
+    let accessType = 'prepaid';
+    
+    if (data.sub_id) {
+      const today = new Date();
+      const endDate = new Date(data.subscription_end);
+      const graceEndDate = new Date(data.grace_end_date);
+      
+      if (today <= endDate) {
+        hasActiveSubscription = true;
+        subscriptionStatus = 'active';
+        accessType = 'subscription';
+      } else if (today <= graceEndDate) {
+        hasActiveSubscription = true;
+        subscriptionStatus = 'grace';
+        accessType = 'subscription';
+      }
+    }
+    
+    // Determine form submission eligibility
+    const basicRate = hasActiveSubscription ? (data.sub_basic_rate || 0) : rates.basic;
+    const realtimeRate = hasActiveSubscription ? (data.sub_realtime_rate || 0) : rates.realtime;
+    
+    const canSubmitBasic = hasActiveSubscription || data.balance >= rates.basic;
+    const canSubmitRealtime = hasActiveSubscription || data.balance >= rates.realtime;
+
+    // Generate guidance for blocked access
+    const guidance = {};
+    if (!canSubmitBasic && !hasActiveSubscription) {
+      guidance.basic = {
+        blocked: true,
+        reason: 'insufficient_balance',
+        required: rates.basic,
+        shortfall: rates.basic - data.balance,
+        action: 'recharge'
+      };
+    }
+    if (!canSubmitRealtime && !hasActiveSubscription) {
+      guidance.realtime = {
+        blocked: true,
+        reason: 'insufficient_balance',
+        required: rates.realtime,
+        shortfall: rates.realtime - data.balance,
+        action: 'recharge'
+      };
+    }
 
     res.json({
-      balance: result[0].balance,
-      walletStatus: result[0].wallet_status,
-      accessType: result[0].access_type,
-      subscriptionEnd: result[0].subscription_end,
-      canSubmitBasic: result[0].access_type === 'subscription' || result[0].balance >= rates.basic,
-      canSubmitRealtime: result[0].access_type === 'subscription' || result[0].balance >= rates.realtime,
-      rates
+      balance: data.balance,
+      walletStatus: data.wallet_status,
+      accessType,
+      subscriptionEnd: data.subscription_end,
+      subscriptionStatus,
+      subscriptionPlan: data.plan_name,
+      canSubmitBasic,
+      canSubmitRealtime,
+      rates: {
+        basic: basicRate,
+        realtime: realtimeRate,
+        originalBasic: rates.basic,
+        originalRealtime: rates.realtime
+      },
+      guidance,
+      demoMode: isDemoMode,
+      paymentsEnabled: !isDemoMode
     });
   } catch (error) {
     console.error("Balance Check Error:", error);

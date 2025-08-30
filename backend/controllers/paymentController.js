@@ -64,6 +64,10 @@ export const verifyPayment = async (req, res) => {
     // Add to wallet
     await addToWallet(req.user.id, amount, razorpay_payment_id);
 
+    // Generate receipt
+    const receiptService = (await import('../services/receiptService.js')).default;
+    await receiptService.generateReceipt(req.user.id, amount, 'razorpay', razorpay_payment_id);
+
     // Send notification
     await sendPaymentNotification(req.user.id, amount, "payment_success");
 
@@ -77,66 +81,209 @@ export const verifyPayment = async (req, res) => {
 // Webhook handler for automatic payment updates
 export const handleWebhook = async (req, res) => {
   const webhookSignature = req.headers["x-razorpay-signature"];
-  const webhookBody = JSON.stringify(req.body);
+  const webhookBody = req.rawBody || JSON.stringify(req.body);
 
   try {
-    // Verify webhook signature
+    // Verify webhook signature using raw body
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET)
       .update(webhookBody)
       .digest("hex");
 
     if (expectedSignature !== webhookSignature) {
+      console.warn('Webhook signature mismatch');
       return res.status(400).json({ message: "Invalid webhook signature" });
     }
 
     const { event, payload } = req.body;
+    const webhookId = req.headers['x-razorpay-event-id'] || `webhook_${Date.now()}`;
+
+    // Check if webhook already processed
+    const [existing] = await db.query(
+      'SELECT event_id FROM webhook_events WHERE webhook_id = ?',
+      [webhookId]
+    );
+    
+    if (existing.length > 0) {
+      console.log('Webhook already processed:', webhookId);
+      return res.json({ status: "ok", message: "already processed" });
+    }
 
     if (event === "payment.captured") {
       const payment = payload.payment.entity;
-      const userId = payment.notes.user_id;
+      const userId = payment.notes?.user_id;
       const amount = payment.amount / 100;
+      const paymentId = payment.id;
 
-      // Add to wallet
-      await addToWallet(userId, amount, payment.id);
+      // Validate required fields
+      if (!userId || !amount || !paymentId) {
+        console.error('Missing required webhook data:', { userId, amount, paymentId });
+        return res.status(400).json({ message: "Missing required payment data" });
+      }
+
+      // Check payment idempotency
+      const [processed] = await db.query(
+        'SELECT payment_id FROM processed_payments WHERE payment_id = ?',
+        [paymentId]
+      );
       
-      // Send notification
-      await sendPaymentNotification(userId, amount, "payment_success");
+      if (processed.length > 0) {
+        console.log('Payment already processed:', paymentId);
+        return res.json({ status: "ok", message: "payment already processed" });
+      }
+
+      // Process payment in transaction
+      const connection = await db.getConnection();
+      try {
+        await connection.beginTransaction();
+
+        // Record webhook event
+        await connection.query(
+          'INSERT INTO webhook_events (webhook_id, event_type, payment_id, amount, user_id, processed) VALUES (?, ?, ?, ?, ?, TRUE)',
+          [webhookId, event, paymentId, amount, userId]
+        );
+
+        // Record processed payment
+        await connection.query(
+          'INSERT INTO processed_payments (payment_id, user_id, amount, txn_ref) VALUES (?, ?, ?, ?)',
+          [paymentId, userId, amount, paymentId]
+        );
+
+        // Add to wallet
+        await addToWallet(userId, amount, paymentId, 'razorpay');
+
+        await connection.commit();
+        console.log('Payment processed successfully:', { paymentId, userId, amount });
+        
+        // Generate receipt (outside transaction)
+        const receiptService = (await import('../services/receiptService.js')).default;
+        await receiptService.generateReceipt(userId, amount, 'razorpay', paymentId);
+        
+        // Send notification (outside transaction)
+        await sendPaymentNotification(userId, amount, "payment_success");
+        
+      } catch (error) {
+        await connection.rollback();
+        throw error;
+      } finally {
+        connection.release();
+      }
+    } else {
+      // Log other webhook events without processing
+      await db.query(
+        'INSERT INTO webhook_events (webhook_id, event_type, processed) VALUES (?, ?, TRUE)',
+        [webhookId, event]
+      );
     }
 
     res.json({ status: "ok" });
   } catch (error) {
-    console.error("Webhook Error:", error);
+    console.error("Webhook Error:", { 
+      error: error.message, 
+      webhookId: req.headers['x-razorpay-event-id'],
+      event: req.body?.event 
+    });
     res.status(500).json({ message: "Webhook processing failed" });
   }
 };
 
 // Manual payment update (admin only)
 export const updateManualPayment = async (req, res) => {
-  const { userId, amount, txnRef } = req.body;
+  const { userId, amount, txnRef, source, reason, userName, email, receiptDate } = req.body;
 
-  if (!userId || !amount || !txnRef) {
-    return res.status(400).json({ message: "All fields required" });
+  // Validate required fields
+  if (!userId || isNaN(parseInt(userId, 10))) {
+    return res.status(400).json({ message: "Valid userId is required" });
+  }
+  if (amount === undefined || amount === null || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+    return res.status(400).json({ message: "Valid positive amount is required" });
+  }
+  if (!txnRef || typeof txnRef !== 'string' || txnRef.trim().length < 4) {
+    return res.status(400).json({ message: "Valid txnRef is required" });
+  }
+  const allowedSources = ['cash', 'upi', 'card', 'netbanking', 'wallet', 'other'];
+  if (!source || !allowedSources.includes(source)) {
+    return res.status(400).json({ message: `source must be one of: ${allowedSources.join(', ')}` });
   }
 
-  try {
-    // Check if transaction already exists
-    const [existing] = await db.query(
-      "SELECT * FROM transactions WHERE txn_ref = ?",
-      [txnRef]
-    );
+  const adminId = req.user?.id;
+  if (!adminId) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
 
-    if (existing.length > 0) {
-      return res.status(400).json({ message: "Transaction already processed" });
+  const amt = parseFloat(amount);
+  const txRef = txnRef.trim();
+  const receipt_date = receiptDate ? new Date(receiptDate) : new Date();
+
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    // Ensure target user exists and active
+    const [userRows] = await connection.query(
+      "SELECT user_id, status, name, email FROM users WHERE user_id = ?",
+      [userId]
+    );
+    if (userRows.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (userRows[0].status !== 'active') {
+      await connection.rollback();
+      return res.status(400).json({ message: "Target user account is not active" });
     }
 
-    await addToWallet(userId, amount, txnRef);
-    await sendPaymentNotification(userId, amount, "payment_success");
+    // Upsert receipt using txnRef as txn_id
+    const [existingReceipt] = await connection.query(
+      "SELECT receipt_id FROM receipts WHERE txn_id = ?",
+      [txRef]
+    );
+    if (existingReceipt.length > 0) {
+      await connection.query(
+        "UPDATE receipts SET user_id = ?, user_name = ?, email = ?, amount = ?, payment_mode = ?, status = 'success', receipt_date = ? WHERE txn_id = ?",
+        [userId, userName || userRows[0].name || null, email || userRows[0].email || null, amt, source, receipt_date, txRef]
+      );
+    } else {
+      await connection.query(
+        "INSERT INTO receipts (user_id, txn_id, user_name, email, amount, payment_mode, status, receipt_date) VALUES (?, ?, ?, ?, ?, ?, 'success', ?)",
+        [userId, txRef, userName || userRows[0].name || null, email || userRows[0].email || null, amt, source, receipt_date]
+      );
+    }
 
-    res.json({ message: "Manual payment updated successfully" });
+    // Credit wallet and record transaction with payment_mode = 'manual'
+    // addToWallet enforces idempotency on txn_ref
+    await addToWallet(userId, amt, txRef, 'manual');
+
+    // Admin audit table (create if not exists) and insert audit record
+    await connection.query(
+      "CREATE TABLE IF NOT EXISTS admin_audit (\n        audit_id INT PRIMARY KEY AUTO_INCREMENT,\n        admin_id INT NOT NULL,\n        action VARCHAR(100) NOT NULL,\n        target_user_id INT NOT NULL,\n        amount DECIMAL(10,2) NULL,\n        txn_ref VARCHAR(255) NULL,\n        reason TEXT NULL,\n        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n        INDEX idx_admin_created (admin_id, created_at)\n      )"
+    );
+    await connection.query(
+      "INSERT INTO admin_audit (admin_id, action, target_user_id, amount, txn_ref, reason) VALUES (?, 'manual_payment_credit', ?, ?, ?, ?)",
+      [adminId, userId, amt, txRef, reason || null]
+    );
+
+    await connection.commit();
+
+    // Notify user
+    await sendPaymentNotification(userId, amt, "payment_success");
+
+    const [wallet] = await db.query('SELECT balance FROM wallets WHERE user_id = ?', [userId]);
+    return res.json({
+      success: true,
+      message: "Manual payment credited successfully",
+      newBalance: wallet[0]?.balance || 0,
+      txnRef: txRef
+    });
   } catch (error) {
+    try { await connection.rollback(); } catch {}
     console.error("Manual Payment Error:", error);
-    res.status(500).json({ message: "Failed to update manual payment" });
+    if (String(error.message).includes('Transaction already processed')) {
+      return res.status(409).json({ message: "Transaction already processed" });
+    }
+    return res.status(500).json({ message: "Failed to update manual payment" });
+  } finally {
+    connection.release();
   }
 };
 

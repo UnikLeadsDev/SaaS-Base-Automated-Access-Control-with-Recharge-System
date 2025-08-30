@@ -11,14 +11,18 @@ import adminRoutes from "./routes/adminRoutes.js";
 import subscriptionRoutes from "./routes/subscriptionRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
 import testRoutes from "./routes/testRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
 import { checkLowBalanceAndExpiry } from "./controllers/notificationController.js";
+import { startCronJobs } from "./jobs/cronJobs.js";
+import { rawBodyMiddleware } from "./middleware/rawBody.js";
+import { errorHandler } from "./middleware/errorHandler.js";
 import receiptRoutes from "./routes/receiptRoutes.js";
 
 dotenv.config();
 
 // Validate critical environment variables
 const requiredEnvVars = [
-  'JWT_SECRET', 'BASIC_FORM_RATE', 'REALTIME_VALIDATION_RATE',
+  'JWT_SECRET',
   'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET'
 ];
 
@@ -26,6 +30,18 @@ for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
     console.error(`❌ Missing required environment variable: ${envVar}`);
     process.exit(1);
+  }
+}
+
+// Optional rate envs with sane fallbacks are validated in middleware/accessControl.js
+// Log warnings here if provided but invalid.
+const rateEnvPairs = [
+  ['BASIC_FORM_RATE', process.env.BASIC_FORM_RATE],
+  ['REALTIME_VALIDATION_RATE', process.env.REALTIME_VALIDATION_RATE]
+];
+for (const [key, value] of rateEnvPairs) {
+  if (value !== undefined && value !== '' && isNaN(parseFloat(value))) {
+    console.warn(`⚠️  ${key} is set but not a valid number: "${value}". Using fallback defaults.`);
   }
 }
 
@@ -39,6 +55,7 @@ app.use(cors({
   ],
   credentials: true
 }));
+app.use(rawBodyMiddleware);
 app.use(express.json());
 
 // Routes
@@ -50,6 +67,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/subscription", subscriptionRoutes);
 app.use("/api/support", supportRoutes);
 app.use("/api/test", testRoutes);
+app.use("/api/reports", reportRoutes);
 app.use("/api/receipts", receiptRoutes);
 
 
@@ -69,10 +87,40 @@ cron.schedule('0 * * * *', async () => {
     console.log('Running automated alerts check...');
     try {
         await checkLowBalanceAndExpiry();
+        await checkSubscriptionExpiry();
     } catch (error) {
         console.error('Cron job error:', error);
     }
 });
+
+// Check and update subscription statuses
+const checkSubscriptionExpiry = async () => {
+    try {
+        // Update expired subscriptions
+        await db.query(`
+            UPDATE subscriptions 
+            SET status = 'expired' 
+            WHERE status IN ('active', 'grace') 
+            AND grace_end_date < CURDATE()
+        `);
+        
+        // Update subscriptions in grace period
+        await db.query(`
+            UPDATE subscriptions 
+            SET status = 'grace' 
+            WHERE status = 'active' 
+            AND end_date < CURDATE() 
+            AND grace_end_date >= CURDATE()
+        `);
+        
+        console.log('Subscription statuses updated');
+    } catch (error) {
+        console.error('Subscription expiry check error:', error);
+    }
+};
+
+// Error handling middleware (must be last)
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => {
@@ -80,4 +128,7 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`📊 Health check: http://localhost:${PORT}/health`);
     console.log(`🔔 Automated alerts scheduled every hour`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    
+    // Start cron jobs
+    startCronJobs();
 });
