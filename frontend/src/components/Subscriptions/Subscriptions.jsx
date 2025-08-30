@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
-import apiWrapper from '../../utils/apiWrapper.js';
 import { CreditCard, Calendar, CheckCircle } from 'lucide-react';
 import API_BASE_URL from '../../config/api.js';
 
@@ -13,236 +12,154 @@ const Subscriptions = () => {
   const [paymentLoading, setPaymentLoading] = useState(false);
 
   useEffect(() => {
-    fetchSubscriptions();
     fetchPlans();
-    fetchCurrentSubscription();
+    fetchSubscriptions();
   }, []);
 
-  const isMockToken = () => {
-    const token = localStorage.getItem('token');
-    return token && token.startsWith('mock_jwt_token_');
-  };
+  const token = localStorage.getItem('token');
+  const isMockToken = token && token.startsWith('mock_jwt_token_');
+
+  // Fetch all available subscription plans
+ const fetchPlans = async () => {
+  if (!token || isMockToken) return;
+
+  try {
+    const { data } = await axios.get(`${API_BASE_URL}/subscription/plans`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (data.success) setPlans(data.plans || []);
+  } catch (err) { console.error(err); }
+};
 
   const fetchSubscriptions = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token || isMockToken()) return;
-      
-      const response = await apiWrapper.get(`${API_BASE_URL}/subscription/list`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (response.data.success) {
-        setSubscriptions(response.data.subscriptions || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch subscriptions:', error);
+  if (!token || isMockToken) return;
+
+  try {
+    const { data } = await axios.get(`${API_BASE_URL}/subscription/list`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (data.success) {
+      setSubscriptions(data.subscriptions || []);
+      const activeSub = data.subscriptions?.find(s => s.status === 'active');
+      if (activeSub) setCurrentSubscription(activeSub);
     }
-  };
+  } catch (err) { console.error(err); }
+};
 
-  const fetchPlans = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token || isMockToken()) {
-        // Demo plans for mock mode
-        setPlans([
-          { id: 1, name: 'Basic Plan', amount: 999, duration: 30, features: ['Unlimited Basic Forms', 'Email Support'] },
-          { id: 2, name: 'Premium Plan', amount: 1999, duration: 30, features: ['Unlimited All Forms', 'Priority Support', 'Analytics'] }
-        ]);
-        return;
-      }
-      
-      const response = await apiWrapper.get(`${API_BASE_URL}/subscription/plans`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (response.data.success) {
-        setPlans(response.data.plans || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch plans:', error);
-    }
-  };
 
-  const fetchCurrentSubscription = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token || isMockToken()) return;
-      
-      const response = await apiWrapper.get(`${API_BASE_URL}/subscription/status`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (response.data.success) {
-        setCurrentSubscription(response.data.subscription);
-      }
-    } catch (error) {
-      console.error('Failed to fetch current subscription:', error);
-    }
-  };
+const subscribeToPlan = async (plan) => {
+  if (!token || isMockToken) {
+    toast.error('Real payment required.');
+    return;
+  }
+  setPaymentLoading(true);
 
-  const subscribeToPlan = async (plan) => {
-    setPaymentLoading(true);
-    try {
-      const token = localStorage.getItem('token');
+  try {
+    const { data } = await axios.post(
+      `${API_BASE_URL}/subscription/create`,
+      { planId: plan.plan_id }, // note: plan.plan_id
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-      // Block demo mode: require real payment
-      if (!token || isMockToken()) {
-        toast.error('Real payment required. Please log in against the backend to subscribe.');
-        setPaymentLoading(false);
-        return;
-      }
-      
-      // Create Razorpay order (real flow)
-      const response = await axios.post(
-        `${API_BASE_URL}/subscription/create`,
-        { planId: plan.id },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+    const { orderId, amount, currency, key } = data;
 
-      const { orderId, amount, currency, key } = response.data;
+    const options = {
+      key,
+      amount,
+      currency,
+      name: 'SaaS Base',
+      description: `Subscription to ${plan.name}`,
+      order_id: orderId,
+      handler: async (res) => {
+        try {
+          const verify = await axios.post(
+            `${API_BASE_URL}/subscription/verify-payment`,
+            {
+              razorpay_order_id: res.razorpay_order_id,
+              razorpay_payment_id: res.razorpay_payment_id,
+              razorpay_signature: res.razorpay_signature,
+              planId: plan.plan_id
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          if (verify.data.success) {
+            toast.success('Subscription activated!');
+            fetchSubscriptions();
+          } else toast.error('Payment verification failed');
+        } catch { toast.error('Payment verification failed'); }
+        finally { setPaymentLoading(false); }
+      },
+      prefill: { name: localStorage.getItem('userName'), email: localStorage.getItem('userEmail') },
+      theme: { color: '#4F46E5' },
+      modal: { ondismiss: () => setPaymentLoading(false) }
+    };
 
-      // Initialize Razorpay
-      const options = {
-        key: key,
-        amount: amount,
-        currency: currency,
-        name: 'SaaS Base',
-        description: `Subscription to ${plan.name}`,
-        order_id: orderId,
-        handler: async function (response) {
-          try {
-            // Verify payment (activates subscription and credits wallet server-side)
-            const verifyResponse = await axios.post(
-              `${API_BASE_URL}/subscription/verify-payment`,
-              {
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                planId: plan.id
-              },
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
+    new window.Razorpay(options).open();
+  } catch (err) { toast.error('Failed to initiate payment'); setPaymentLoading(false); }
+};
 
-            if (verifyResponse.data?.success) {
-              toast.success('Subscription activated successfully');
-              fetchSubscriptions();
-              fetchCurrentSubscription();
-            } else {
-              toast.error('Payment verification failed');
-            }
-          } catch (error) {
-            toast.error('Payment verification failed');
-          } finally {
-            setPaymentLoading(false);
-          }
-        },
-        prefill: {
-          name: localStorage.getItem('userName') || '',
-          email: localStorage.getItem('userEmail') || ''
-        },
-        theme: {
-          color: '#4F46E5'
-        },
-        modal: {
-          ondismiss: function() {
-            setPaymentLoading(false);
-          }
-        }
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-      
-    } catch (error) {
-      toast.error('Failed to initiate payment');
-      setPaymentLoading(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
-      {/* Current Subscription Status */}
+
+      {/* Current Subscription */}
       {currentSubscription && (
         <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Current Subscription</h2>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-green-900">{currentSubscription.plan_name}</h3>
-                <p className="text-sm text-green-700">
-                  Status: <span className="capitalize">{currentSubscription.currentStatus}</span>
-                </p>
-                <p className="text-sm text-green-700">
-                  {currentSubscription.daysRemaining > 0 
-                    ? `${currentSubscription.daysRemaining} days remaining`
-                    : currentSubscription.graceDaysRemaining > 0
-                    ? `Grace period: ${currentSubscription.graceDaysRemaining} days remaining`
-                    : 'Expired'
-                  }
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-600">Valid until</p>
-                <p className="font-semibold">{new Date(currentSubscription.end_date).toLocaleDateString()}</p>
-              </div>
+          <h2 className="text-xl font-bold mb-4">Current Subscription</h2>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex justify-between">
+            <div>
+              <h3 className="font-semibold text-green-900">{currentSubscription.plan_name}</h3>
+              <p className="text-sm text-green-700">Status: {currentSubscription.status}</p>
+              <p className="text-sm text-green-700">
+                Valid until: {new Date(currentSubscription.end_date).toLocaleDateString()}
+              </p>
             </div>
           </div>
         </div>
       )}
-      
+
+      {/* Available Plans */}
       <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Subscription Plans</h2>
-        
+        <h2 className="text-2xl font-bold mb-6">Subscription Plans</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {plans.map((plan) => (
-            <div key={plan.id} className="border border-gray-200 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
-                <div className="text-2xl font-bold text-indigo-600">₹{plan.amount}</div>
+          {plans?.map(plan => (
+            <div key={plan.id} className="border p-6 rounded-lg">
+              <div className="flex justify-between mb-4">
+                <h3 className="font-semibold">{plan.name}</h3>
+                <span className="text-indigo-600 font-bold">₹{plan.amount}</span>
               </div>
-              
               <div className="mb-4">
                 <div className="flex items-center text-sm text-gray-500 mb-2">
                   <Calendar className="h-4 w-4 mr-1" />
                   {plan.duration} days validity
                 </div>
-                
-                <ul className="space-y-2">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-center text-sm text-gray-600">
-                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      {feature}
+                <ul className="space-y-1">
+                  {plan.features?.map((f, i) => (
+                    <li key={i} className="flex items-center text-sm text-gray-600">
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-1" /> {f}
                     </li>
                   ))}
                 </ul>
               </div>
-              
               <button
                 onClick={() => subscribeToPlan(plan)}
-                disabled={paymentLoading || loading || isMockToken()}
-                className={`w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md disabled:opacity-50 ${
-                  isMockToken() 
-                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
-                    : 'text-white bg-indigo-600 hover:bg-indigo-700'
+                disabled={paymentLoading || loading || isMockToken}
+                className={`w-full inline-flex justify-center items-center px-4 py-2 rounded-md text-white ${
+                  isMockToken ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'
                 }`}
               >
                 <CreditCard className="h-4 w-4 mr-2" />
-                {isMockToken() ? 'Subscribe (Demo Mode)' : 'Subscribe Now'}
+                {isMockToken ? 'Subscribe (Demo Mode)' : 'Subscribe Now'}
               </button>
-              {isMockToken() && (
-                <p className="text-xs text-orange-600 mt-2 text-center">
-                  Payments disabled in demo mode
-                </p>
-              )}
             </div>
           ))}
         </div>
       </div>
 
-      {subscriptions.length > 0 && (
+      {/* User Subscriptions */}
+      {subscriptions?.length > 0 && (
         <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Subscriptions</h3>
+          <h3 className="text-lg font-semibold mb-4">Your Subscriptions</h3>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -255,18 +172,16 @@ const Subscriptions = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {subscriptions.map((sub) => (
+                {subscriptions?.map(sub => (
                   <tr key={sub.sub_id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{sub.plan_name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹{sub.amount}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(sub.start_date).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(sub.end_date).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 text-sm font-medium">{sub.plan_name}</td>
+                    <td className="px-6 py-4 text-sm">₹{sub.amount}</td>
+                    <td className="px-6 py-4 text-sm">{new Date(sub.start_date).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-sm">{new Date(sub.end_date).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-sm">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                         sub.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {sub.status}
-                      </span>
+                      }`}>{sub.status}</span>
                     </td>
                   </tr>
                 ))}
@@ -275,6 +190,7 @@ const Subscriptions = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };

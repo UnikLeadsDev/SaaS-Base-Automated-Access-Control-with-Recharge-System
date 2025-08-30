@@ -7,7 +7,6 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// Create subscription order
 export const createSubscription = async (req, res) => {
   const { planId } = req.body;
 
@@ -17,18 +16,17 @@ export const createSubscription = async (req, res) => {
       [planId]
     );
 
-    if (!plans.length) {
-      return res.status(404).json({ message: "Plan not found" });
-    }
+    if (!plans.length) return res.status(404).json({ message: "Plan not found" });
 
     const plan = plans[0];
+
     const order = await razorpay.orders.create({
-      amount: plan.amount * 100,
+      amount: plan.amount * 100, // in paise
       currency: "INR",
       receipt: `sub_${req.user.id}_${Date.now()}`,
-      notes: { user_id: req.user.id, plan_id: planId, type: 'subscription' }
+      notes: { user_id: req.user.id, plan_id: planId }
     });
-    
+
     res.json({
       success: true,
       orderId: order.id,
@@ -37,11 +35,13 @@ export const createSubscription = async (req, res) => {
       key: process.env.RAZORPAY_KEY_ID,
       plan
     });
-  } catch (error) {
-    console.error("Create Subscription Error:", error);
+
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Failed to create subscription order" });
   }
 };
+
 
 // Verify subscription payment
 export const verifySubscriptionPayment = async (req, res) => {
@@ -84,13 +84,19 @@ export const verifySubscriptionPayment = async (req, res) => {
     const graceEndDate = new Date(endDate.getTime() + plan.grace_period_days * 24 * 60 * 60 * 1000);
 
     const [result] = await connection.query(
-      `INSERT INTO subscriptions (user_id, plan_id, amount, start_date, end_date, grace_end_date) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [req.user.id, plan.plan_id, amount, 
-       startDate.toISOString().split('T')[0], 
-       endDate.toISOString().split('T')[0],
-       graceEndDate.toISOString().split('T')[0]]
-    );
+  `INSERT INTO subscriptions 
+     (user_id, plan_id, plan_name, amount, start_date, end_date, grace_end_date) 
+   VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  [
+    req.user.id,
+    plan.plan_id,
+    plan.plan_name, // add this
+    amount,
+    startDate.toISOString().split('T')[0],
+    endDate.toISOString().split('T')[0],
+    graceEndDate.toISOString().split('T')[0]
+  ]
+);
 
     // Record transaction
     await connection.query(
@@ -133,6 +139,22 @@ export const getSubscriptionPlans = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+export const getUserSubscriptions = async (req, res) => {
+  try {
+    const [subs] = await db.query(
+      `SELECT sub_id, plan_name, amount, start_date, end_date, status
+       FROM subscriptions WHERE user_id = ? ORDER BY start_date DESC`,
+      [req.user.id]
+    );
+
+    res.json({ success: true, subscriptions: subs });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 
 // Get subscription status
 export const getSubscriptionStatus = async (req, res) => {

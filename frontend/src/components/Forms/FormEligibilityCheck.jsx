@@ -12,38 +12,43 @@ const FormEligibilityCheck = ({ formType, onEligibilityChange }) => {
     checkEligibility();
   }, [formType]);
 
-  const checkEligibility = async () => {
-    try {
-      const response = await apiWrapper.get(`${API_BASE_URL}/wallet/check-balance`);
-      const data = response.data;
-      
-      const isEligible = formType === 'basic' ? data.canSubmitBasic : data.canSubmitRealtime;
-      const guidance = data.guidance?.[formType];
-      
-      const eligibilityData = {
-        eligible: isEligible,
-        balance: data.balance,
-        accessType: data.accessType,
-        demoMode: data.demoMode,
-        paymentsEnabled: data.paymentsEnabled,
-        guidance,
-        rates: data.rates
-      };
-      
-      setEligibility(eligibilityData);
-      onEligibilityChange?.(eligibilityData);
-    } catch (error) {
-      const errorInfo = handleApiError(error, false);
-      setEligibility({ 
-        eligible: false, 
-        error: true, 
-        errorMessage: errorInfo.message,
-        guidance: errorInfo.guidance 
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+const checkEligibility = async () => {
+  try {
+    const response = await apiWrapper.get(`${API_BASE_URL}/wallet/check-balance`);
+    const data = response.data;
+    console.log("check-balance response", data);
+
+    // Treat subscription users as eligible
+    const isEligible = data.accessType === 'subscription' || 
+                       (formType === 'basic' ? data.canSubmitBasic : data.canSubmitRealtime);
+
+    const guidance = isEligible ? null : data.guidance?.[formType];
+
+    const eligibilityData = {
+      eligible: isEligible,
+      balance: data.balance,
+      accessType: data.accessType,
+      demoMode: data.demoMode,
+      paymentsEnabled: data.paymentsEnabled,
+      guidance,
+      rates: data.rates
+    };
+
+    setEligibility(eligibilityData);
+    onEligibilityChange?.(eligibilityData);
+  } catch (error) {
+    const errorInfo = handleApiError(error, false);
+    setEligibility({ 
+      eligible: false, 
+      error: true, 
+      errorMessage: errorInfo.message,
+      guidance: errorInfo.guidance 
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   if (loading) {
     return (
