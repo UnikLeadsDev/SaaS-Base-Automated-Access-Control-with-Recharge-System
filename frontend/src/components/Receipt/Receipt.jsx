@@ -150,42 +150,47 @@ function Receipt() {
     return <div className="text-center py-10 text-gray-500">No receipts found.</div>;
   }
 
-  return (
-    <div className="flex flex-col items-center p-6 w-full">
-  <h2 className="text-xl font-bold text-indigo-600 mb-4">Your Receipts</h2>
-  
-  <div className="grid grid-cols-3 gap-6 w-full">
-    {receipts.map((receipt) => (
-      <div
-        key={receipt.receipt_id || receipt.txn_id}
-        className="bg-white shadow rounded-lg gap-5 p-4 border flex justify-between items-center"
-      >
-        <div>
-          <p className="font-semibold">Txn ID: {receipt.txn_id}</p>
-          <p className="text-sm text-gray-500">
-            {new Date(receipt.receipt_date).toLocaleDateString("en-IN")} — ₹{receipt.amount}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => generatePDF(receipt)}
-            className="px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600"
-          >
-            PDF
-          </button>
-          <button
-            onClick={() => sendEmail(receipt)}
-            className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-          >
-            Mail
-          </button>
-        </div>
-      </div>
-    ))}
-  </div>
-</div>
+return (
+  <div className="flex flex-col items-center p-6 w-full">
+    <h2 className="text-xl font-bold text-indigo-600 mb-4">Your Receipts</h2>
 
-  );
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+      {receipts.map((receipt) => (
+        <div
+          key={receipt.receipt_id || receipt.txn_id}
+          className="bg-white shadow rounded-lg p-4 border flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4"
+        >
+          {/* Left section */}
+          <div>
+            <p className="font-semibold break-all">
+              Txn ID: {receipt.txn_id}
+            </p>
+            <p className="text-sm text-gray-500">
+              {new Date(receipt.receipt_date).toLocaleDateString("en-IN")} — ₹{receipt.amount}
+            </p>
+          </div>
+
+          {/* Right section */}
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={() => generatePDF(receipt)}
+              className="px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600 text-sm"
+            >
+              PDF
+            </button>
+            <button
+              onClick={() => sendEmail(receipt)}
+              className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+            >
+              Mail
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 }
 
 export default Receipt;

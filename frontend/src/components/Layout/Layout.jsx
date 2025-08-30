@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useWallet } from "../../context/WalletContext";
+
 import { useAuth } from '../../context/AuthContext';
 import { 
   Home, 
@@ -23,11 +25,16 @@ const Layout = ({ children }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { balance } = useWallet();
+
+ 
 
   // Date & Time state
   const [dateTime, setDateTime] = useState(new Date());
+  
 
   useEffect(() => {
+    
     const interval = setInterval(() => setDateTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
@@ -51,91 +58,118 @@ const Layout = ({ children }) => {
     navigate('/login');
   };
 
-  return (
-    <div className="h-screen flex overflow-hidden bg-gray-100">
-      {/* Mobile sidebar */}
-      <div className={`fixed inset-0 flex z-40 md:hidden ${sidebarOpen ? '' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-        <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white">
-          <div className="absolute top-0 right-0 -mr-12 pt-2">
-            <button
-              className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <X className="h-6 w-6 text-white" />
-            </button>
-          </div>
-          <SidebarContent navigation={navigation} currentPath={location.pathname} />
-        </div>
-      </div>
-
-      {/* Desktop sidebar */}
-      <div className="hidden md:flex md:flex-shrink-0">
-        <div className="flex flex-col w-64">
-          <SidebarContent navigation={navigation} currentPath={location.pathname} />
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div className="flex flex-col w-0 flex-1 overflow-hidden">
-        {/* Top bar */}
-        <div className="relative z-10 flex-shrink-0 flex h-16 bg-white shadow-sm border-b border-gray-200">
+ return (
+  <div className="h-screen flex overflow-hidden bg-gray-100">
+    {/* Mobile sidebar */}
+    <div
+      className={`fixed inset-0 flex z-40 md:hidden transition-transform duration-300 ${
+        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+      }`}
+    >
+      <div
+        className="fixed inset-0 bg-gray-600 bg-opacity-75"
+        onClick={() => setSidebarOpen(false)}
+      />
+      <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white shadow-lg">
+        <div className="absolute top-0 right-0 -mr-12 pt-2">
           <button
-            className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 md:hidden"
-            onClick={() => setSidebarOpen(true)}
+            className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+            onClick={() => setSidebarOpen(false)}
           >
-            <Menu className="h-6 w-6" />
+            <X className="h-6 w-6 text-white" />
           </button>
-          <div className="flex-1 px-4 flex justify-between items-center">
-            
-            {/* Left side: Date & Time */}
-            <div className="flex items-center space-x-4 text-sm text-gray-700 font-medium bg-gray-50 px-3 py-1 rounded-lg shadow-sm">
-              <div className="flex items-center space-x-1">
-                <Calendar className="h-4 w-4 text-indigo-500" />
-                <span>{dateTime.toLocaleDateString("en-GB")}</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Clock className="h-4 w-4 text-indigo-500" />
-                <span>{dateTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-              </div>
-            </div>
-
-            {/* Right side: Bell + Name & Role + Logout */}
-            <div className="flex items-center space-x-4">
-              <button className="bg-white p-1 rounded-full text-gray-400 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                <Bell className="h-6 w-6" />
-              </button>
-
-              {/* User Name + Role */}
-              <div className="flex items-center space-x-3">
-                <span className="text-sm font-medium text-gray-700">{user?.name}</span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 capitalize">
-                  {user?.role}
-                </span>
-              </div>
-
-              {/* Logout */}
-              <button
-                onClick={handleLogout}
-                className="bg-white p-1 rounded-full text-gray-400 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              >
-                <LogOut className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
         </div>
-
-        {/* Page content */}
-        <main className="flex-1 relative overflow-y-auto focus:outline-none">
-          <div className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-              {children}
-            </div>
-          </div>
-        </main>
+        <SidebarContent navigation={navigation} currentPath={location.pathname} />
       </div>
     </div>
-  );
+
+    {/* Desktop sidebar */}
+    <div className="hidden md:flex md:flex-shrink-0">
+      <div className="flex flex-col w-64 border-r border-gray-200 bg-white">
+        <SidebarContent navigation={navigation} currentPath={location.pathname} />
+      </div>
+    </div>
+
+    {/* Main content */}
+    <div className="flex flex-col w-0 flex-1 overflow-hidden">
+      {/* Top bar */}
+      <div className="relative z-10 flex-shrink-0 flex h-16 bg-white shadow-sm border-b border-gray-200">
+        {/* Sidebar toggle button on mobile */}
+        <button
+          className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 md:hidden"
+          onClick={() => setSidebarOpen(true)}
+        >
+          <Menu className="h-6 w-6" />
+        </button>
+
+        {/* Main top bar content */}
+        <div className="flex-1 px-2 sm:px-4 flex justify-between items-center">
+          {/* Left: Date & Time */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center sm:space-x-4 text-xs sm:text-sm text-gray-700 font-medium bg-gray-50 px-2 sm:px-3 py-1 rounded-lg shadow-sm space-y-1 sm:space-y-0">
+            <div className="flex items-center space-x-1">
+              <Calendar className="h-4 w-4 text-indigo-500" />
+              <span>{dateTime.toLocaleDateString("en-GB")}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Clock className="h-4 w-4 text-indigo-500" />
+              <span>
+                {dateTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            </div>
+          </div>
+
+          {/* Right: Wallet, Bell, User Info, Logout */}
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Wallet Button */}
+            <button
+              onClick={() => navigate("/wallet")}
+              className="flex items-center space-x-1 sm:space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium shadow-sm transition"
+            >
+              <Wallet className="h-4 w-4" />
+              <span>₹{balance?.toFixed(2) || "0.00"}</span>
+            </button>
+
+            {/* Notification */}
+            <button className="bg-white p-1 rounded-full text-gray-400 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+              <Bell className="h-5 w-5" />
+            </button>
+
+            {/* User Info */}
+            <div className="hidden sm:flex items-center space-x-3">
+              <span className="text-sm font-medium text-gray-700">{user?.name}</span>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 capitalize">
+                {user?.role}
+              </span>
+            </div>
+
+            {/* Mobile: Just initials */}
+            <div className="sm:hidden bg-indigo-100 text-indigo-700 font-bold rounded-full w-8 h-8 flex items-center justify-center text-sm">
+              {user?.name?.charAt(0) || "U"}
+            </div>
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              className="bg-white p-1 rounded-full text-gray-400 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Page content */}
+      <main className="flex-1 relative overflow-y-auto focus:outline-none">
+        <div className="py-6">
+          <div className="max-w-7xl mx-auto px-2 sm:px-6 md:px-8 pb-20">
+            {children}
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+);
+
 };
 
 const SidebarContent = ({ navigation, currentPath }) => (
