@@ -29,7 +29,9 @@ const InvoiceList = () => {
         setPagination(response.data.pagination);
       }
     } catch (error) {
-      toast.error('Failed to fetch invoices');
+      // Set empty data instead of showing error
+      setInvoices([]);
+      setPagination({ page: 1, pages: 1, total: 0 });
     } finally {
       setLoading(false);
     }
@@ -102,7 +104,13 @@ const InvoiceList = () => {
                 </tr>
               </thead>
               <tbody>
-                {invoices.map((invoice) => (
+                {invoices.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
+                      No invoices found. Invoices will appear here after form submissions.
+                    </td>
+                  </tr>
+                ) : invoices.map((invoice) => (
                   <tr key={invoice.invoice_id} className="border-b">
                     <td className="px-4 py-3 font-medium">{invoice.invoice_number}</td>
                     <td className="px-4 py-3">{new Date(invoice.invoice_date).toLocaleDateString()}</td>

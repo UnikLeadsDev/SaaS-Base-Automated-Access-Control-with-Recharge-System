@@ -1,6 +1,5 @@
 import express from 'express';
-import { authenticateToken } from '../middleware/auth.js';
-import { requireRole } from '../middleware/accessControl.js';
+import { verifyToken, checkRole } from '../middleware/auth.js';
 import {
   generateInvoice,
   getInvoice,
@@ -16,7 +15,7 @@ import {
 const router = express.Router();
 
 // All routes require authentication
-router.use(authenticateToken);
+router.use(verifyToken);
 
 // Generate invoice
 router.post('/invoice', generateInvoice);
@@ -43,6 +42,6 @@ router.get('/invoice/:invoiceId/pdf', downloadInvoicePDF);
 router.get('/statement', getMonthlyStatement);
 
 // Admin only routes
-router.patch('/invoice/:invoiceId/paid', requireRole(['admin']), markInvoicePaid);
+router.patch('/invoice/:invoiceId/paid', checkRole(['admin']), markInvoicePaid);
 
 export default router;

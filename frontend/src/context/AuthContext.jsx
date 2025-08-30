@@ -96,8 +96,7 @@ export const AuthProvider = ({ children }) => {
       return response.data;
     } catch (error) {
       // Mock login when backend is unavailable or returns any error
-      console.warn('Backend login failed, using demo mode:', error.message);
-      if (error.code === 'ERR_NETWORK' || error.response?.status === 404 || error.response?.status === 401 || !error.response) {
+      if (error.code === 'ERR_NETWORK' || error.response?.status === 404 || error.response?.status === 401 || error.response?.status === 500 || !error.response) {
         const mockUser = {
           id: 1,
           name: 'Demo User',

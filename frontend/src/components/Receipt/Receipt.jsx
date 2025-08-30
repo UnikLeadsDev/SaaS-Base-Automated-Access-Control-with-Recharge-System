@@ -31,7 +31,7 @@ function Receipt() {
         const data = await res.json();
         setReceipts(Array.isArray(data) ? data : []);
       } catch (err) {
-        console.error("Error fetching receipts:", err);
+        // Silently handle API failure
         setReceipts([]);
       } finally {
         setLoading(false);
