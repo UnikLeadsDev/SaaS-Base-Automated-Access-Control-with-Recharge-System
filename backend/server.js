@@ -10,7 +10,7 @@ import walletRoutes from "./routes/walletRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import subscriptionRoutes from "./routes/subscriptionRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
-
+import billingRoutes from "./routes/billingRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
 import { checkLowBalanceAndExpiry } from "./controllers/notificationController.js";
 import { startCronJobs } from "./jobs/cronJobs.js";
@@ -91,7 +91,7 @@ app.use("/api/wallet", walletRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/subscription", subscriptionRoutes);
 app.use("/api/support", supportRoutes);
-
+app.use("/api/billing", billingRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/receipts", receiptRoutes);
 app.use("/api/security", csrfRoutes);
