@@ -44,3 +44,71 @@ export const checkSubscriptionAccess = (formType) => {
     }
   };
 };
+
+
+
+export const checkBalance = async (req, res) => {
+  try {
+    // 1. Get wallet balance
+    const [result] = await db.query(
+      "SELECT balance FROM wallets WHERE user_id = ?",
+      [req.user.id]
+    );
+
+    const balance = parseFloat(result[0]?.balance || 0);
+
+    // 2. (Optional) Check if user has active subscription
+    const [subResult] = await db.query(
+      "SELECT * FROM subscriptions WHERE user_id = ? AND status = 'active'",
+      [req.user.id]
+    );
+
+    const hasSubscription = subResult.length > 0;
+
+    // 3. Rates (could be static or from DB/config)
+    const rates = {
+      basic: 5,
+      realtime: 50
+    };
+
+    // 4. Guidance (only if not eligible)
+    let guidance = {};
+    if (!hasSubscription) {
+      const shortfallBasic = Math.max(0, rates.basic - balance);
+      const shortfallRealtime = Math.max(0, rates.realtime - balance);
+
+      guidance = {
+        basic: shortfallBasic > 0 ? {
+          reason: "insufficient_balance",
+          required: rates.basic,
+          shortfall: shortfallBasic,
+          action: "recharge"
+        } : null,
+        realtime: shortfallRealtime > 0 ? {
+          reason: "insufficient_balance",
+          required: rates.realtime,
+          shortfall: shortfallRealtime,
+          action: "recharge"
+        } : null
+      };
+    }
+
+    // 5. Response payload
+    return res.json({
+      success: true,
+      balance,
+      accessType: hasSubscription ? "subscription" : "wallet",
+      canSubmitBasic: hasSubscription || balance >= rates.basic,
+      canSubmitRealtime: hasSubscription || balance >= rates.realtime,
+      demoMode: false,           // or derive from env/config
+      paymentsEnabled: true,     // or derive from env/config
+      rates,
+      guidance
+    });
+
+  } catch (err) {
+    console.error("Balance check error:", err);
+    res.status(500).json({ success: false, message: "Balance check failed" });
+  }
+};
+

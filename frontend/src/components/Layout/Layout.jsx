@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
@@ -13,15 +13,24 @@ import {
   X,
   Bell,
   Receipt,
-  Calculator
+  Calculator,
+  Calendar,
+  Clock
 } from 'lucide-react';
- // replace with your logo path
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Date & Time state
+  const [dateTime, setDateTime] = useState(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => setDateTime(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -31,7 +40,6 @@ const Layout = ({ children }) => {
     { name: 'Receipt', href: '/receipt', icon: Receipt }, 
     { name: 'Subscriptions', href: '/subscriptions', icon: CreditCard },
     { name: 'Support', href: '/support', icon: HelpCircle },
-
   ];
 
   if (user?.role === 'admin') {
@@ -72,34 +80,50 @@ const Layout = ({ children }) => {
       <div className="flex flex-col w-0 flex-1 overflow-hidden">
         {/* Top bar */}
         <div className="relative z-10 flex-shrink-0 flex h-16 bg-white shadow-sm border-b border-gray-200">
-  <button
-    className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 md:hidden"
-    onClick={() => setSidebarOpen(true)}
-  >
-    <Menu className="h-6 w-6" />
-  </button>
-  <div className="flex-1 px-4 flex justify-between items-center">
-    <h1 className="text-lg font-semibold text-gray-800">SaaS Base</h1>
-    <div className="flex items-center space-x-4">
-      <button className="bg-white p-1 rounded-full text-gray-400 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-        <Bell className="h-6 w-6" />
-      </button>
-      <div className="flex items-center space-x-2">
-        <span className="text-sm font-medium text-gray-700">{user?.name}</span>
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 capitalize">
-          {user?.role}
-        </span>
-        <button
-          onClick={handleLogout}
-          className="bg-white p-1 rounded-full text-gray-400 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-        >
-          <LogOut className="h-5 w-5" />
-        </button>
-      </div>
-    </div>
-  </div>
- </div>
+          <button
+            className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 md:hidden"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+          <div className="flex-1 px-4 flex justify-between items-center">
+            
+            {/* Left side: Date & Time */}
+            <div className="flex items-center space-x-4 text-sm text-gray-700 font-medium bg-gray-50 px-3 py-1 rounded-lg shadow-sm">
+              <div className="flex items-center space-x-1">
+                <Calendar className="h-4 w-4 text-indigo-500" />
+                <span>{dateTime.toLocaleDateString("en-GB")}</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Clock className="h-4 w-4 text-indigo-500" />
+                <span>{dateTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+              </div>
+            </div>
 
+            {/* Right side: Bell + Name & Role + Logout */}
+            <div className="flex items-center space-x-4">
+              <button className="bg-white p-1 rounded-full text-gray-400 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <Bell className="h-6 w-6" />
+              </button>
+
+              {/* User Name + Role */}
+              <div className="flex items-center space-x-3">
+                <span className="text-sm font-medium text-gray-700">{user?.name}</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 capitalize">
+                  {user?.role}
+                </span>
+              </div>
+
+              {/* Logout */}
+              <button
+                onClick={handleLogout}
+                className="bg-white p-1 rounded-full text-gray-400 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                <LogOut className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* Page content */}
         <main className="flex-1 relative overflow-y-auto focus:outline-none">
@@ -119,7 +143,6 @@ const SidebarContent = ({ navigation, currentPath }) => (
     {/* Branding */}
     <div className="flex items-center justify-center px-4 mb-6">
       <h2 className="text-2xl font-bold text-indigo-600 tracking-tight">SaaS Base</h2>
-
     </div>
 
     {/* Navigation */}
@@ -146,20 +169,11 @@ const SidebarContent = ({ navigation, currentPath }) => (
               />
               {item.name}
             </div>
-
-            {/* Optional label (e.g., "New") */}
-            {item.name === 'Editor' && (
-              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                New
-              </span>
-            )}
           </Link>
         );
       })}
     </nav>
   </div>
 );
-
-
 
 export default Layout;
