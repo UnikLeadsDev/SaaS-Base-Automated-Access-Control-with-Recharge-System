@@ -12,7 +12,8 @@ import {
   Menu,
   X,
   Bell,
-  Receipt 
+  Receipt,
+  Calculator
 } from 'lucide-react';
  // replace with your logo path
 
@@ -26,6 +27,7 @@ const Layout = ({ children }) => {
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Loan Forms', href: '/forms', icon: FileText },
     { name: 'Wallet', href: '/wallet', icon: Wallet },
+    { name: 'Billing', href: '/billing', icon: Calculator },
     { name: 'Receipt', href: '/receipt', icon: Receipt }, 
     { name: 'Subscriptions', href: '/subscriptions', icon: CreditCard },
     { name: 'Support', href: '/support', icon: HelpCircle },

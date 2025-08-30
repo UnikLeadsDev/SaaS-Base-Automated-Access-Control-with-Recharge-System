@@ -6,6 +6,7 @@ import formRoutes from "./formRoutes.js";
 import adminRoutes from "./adminRoutes.js";
 import supportRoutes from "./supportRoutes.js";
 import subscriptionRoutes from "./subscriptionRoutes.js";
+import billingRoutes from "./billingRoutes.js";
 
 const router = express.Router();
 
@@ -16,5 +17,6 @@ router.use("/forms", formRoutes);
 router.use("/admin", adminRoutes);
 router.use("/support", supportRoutes);
 router.use("/subscription", subscriptionRoutes);
+router.use("/billing", billingRoutes);
 
 export default router;

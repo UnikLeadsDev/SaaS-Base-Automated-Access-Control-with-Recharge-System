@@ -1,5 +1,6 @@
 import db from "../config/db.js";
 import notificationService from "../services/notificationService.js";
+import { v4 as uuidv4 } from "uuid";
 
 // Ensure wallet exists for a user and return current wallet row
 const ensureWalletForUser = async (userId) => {
@@ -7,17 +8,20 @@ const ensureWalletForUser = async (userId) => {
     "SELECT balance, status FROM wallets WHERE user_id = ?",
     [userId]
   );
+
   if (wallet.length === 0) {
     await db.query(
       "INSERT INTO wallets (user_id, balance, status) VALUES (?, 0, 'active')",
       [userId]
     );
+
     const [created] = await db.query(
       "SELECT balance, status FROM wallets WHERE user_id = ?",
       [userId]
     );
     return created[0];
   }
+
   return wallet[0];
 };
 
@@ -42,9 +46,9 @@ export const getWalletBalanceCheck = async (req, res) => {
   try {
     const wallet = await ensureWalletForUser(req.user.id);
 
-    const basicRate = parseFloat(process.env.BASIC_FORM_RATE);
-    const realtimeRate = parseFloat(process.env.REALTIME_VALIDATION_RATE);
-    
+    const basicRate = parseFloat(process.env.BASIC_FORM_RATE) || 0;
+    const realtimeRate = parseFloat(process.env.REALTIME_VALIDATION_RATE) || 0;
+
     res.json({
       balance: wallet.balance,
       status: wallet.status,
@@ -63,29 +67,44 @@ export const getWalletBalanceCheck = async (req, res) => {
   }
 };
 
-// Deduct amount from wallet (atomic transaction)
-export const deductFromWallet = async (userId, amount, txnRef = null) => {
-  // Input validation
-  if (!userId || amount <= 0 || isNaN(amount)) {
-    throw new Error('Invalid input: userId required and amount must be positive');
+// Deduct amount from wallet (idempotent & atomic)
+export const deductFromWallet = async (userId, amount, txnRef, description = null) => {
+  console.log("Deducting from wallet:", { userId, amount, txnRef, description });
+  if (!userId || amount <= 0 || isNaN(amount) || !txnRef) {
+    throw new Error('Invalid input: userId and txnRef are required and amount must be positive');
   }
-  
+
   const connection = await db.getConnection();
-  
   try {
     await connection.beginTransaction();
 
-    // Check current balance
+    // // Generate txnRef if not provided
+    // if (!txnRef) txnRef = uuidv4();
+
+    // Check for existing transaction (idempotent)
+    const [existing] = await connection.query(
+      "SELECT amount FROM transactions WHERE txn_ref = ? AND type = 'debit'",
+      [txnRef]
+    );
+    if (existing.length > 0) {
+      const [wallet] = await connection.query(
+        "SELECT balance FROM wallets WHERE user_id = ?",
+        [userId]
+      );
+      await connection.release();
+      return { success: true, newBalance: wallet[0].balance, message: 'Transaction already processed' };
+    }
+
+    // Lock wallet row
     const [wallet] = await connection.query(
       "SELECT balance FROM wallets WHERE user_id = ? FOR UPDATE",
       [userId]
     );
-
     if (wallet.length === 0 || wallet[0].balance < amount) {
       throw new Error("Insufficient balance");
     }
 
-    // Deduct from wallet
+    // Deduct balance
     await connection.query(
       "UPDATE wallets SET balance = balance - ?, updated_at = NOW() WHERE user_id = ?",
       [amount, userId]
@@ -93,33 +112,31 @@ export const deductFromWallet = async (userId, amount, txnRef = null) => {
 
     // Record transaction
     await connection.query(
-      "INSERT INTO transactions (user_id, amount, type, txn_ref) VALUES (?, ?, 'debit', ?)",
-      [userId, amount, txnRef]
+      "INSERT INTO transactions (user_id, amount, type, txn_ref, payment_mode) VALUES (?, ?, 'debit', ?, ?)",
+      [userId, amount, txnRef, description || 'deduction']
     );
 
     await connection.commit();
-    
-    // Send low balance alert if balance is below threshold
+
+    // Updated balance
     const [updatedWallet] = await connection.query(
       "SELECT balance FROM wallets WHERE user_id = ?",
       [userId]
     );
-    
-    const newBalance = updatedWallet[0].balance;
+
+    // Low balance notification
     const threshold = parseFloat(process.env.LOW_BALANCE_THRESHOLD) || 100;
-    
-    if (newBalance <= threshold) {
+    if (updatedWallet[0].balance <= threshold) {
       const [user] = await connection.query(
         "SELECT mobile FROM users WHERE user_id = ?",
         [userId]
       );
-      
       if (user[0]?.mobile) {
-        await notificationService.sendLowBalanceAlert(user[0].mobile, newBalance);
+        await notificationService.sendLowBalanceAlert(user[0].mobile, updatedWallet[0].balance);
       }
     }
-    
-    return true;
+
+    return { success: true, newBalance: updatedWallet[0].balance };
   } catch (error) {
     await connection.rollback();
     throw error;
@@ -128,24 +145,38 @@ export const deductFromWallet = async (userId, amount, txnRef = null) => {
   }
 };
 
-// Add amount to wallet (atomic transaction)
-export const addToWallet = async (userId, amount, txnRef = null) => {
-  // Input validation
-  if (!userId || amount <= 0 || isNaN(amount)) {
+// Add amount to wallet (atomic & idempotent)
+export const addToWallet = async (userId, amount, txnRef, paymentMode = 'razorpay') => {
+  if (!userId || amount <= 0 || isNaN(amount) || !txnRef) {
     throw new Error('Invalid input: userId required and amount must be positive');
   }
-  
+
   const connection = await db.getConnection();
-  
   try {
     await connection.beginTransaction();
 
-    // Check wallet exists
+    // Generate txnRef if not provided
+    // if (!txnRef) txnRef = uuidv4();
+
+    // Check for existing transaction
+    const [existing] = await connection.query(
+      "SELECT amount FROM transactions WHERE txn_ref = ? AND type = 'credit'",
+      [txnRef]
+    );
+    if (existing.length > 0) {
+      const [wallet] = await connection.query(
+        "SELECT balance FROM wallets WHERE user_id = ?",
+        [userId]
+      );
+      await connection.release();
+      return { success: true, newBalance: wallet[0].balance, message: 'Transaction already processed' };
+    }
+
+    // Ensure wallet exists
     const [wallet] = await connection.query(
       "SELECT wallet_id FROM wallets WHERE user_id = ? FOR UPDATE",
       [userId]
     );
-    
     if (wallet.length === 0) {
       await connection.query(
         "INSERT INTO wallets (user_id, balance, status) VALUES (?, 0, 'active')",
@@ -153,7 +184,7 @@ export const addToWallet = async (userId, amount, txnRef = null) => {
       );
     }
 
-    // Add to wallet
+    // Add balance
     await connection.query(
       "UPDATE wallets SET balance = balance + ?, updated_at = NOW() WHERE user_id = ?",
       [amount, userId]
@@ -161,28 +192,28 @@ export const addToWallet = async (userId, amount, txnRef = null) => {
 
     // Record transaction
     await connection.query(
-      "INSERT INTO transactions (user_id, amount, type, txn_ref) VALUES (?, ?, 'credit', ?)",
-      [userId, amount, txnRef]
+      "INSERT INTO transactions (user_id, amount, type, txn_ref, payment_mode) VALUES (?, ?, 'credit', ?, ?)",
+      [userId, amount, txnRef, paymentMode]
     );
 
     await connection.commit();
-    
-    // Send payment success SMS
+
+    // Updated balance
     const [updatedWallet] = await connection.query(
       "SELECT balance FROM wallets WHERE user_id = ?",
       [userId]
     );
-    
+
+    // Send payment success notification
     const [user] = await connection.query(
       "SELECT mobile FROM users WHERE user_id = ?",
       [userId]
     );
-    
     if (user[0]?.mobile) {
       await notificationService.sendPaymentSuccess(user[0].mobile, amount, updatedWallet[0].balance);
     }
-    
-    return true;
+
+    return { success: true, newBalance: updatedWallet[0].balance };
   } catch (error) {
     await connection.rollback();
     throw error;

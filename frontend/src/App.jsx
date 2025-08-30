@@ -11,6 +11,7 @@ import Receipt from './components/Receipt/Receipt';
 import Subscriptions from './components/Subscriptions/Subscriptions';
 import Support from './components/Support/Support';
 import AdminDashboard from './components/Admin/AdminDashboard';
+import BillingDashboard from './components/Billing/BillingDashboard';
 import Layout from './components/Layout/Layout';
 import './App.css';
 
@@ -70,6 +71,12 @@ function App() {
             <Route path="/support" element={
               <ProtectedRoute>
                 <Layout><Support /></Layout>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/billing" element={
+              <ProtectedRoute>
+                <Layout><BillingDashboard /></Layout>
               </ProtectedRoute>
             } />
             

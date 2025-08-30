@@ -1,29 +1,49 @@
 import db from "../config/db.js";
 import { deductFromWallet } from "./walletController.js";
 import notificationService from "../services/notificationService.js";
+import { autoGenerateInvoice } from "./billingController.js";
 
 // Submit basic form
 export const submitBasicForm = async (req, res) => {
   const { applicantName, loanAmount, purpose } = req.body;
-  const userId = req.user.id;
+  const userId = req.user.id;  // ✅ logged-in userId
   const rate = parseFloat(process.env.BASIC_FORM_RATE) || 5;
 
   try {
     // Deduct amount from wallet
-    await deductFromWallet(userId, rate, 'Basic Form');
+    await deductFromWallet(userId, rate, "Basic Form");
 
     // Save form submission
-    await db.query(
-      "INSERT INTO form_submissions (user_id, form_type, applicant_name, loan_amount, purpose, amount_charged) VALUES (?, 'basic', ?, ?, ?, ?)",
+    const [formResult] = await db.query(
+      `INSERT INTO form_submissions 
+        (user_id, form_type, applicant_name, loan_amount, purpose, amount_charged) 
+       VALUES (?, 'basic', ?, ?, ?, ?)`,
       [userId, applicantName, loanAmount, purpose, rate]
     );
 
-    // Get user mobile for SMS
+    // Auto-generate invoice
+    try {
+      await autoGenerateInvoice(
+        userId,
+        "basic",
+        rate,
+        `FORM_${formResult.insertId}`
+      );
+    } catch (invoiceError) {
+      console.error("Invoice generation failed:", invoiceError);
+    }
+
+    // Get user mobile & wallet balance
     const [user] = await db.query("SELECT mobile FROM users WHERE user_id = ?", [userId]);
     const [wallet] = await db.query("SELECT balance FROM wallets WHERE user_id = ?", [userId]);
 
+    // Send notification
     if (user[0]?.mobile) {
-      await notificationService.sendFormSubmitted(user[0].mobile, 'Basic Form', rate, wallet[0].balance);
+      await notificationService.sendFormSubmitted(
+        user[0].mobile,
+        "Basic Form",
+        userId // ✅ fixed
+      );
     }
 
     res.json({
@@ -32,7 +52,6 @@ export const submitBasicForm = async (req, res) => {
       amountDeducted: rate,
       remainingBalance: wallet[0].balance
     });
-
   } catch (error) {
     console.error("Form submission error:", error);
     res.status(500).json({ message: "Form submission failed" });
@@ -47,20 +66,39 @@ export const submitRealtimeForm = async (req, res) => {
 
   try {
     // Deduct amount from wallet
-    await deductFromWallet(userId, rate, 'Realtime Validation');
+    await deductFromWallet(userId, rate, "Realtime Validation");
 
     // Save form submission
-    await db.query(
-      "INSERT INTO form_submissions (user_id, form_type, applicant_name, loan_amount, purpose, aadhaar, pan, bank_account, amount_charged) VALUES (?, 'realtime', ?, ?, ?, ?, ?, ?, ?)",
+    const [formResult] = await db.query(
+      `INSERT INTO form_submissions 
+        (user_id, form_type, applicant_name, loan_amount, purpose, aadhaar, pan, bank_account, amount_charged) 
+       VALUES (?, 'realtime', ?, ?, ?, ?, ?, ?, ?)`,
       [userId, applicantName, loanAmount, purpose, aadhaar, pan, bankAccount, rate]
     );
 
-    // Get user mobile for SMS
+    // Auto-generate invoice
+    try {
+      await autoGenerateInvoice(
+        userId,
+        "realtime_validation",
+        rate,
+        `FORM_${formResult.insertId}`
+      );
+    } catch (invoiceError) {
+      console.error("Invoice generation failed:", invoiceError);
+    }
+
+    // Get user mobile & wallet balance
     const [user] = await db.query("SELECT mobile FROM users WHERE user_id = ?", [userId]);
     const [wallet] = await db.query("SELECT balance FROM wallets WHERE user_id = ?", [userId]);
 
+    // Send notification
     if (user[0]?.mobile) {
-      await notificationService.sendFormSubmitted(user[0].mobile, 'Realtime Validation', rate, wallet[0].balance);
+      await notificationService.sendFormSubmitted(
+        user[0].mobile,
+        "Realtime Validation",
+        userId // ✅ fixed
+      );
     }
 
     res.json({
@@ -69,7 +107,6 @@ export const submitRealtimeForm = async (req, res) => {
       amountDeducted: rate,
       remainingBalance: wallet[0].balance
     });
-
   } catch (error) {
     console.error("Form submission error:", error);
     res.status(500).json({ message: "Form submission failed" });
