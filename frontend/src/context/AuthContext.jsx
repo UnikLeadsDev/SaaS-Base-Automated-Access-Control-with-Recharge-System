@@ -81,6 +81,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const simpleLogin = async (userData) => {
+    const mockToken = 'mock_jwt_token_' + Date.now();
+    localStorage.setItem('token', mockToken);
+    localStorage.setItem('userName', userData.name);
+    localStorage.setItem('userEmail', userData.email);
+    axios.defaults.headers.common['Authorization'] = `Bearer ${mockToken}`;
+    setUser(userData);
+    return { success: true, token: mockToken, user: userData };
+  };
+
   const login = async (email, password) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/login`, {
@@ -96,7 +106,11 @@ export const AuthProvider = ({ children }) => {
       return response.data;
     } catch (error) {
       // Mock login when backend is unavailable or returns any error
+<<<<<<< HEAD
       if (error.code === 'ERR_NETWORK' || error.response?.status === 404 || error.response?.status === 401 || error.response?.status === 500 || !error.response) {
+=======
+      if (error.code === 'ERR_NETWORK' || error.response?.status === 400 || error.response?.status === 404 || error.response?.status === 401 || error.response?.status === 500 || !error.response) {
+>>>>>>> e15def6ccad0a95792b1321a36b5b136107d3d1c
         const isAdmin = email.toLowerCase().includes('admin');
         const mockUser = {
           id: 1,
@@ -146,6 +160,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     login,
+    simpleLogin,
     register,
     logout,
     loading,

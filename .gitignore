@@ -38,3 +38,7 @@ logs/
 # Temporary files
 tmp/
 temp/
+
+# Google OAuth credentials
+client_secret_*.json
+*.json

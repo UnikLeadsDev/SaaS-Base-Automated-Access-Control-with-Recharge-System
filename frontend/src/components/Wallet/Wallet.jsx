@@ -4,12 +4,7 @@ import { toast } from "react-hot-toast";
 import axios from "axios";
 import { useWallet } from "../../context/WalletContext";
 import { handleApiError } from "../../utils/errorHandler";
-import {
-  Wallet as WalletIcon,
-  Plus,
-  History,
-  CreditCard,
-} from "lucide-react";
+import { Wallet as WalletIcon, Plus, History, CreditCard } from "lucide-react";
 import API_BASE_URL from "../../config/api";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -264,7 +259,7 @@ const Wallet = () => {
 
         {/* Desktop */}
         <div className="hidden sm:block">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full bg-white divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium">Date</th>
@@ -302,108 +297,104 @@ const Wallet = () => {
       </div>
 
       {/* Payment Result Dialog */}
-{paymentDialog.open && (
-  <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
-    <div className="bg-white rounded-2xl shadow-lg p-6 w-11/12 sm:w-96">
-      {paymentDialog.success ? (
-        <>
-          {/* Success Icon */}
-          <div className="flex justify-center mb-4">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-14 w-14 text-green-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2l4-4m6 2a9 9 0 11-18 0a9 9 0 0118 0z" />
-            </svg>
-          </div>
+      {paymentDialog.open && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-2xl shadow-lg p-6 w-11/12 sm:w-96">
+            {paymentDialog.success ? (
+              <>
+                {/* Success Icon */}
+                <div className="flex justify-center mb-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-14 w-14 text-green-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 12l2 2l4-4m6 2a9 9 0 11-18 0a9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
 
-          {/* Title & Amount */}
-          <h3 className="text-center text-lg font-medium text-gray-900">
-            Payment Success!
-          </h3>
-          <p className="text-center text-2xl font-bold text-gray-900 mt-2">
-            ₹{paymentDialog.amount}
-          </p>
+                <h3 className="text-center text-lg font-medium text-gray-900">
+                  Payment Success!
+                </h3>
+                <p className="text-center text-2xl font-bold text-gray-900 mt-2">
+                  ₹{paymentDialog.amount}
+                </p>
 
-          <hr className="my-4" />
+                <hr className="my-4" />
 
-          {/* Details */}
-          <div className="space-y-2 text-sm text-gray-700">
-            <div className="flex justify-between">
-              <span>Ref Number</span>
-              <span className="font-medium">{paymentDialog.txnId}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Payment Time</span>
-              <span className="font-medium">
-                {new Date().toLocaleString()}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Payment Method</span>
-              <span className="font-medium">{paymentDialog.paymentMode}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Sender Name</span>
-              <span className="font-medium">{paymentDialog.sender || "N/A"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Amount</span>
-              <span className="font-medium">₹{paymentDialog.amount}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Admin Fee</span>
-              <span className="font-medium">₹{paymentDialog.adminFee || "0.00"}</span>
-            </div>
-          </div>
+                <div className="space-y-2 text-sm text-gray-700">
+                  <div className="flex justify-between">
+                    <span>Ref Number</span>
+                    <span className="font-medium">{paymentDialog.txnId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Payment Time</span>
+                    <span className="font-medium">{new Date().toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Payment Method</span>
+                    <span className="font-medium">{paymentDialog.paymentMode}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Sender Name</span>
+                    <span className="font-medium">{paymentDialog.sender || "N/A"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Amount</span>
+                    <span className="font-medium">₹{paymentDialog.amount}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Admin Fee</span>
+                    <span className="font-medium">₹{paymentDialog.adminFee || "0.00"}</span>
+                  </div>
+                </div>
 
-          {/* Confirm Button */}
-          <div className="mt-6 flex justify-center">
-            <button
-              onClick={() => {
-                setPaymentDialog({ ...paymentDialog, open: false });
-                navigate("/receipt", {
-                  state: {
-                    txnId: paymentDialog.txnId,
-                    amount: paymentDialog.amount,
-                    paymentMode: paymentDialog.paymentMode,
-                  },
-                });
-              }}
-              className="px-6 py-2 rounded-lg bg-green-500 text-white font-medium hover:bg-green-600"
-            >
-              Confirm
-            </button>
+                <div className="mt-6 flex justify-center">
+                  <button
+                    onClick={() => {
+                      setPaymentDialog({ ...paymentDialog, open: false });
+                      navigate("/receipt", {
+                        state: {
+                          txnId: paymentDialog.txnId,
+                          amount: paymentDialog.amount,
+                          paymentMode: paymentDialog.paymentMode,
+                        },
+                      });
+                    }}
+                    className="px-6 py-2 rounded-lg bg-green-500 text-white font-medium hover:bg-green-600"
+                  >
+                    Confirm
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-medium text-red-600 mb-4 text-center">
+                  Payment Failed
+                </h3>
+                <p className="text-gray-700 mb-6 text-center">
+                  Something went wrong. Please try again.
+                </p>
+                <div className="flex justify-center">
+                  <button
+                    onClick={() => setPaymentDialog({ ...paymentDialog, open: false })}
+                    className="px-6 py-2 rounded-lg bg-gray-500 text-white hover:bg-gray-600"
+                  >
+                    Close
+                  </button>
+                </div>
+              </>
+            )}
           </div>
-        </>
-      ) : (
-        <>
-          <h3 className="text-lg font-medium text-red-600 mb-4 text-center">
-            Payment Failed
-          </h3>
-          <p className="text-gray-700 mb-6 text-center">
-            Something went wrong. Please try again.
-          </p>
-          <div className="flex justify-center">
-            <button
-              onClick={() =>
-                setPaymentDialog({ ...paymentDialog, open: false })
-              }
-              className="px-6 py-2 rounded-lg bg-gray-500 text-white hover:bg-gray-600"
-            >
-              Close
-            </button>
-          </div>
-        </>
+        </div>
       )}
-    </div>
-  </div>
-)}
-
     </div>
   );
 };
