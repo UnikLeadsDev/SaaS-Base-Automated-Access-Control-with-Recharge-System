@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import API_BASE_URL from '../../config/api';
+import previewImage from '../../assets/preview.webp';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -43,165 +44,112 @@ const Register = () => {
   return (
     <div className="min-h-screen flex flex-col md:grid md:grid-cols-2 bg-gray-100">
       {/* Left: Form Section */}
-      <div className="flex items-center justify-center px-4 sm:px-6 lg:px-8 py-6 bg-white">
+      <div className="flex items-center justify-center px-4 sm:px-6 lg:px-8 py-4 bg-white">
         <motion.div
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
-          className="w-full max-w-md space-y-6"
+          className="w-full max-w-xs space-y-3"
         >
           {/* Branding */}
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-indigo-600">SaaS Base Registration</h1>
-            <h2 className="mt-2 text-xl font-semibold text-gray-800">Create your account</h2>
-            <p className="mt-2 text-sm text-gray-600">Join our platform today</p>
+            <h1 className="text-2xl font-bold text-indigo-600">SaaS Base</h1>
+            <h2 className="mt-1 text-lg font-semibold text-gray-800">Create Account</h2>
+            <p className="mt-1 text-xs text-gray-600">Join our platform</p>
           </div>
 
-          {/* Google Sign-in */}
-          <button
-            type="button"
-            className="w-full py-2 px-4 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 transition"
-          >
-            Sign up with Google
-          </button>
-
           {/* Form */}
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            {/* Name Field */}
-            <motion.input
+          <form className="space-y-2" onSubmit={handleSubmit}>
+            <input
               name="name"
               type="text"
               required
               value={formData.name}
               onChange={handleChange}
               placeholder="Full Name"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
+              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
               disabled={loading}
             />
 
-            {/* Email Field */}
-            <motion.input
+            <input
               name="email"
               type="email"
               required
               value={formData.email}
               onChange={handleChange}
               placeholder="Email Address"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
+              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
               disabled={loading}
             />
 
-            {/* Mobile Field */}
-            <motion.input
+            <input
               name="mobile"
               type="tel"
               value={formData.mobile}
               onChange={handleChange}
               placeholder="Mobile Number"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
+              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
               disabled={loading}
             />
 
-            {/* Role Field */}
-            <motion.select
+            <select
               name="role"
               value={formData.role}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
+              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
               disabled={loading}
             >
               <option value="DSA">DSA</option>
               <option value="NBFC">NBFC</option>
               <option value="Co-op">Co-op Bank</option>
-            </motion.select>
+            </select>
 
-            {/* Password Field */}
-            <motion.input
+            <input
               name="password"
               type="password"
               required
               value={formData.password}
               onChange={handleChange}
               placeholder="Password"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
+              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
               disabled={loading}
             />
 
-            {/* Confirm Password Field */}
-            <motion.input
+            <input
               name="confirmPassword"
               type="password"
               required
               value={formData.confirmPassword}
               onChange={handleChange}
               placeholder="Confirm Password"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
+              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
               disabled={loading}
             />
 
-            <motion.button
-              whileTap={{ scale: 0.95 }}
+            <button
               type="submit"
               disabled={loading}
-              className="w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
+              className="w-full py-1.5 px-3 text-sm bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
-            </motion.button>
+              {loading ? 'Creating...' : 'Create Account'}
+            </button>
 
-            <div className="text-center text-sm">
+            <div className="text-center text-xs">
               <Link to="/login" className="text-indigo-600 hover:underline">
-                Already have an account? Login Here
+                Already have an account? Login
               </Link>
             </div>
           </form>
         </motion.div>
       </div>
 
-      {/* Right: Stats Section */}
-      <div className="hidden md:flex flex-col justify-center items-center bg-gradient-to-br from-purple-600 to-pink-500 text-white px-8 py-6 space-y-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="bg-white/10 backdrop-blur-md rounded-xl p-6 w-full max-w-sm shadow-lg"
-        >
-          <h3 className="text-lg font-semibold">WALLET & ACCESS CONTROL</h3>
-          <p className="text-sm mt-2">
-            Prepaid wallet with Razorpay integration and automated access control.  
-            Submissions are allowed only if balance or subscription is valid.
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="bg-white/10 backdrop-blur-md rounded-xl p-6 w-full max-w-sm shadow-lg"
-        >
-          <h3 className="text-lg font-semibold">NOTIFICATIONS & BILLING</h3>
-          <p className="text-sm mt-2">
-            Automated SMS/Email/WhatsApp alerts via MSG91 for low balance, expiry,  
-            and payments. Includes detailed reports and invoice generation.
-          </p>
-        </motion.div>
+      {/* Right: Image Section */}
+      <div className="hidden md:flex items-center justify-center bg-gray-50 p-8">
+        <img 
+          src={previewImage} 
+          alt="SaaS Platform Preview" 
+          className="w-full h-auto max-w-lg object-contain rounded-lg shadow-lg"
+        />
       </div>
     </div>
   );
