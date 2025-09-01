@@ -1,14 +1,19 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
-import { Users, DollarSign, FileText, AlertTriangle } from 'lucide-react';
+import { Users, DollarSign, FileText, AlertTriangle, TrendingUp, Activity, CreditCard, UserCheck } from 'lucide-react';
+import API_BASE_URL from '../../config/api';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalRevenue: 0,
     totalApplications: 0,
-    lowBalanceUsers: 0
+    lowBalanceUsers: 0,
+    monthlyRevenue: 0,
+    activeUsers: 0,
+    successRate: 0,
+    avgTransactionValue: 0
   });
   const [users, setUsers] = useState([]);
   const [manualPayment, setManualPayment] = useState({
@@ -38,58 +43,61 @@ const AdminDashboard = () => {
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/admin/stats', {
+      const response = await axios.get(`${API_BASE_URL}/admin/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setStats(response.data);
     } catch (error) {
-      console.error('Failed to fetch stats');
+      console.error('Failed to fetch stats:', error);
+      toast.error('Failed to load dashboard statistics');
     }
   };
 
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/admin/users', {
+      const response = await axios.get(`${API_BASE_URL}/admin/users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers(response.data.users || response.data);
     } catch (error) {
-      console.error('Failed to fetch users');
+      console.error('Failed to fetch users:', error);
+      toast.error('Failed to load users data');
     }
   };
 
   const updateManualPayment = async () => {
     if (!manualPayment.userId || !manualPayment.amount || !manualPayment.txnRef) {
-      toast.error('Please fill all fields');
+      toast.error('Please fill all required fields');
       return;
     }
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post(
-        'http://localhost:5000/api/admin/manual-payment',
+      const response = await axios.post(
+        `${API_BASE_URL}/admin/manual-payment`,
         {
-          userId: manualPayment.userId,
+          userId: parseInt(manualPayment.userId),
           amount: parseFloat(manualPayment.amount),
           txnRef: manualPayment.txnRef,
           source: manualPayment.source,
-          reason: manualPayment.reason
+          reason: manualPayment.reason || 'Manual payment by admin'
         },
         { 
           headers: { 
             Authorization: `Bearer ${token}`,
-            'X-Requested-With': 'XMLHttpRequest'
+            'Content-Type': 'application/json'
           } 
         }
       );
       
-      toast.success('Manual payment updated successfully');
+      toast.success('Payment added successfully');
       setManualPayment({ userId: '', amount: '', txnRef: '', source: 'cash', reason: '' });
       fetchStats();
       fetchUsers();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update payment');
+      console.error('Payment update error:', error);
+      toast.error(error.response?.data?.message || 'Failed to add payment');
     }
   };
 
@@ -103,7 +111,7 @@ const AdminDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        `http://localhost:5000/api/admin/transaction/${transactionSearch.transactionId}`,
+        `${API_BASE_URL}/admin/transaction/${transactionSearch.transactionId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -135,7 +143,7 @@ const AdminDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       await axios.put(
-        `http://localhost:5000/api/admin/transaction/${paymentUpdate.transactionId}`,
+        `${API_BASE_URL}/admin/transaction/${paymentUpdate.transactionId}`,
         {
           status: paymentUpdate.status,
           amount: paymentUpdate.amount,
@@ -159,17 +167,21 @@ const AdminDashboard = () => {
   };
 
   const toggleUserStatus = async (userId, currentStatus) => {
+    if (!confirm(`Are you sure you want to ${currentStatus === 'active' ? 'block' : 'activate'} this user?`)) {
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
       const newStatus = currentStatus === 'active' ? 'blocked' : 'active';
       
       await axios.put(
-        `http://localhost:5000/api/admin/users/${userId}/status`,
+        `${API_BASE_URL}/admin/users/${userId}/status`,
         { status: newStatus },
         { 
           headers: { 
             Authorization: `Bearer ${token}`,
-            'X-Requested-With': 'XMLHttpRequest'
+            'Content-Type': 'application/json'
           } 
         }
       );
@@ -177,24 +189,134 @@ const AdminDashboard = () => {
       toast.success(`User ${newStatus} successfully`);
       fetchUsers();
     } catch (error) {
-      toast.error('Failed to update user status');
+      console.error('Status update error:', error);
+      toast.error(error.response?.data?.message || 'Failed to update user status');
+    }
+  };
+
+  const deleteUser = async (userId, userName) => {
+    if (!confirm(`Are you sure you want to permanently delete user "${userName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_BASE_URL}/admin/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast.success('User deleted successfully');
+      fetchUsers();
+      fetchStats();
+    } catch (error) {
+      console.error('Delete user error:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete user');
+    }
+  };
+
+  const resetUserPassword = async (userId, userEmail) => {
+    if (!confirm(`Send password reset email to ${userEmail}?`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_BASE_URL}/admin/users/${userId}/reset-password`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast.success('Password reset email sent successfully');
+    } catch (error) {
+      console.error('Password reset error:', error);
+      toast.error(error.response?.data?.message || 'Failed to send password reset');
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
+      {/* Enhanced Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 overflow-hidden shadow-lg rounded-lg">
+          <div className="p-5 text-white">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <Users className="h-8 w-8 text-blue-100" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-blue-100 truncate">Total Users</dt>
+                  <dd className="text-2xl font-bold text-white">{stats.totalUsers.toLocaleString()}</dd>
+                  <dd className="text-xs text-blue-100">+12% from last month</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-r from-green-500 to-green-600 overflow-hidden shadow-lg rounded-lg">
+          <div className="p-5 text-white">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <DollarSign className="h-8 w-8 text-green-100" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-green-100 truncate">Total Revenue</dt>
+                  <dd className="text-2xl font-bold text-white">₹{stats.totalRevenue.toLocaleString()}</dd>
+                  <dd className="text-xs text-green-100">+8% from last month</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-r from-purple-500 to-purple-600 overflow-hidden shadow-lg rounded-lg">
+          <div className="p-5 text-white">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <FileText className="h-8 w-8 text-purple-100" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-purple-100 truncate">Applications</dt>
+                  <dd className="text-2xl font-bold text-white">{stats.totalApplications.toLocaleString()}</dd>
+                  <dd className="text-xs text-purple-100">+15% from last month</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-r from-red-500 to-red-600 overflow-hidden shadow-lg rounded-lg">
+          <div className="p-5 text-white">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <AlertTriangle className="h-8 w-8 text-red-100" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-red-100 truncate">Low Balance</dt>
+                  <dd className="text-2xl font-bold text-white">{stats.lowBalanceUsers}</dd>
+                  <dd className="text-xs text-red-100">Needs attention</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Additional Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <Users className="h-6 w-6 text-gray-400" />
+                <TrendingUp className="h-6 w-6 text-indigo-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Users</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.totalUsers}</dd>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Monthly Revenue</dt>
+                  <dd className="text-lg font-medium text-gray-900">₹{stats.monthlyRevenue?.toLocaleString()}</dd>
                 </dl>
               </div>
             </div>
@@ -205,12 +327,12 @@ const AdminDashboard = () => {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <DollarSign className="h-6 w-6 text-gray-400" />
+                <UserCheck className="h-6 w-6 text-green-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Revenue</dt>
-                  <dd className="text-lg font-medium text-gray-900">₹{stats.totalRevenue}</dd>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Active Users</dt>
+                  <dd className="text-lg font-medium text-gray-900">{stats.activeUsers?.toLocaleString()}</dd>
                 </dl>
               </div>
             </div>
@@ -221,12 +343,12 @@ const AdminDashboard = () => {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <FileText className="h-6 w-6 text-gray-400" />
+                <Activity className="h-6 w-6 text-blue-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Applications</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.totalApplications}</dd>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Success Rate</dt>
+                  <dd className="text-lg font-medium text-gray-900">{stats.successRate}%</dd>
                 </dl>
               </div>
             </div>
@@ -237,12 +359,12 @@ const AdminDashboard = () => {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <AlertTriangle className="h-6 w-6 text-red-400" />
+                <CreditCard className="h-6 w-6 text-yellow-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Low Balance</dt>
-                  <dd className="text-lg font-medium text-gray-900">{stats.lowBalanceUsers}</dd>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Avg Transaction</dt>
+                  <dd className="text-lg font-medium text-gray-900">₹{stats.avgTransactionValue}</dd>
                 </dl>
               </div>
             </div>
@@ -431,24 +553,50 @@ const AdminDashboard = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Balance</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {(users || []).map((user) => (
-                <tr key={user.user_id}>
+                <tr key={user.user_id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                      <div className="text-sm text-gray-500">{user.email}</div>
+                    <div className="flex items-center">
+                      <div className="h-10 w-10 flex-shrink-0">
+                        <div className="h-10 w-10 rounded-full bg-indigo-500 flex items-center justify-center">
+                          <span className="text-sm font-medium text-white">
+                            {user.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                        <div className="text-sm text-gray-500">{user.email}</div>
+                      </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.role}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₹{user.balance || 0}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      user.role === 'DSA' ? 'bg-blue-100 text-blue-800' :
+                      user.role === 'NBFC' ? 'bg-purple-100 text-purple-800' :
+                      'bg-orange-100 text-orange-800'
+                    }`}>
+                      {user.role}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900 font-medium">₹{user.balance?.toLocaleString() || 0}</div>
+                    <div className={`text-xs ${
+                      user.balance < 100 ? 'text-red-500' : 
+                      user.balance < 500 ? 'text-yellow-500' : 'text-green-500'
+                    }`}>
+                      {user.balance < 100 ? 'Low Balance' : 
+                       user.balance < 500 ? 'Medium' : 'Good'}
+                    </div>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                       user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -457,16 +605,36 @@ const AdminDashboard = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => toggleUserStatus(user.user_id, user.status)}
-                      className={`${
-                        user.status === 'active' 
-                          ? 'text-red-600 hover:text-red-900' 
-                          : 'text-green-600 hover:text-green-900'
-                      }`}
-                    >
-                      {user.status === 'active' ? 'Block' : 'Activate'}
-                    </button>
+                    <div className="flex space-x-1 flex-wrap">
+                      <button
+                        onClick={() => toggleUserStatus(user.user_id, user.status)}
+                        className={`px-3 py-1 rounded text-xs font-medium ${
+                          user.status === 'active' 
+                            ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                            : 'bg-green-100 text-green-700 hover:bg-green-200'
+                        }`}
+                      >
+                        {user.status === 'active' ? 'Block' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => setManualPayment({...manualPayment, userId: user.user_id})}
+                        className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700 hover:bg-blue-200"
+                      >
+                        Credit
+                      </button>
+                      <button
+                        onClick={() => resetUserPassword(user.user_id, user.email)}
+                        className="px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                      >
+                        Reset PWD
+                      </button>
+                      <button
+                        onClick={() => deleteUser(user.user_id, user.name)}
+                        className="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

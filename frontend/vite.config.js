@@ -7,6 +7,10 @@ export default defineConfig({
   server: {
     hmr: {
       overlay: false
+    },
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+      'Cross-Origin-Embedder-Policy': 'unsafe-none'
     }
   },
   build: {
@@ -14,6 +18,12 @@ export default defineConfig({
       output: {
         manualChunks: undefined
       }
+    }
+  },
+  preview: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+      'Cross-Origin-Embedder-Policy': 'unsafe-none'
     }
   }
 })

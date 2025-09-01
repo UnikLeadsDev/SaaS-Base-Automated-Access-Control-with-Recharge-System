@@ -299,6 +299,46 @@
   border-radius: 12px;
 }
 
+/* Google Login Styles */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 20px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e1e1e1;
+}
+
+.divider span {
+  padding: 0 16px;
+  color: #666;
+  font-size: 14px;
+  background: white;
+}
+
+.clerk-login-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.clerk-login-wrapper .cl-formButtonPrimary {
+  width: 100% !important;
+  background: linear-gradient(135deg, #6c63ff 0%, #5a52d5 100%) !important;
+}
+
+.clerk-login-wrapper .cl-socialButtonsBlockButton {
+  width: 100% !important;
+  margin-bottom: 8px !important;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .login-container {

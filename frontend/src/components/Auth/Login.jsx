@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+
 import toast from 'react-hot-toast';
 import { Eye, EyeOff } from 'lucide-react';
 import previewImage from '../../assets/preview.webp';
@@ -16,7 +17,7 @@ const Login = () => {
 
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
+  const { login, simpleLogin } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -26,10 +27,50 @@ const Login = () => {
     });
   };
 
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'demo-client-id',
+        callback: handleGoogleResponse,
+      });
+
+      window.google.accounts.id.renderButton(
+        document.getElementById('google-signin-btn'),
+        { theme: 'outline', size: 'large', width: 300 }
+      );
+    };
+
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, []);
+
+  const handleGoogleResponse = async (response) => {
+    try {
+      const payload = JSON.parse(atob(response.credential.split('.')[1]));
+      const userData = {
+        id: payload.sub,
+        name: payload.name,
+        email: payload.email,
+        role: 'DSA'
+      };
+      await simpleLogin(userData);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Google login failed:', error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-
     setLoading(true);
 
     try {
@@ -42,6 +83,8 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+
 
   return (
     <div className="login-container">
@@ -129,8 +172,6 @@ const Login = () => {
               </Link>
             </div>
             
-
-            
             <button 
               type="submit"
               disabled={loading || !formData.email || !formData.password}
@@ -145,6 +186,14 @@ const Login = () => {
                 'Sign in'
               )}
             </button>
+            
+            <div className="divider">
+              <span>or</span>
+            </div>
+            
+            <div className="flex justify-center">
+              <div id="google-signin-btn"></div>
+            </div>
             
             <div className="signup-section">
               <p className="signup-text">

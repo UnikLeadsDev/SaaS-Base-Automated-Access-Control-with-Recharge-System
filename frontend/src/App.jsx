@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WalletProvider } from './context/WalletContext';
+
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Dashboard from './components/Dashboard/Dashboard';
@@ -14,6 +15,8 @@ import AdminDashboard from './components/Admin/AdminDashboard';
 import BillingDashboard from './components/Billing/BillingDashboard';
 import Layout from './components/Layout/Layout';
 import './App.css';
+
+
 
 // Suppress console errors
 const originalConsoleError = console.error;
@@ -38,12 +41,13 @@ function App() {
   }
 
   return (
-    <AuthProvider >
-      <WalletProvider>
-        <Router>
+    <AuthProvider>
+        <WalletProvider>
+          <Router>
         <div className=" min-h-screen w-screen bg-gray-50">
           <Toaster position="top-right" />
           <Routes>
+
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/" element={<Navigate to="/dashboard" />} />
