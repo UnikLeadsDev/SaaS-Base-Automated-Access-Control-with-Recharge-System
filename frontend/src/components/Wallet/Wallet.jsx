@@ -77,61 +77,61 @@ const Wallet = () => {
         name: "SaaS Base",
         description: "Wallet Recharge",
         order_id: orderId,
-    handler: async (response) => {
-  try {
-    // ✅ Step 1: Verify payment with backend
-    await axios.post(
-      `${API_BASE_URL}/payment/verify`,
-      {
-        razorpay_order_id: response.razorpay_order_id,
-        razorpay_payment_id: response.razorpay_payment_id,
-        razorpay_signature: response.razorpay_signature,
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+          handler: async (response) => {
+        try {
+          // ✅ Step 1: Verify payment with backend
+       await axios.post(
+         `${API_BASE_URL}/payment/verify`,
+            {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
 
-    // ✅ Step 2: Create receipt in DB
-    // ✅ Step 2: Create receipt in DB
-await axios.post(
-  `${API_BASE_URL}/receipts/receipt`,
-  {
-    txnId: response.razorpay_payment_id,
-    amount: parseFloat(amount) / 100,
-    paymentMode: "razorpay",
-    userName: user?.name,   // 👈 sending userName
-    userEmail: user?.email, // 👈 sending userEmail
-  },
-  { headers: { Authorization: `Bearer ${token}` } }
-);
+      
+            // ✅ Step 2: Create receipt in DB
+            await axios.post(
+              `${API_BASE_URL}/receipts/receipt`,
+              {
+                txnId: response.razorpay_payment_id,
+                amount: parseFloat(amount) / 100,
+                paymentMode: "razorpay",
+                userName: user?.name,   // 👈 sending userName
+                userEmail: user?.email, // 👈 sending userEmail
+              },
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
 
 
-    // ✅ Step 3: Success feedback
-    toast.success("Payment successful! Wallet recharged.");
-    setRechargeAmount("");
-    setShowRecharge(false);
+            // ✅ Step 3: Success feedback
+            toast.success("Payment successful! Wallet recharged.");
+            setRechargeAmount("");
+            setShowRecharge(false);
 
-    // ✅ Step 4: Update balance in context
-     const paymentTxnId = response.razorpay_payment_id;
-    addAmount(parseFloat(amount) / 100, "Wallet Recharge", paymentTxnId);
+            // ✅ Step 4: Update balance in context
+            const paymentTxnId = response.razorpay_payment_id;
+            addAmount(parseFloat(amount) / 100, "Wallet Recharge", paymentTxnId);
 
-    // ✅ Step 5: Navigate to Receipt page
-    navigate("/receipt", {
-      state: {
-        txnId: response.razorpay_payment_id,
-        amount: parseFloat(amount) / 100,
-        paymentMode: "razorpay",
-      },
-    });
-  } catch (error) {
-    handleApiError(error);
-  }
-},
+            // ✅ Step 5: Navigate to Receipt page
+            navigate("/receipt", {
+              state: {
+                txnId: response.razorpay_payment_id,
+                amount: parseFloat(amount) / 100,
+                paymentMode: "razorpay",
+              },
+            });
+          } catch (error) {
+            handleApiError(error);
+          }
+          },
 
-        prefill: {
-          name: "User Name",
-          email: "user@example.com",
-        },
-        theme: { color: "#4F46E5" },
+            prefill: {
+              name: "User Name",
+              email: "user@example.com",
+            },
+            theme: { color: "#4F46E5" },
       };
 
       const rzp = new window.Razorpay(options);

@@ -95,7 +95,13 @@ export const sanitizeInput = (req, res, next) => {
     return obj;
   };
 
+  
+
   req.body = sanitize(req.body);
-  req.query = sanitize(req.query);
+   for (const key in req.query) {
+    if (Object.prototype.hasOwnProperty.call(req.query, key)) {
+      req.query[key] = sanitize(req.query[key]);
+    }
+  }
   next();
 };

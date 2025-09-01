@@ -19,6 +19,7 @@ export const listReceipts = async (req, res) => {
 export const createReceipt = async (req, res) => {
   try {
     const { txnId, amount, paymentMode, userName, userEmail } = req.body;
+    
 
     if (!txnId || !amount || !paymentMode) {
       return res.status(400).json({ message: "txnId, amount and paymentMode are required" });
