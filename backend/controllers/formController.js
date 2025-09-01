@@ -10,15 +10,18 @@ export const submitBasicForm = async (req, res) => {
   const rate = parseFloat(process.env.BASIC_FORM_RATE) || 5;
 
   try {
+    // Generate unique transaction reference
+    const txnRef = `BASIC_${Date.now()}_${userId}`;
+    
     // Deduct amount from wallet
-    await deductFromWallet(userId, rate, "Basic Form");
+    await deductFromWallet(userId, rate, txnRef, "Basic Form");
 
-    // Save form submission
+    // Save form submission (use applications table as per schema)
     const [formResult] = await db.query(
-      `INSERT INTO form_submissions 
-        (user_id, form_type, applicant_name, loan_amount, purpose, amount_charged) 
-       VALUES (?, 'basic', ?, ?, ?, ?)`,
-      [userId, applicantName, loanAmount, purpose, rate]
+      `INSERT INTO applications 
+        (user_id, form_type, amount_charged) 
+       VALUES (?, 'basic', ?)`,
+      [userId, rate]
     );
 
     // Auto-generate invoice
@@ -65,15 +68,18 @@ export const submitRealtimeForm = async (req, res) => {
   const rate = parseFloat(process.env.REALTIME_VALIDATION_RATE) || 50;
 
   try {
+    // Generate unique transaction reference
+    const txnRef = `REALTIME_${Date.now()}_${userId}`;
+    
     // Deduct amount from wallet
-    await deductFromWallet(userId, rate, "Realtime Validation");
+    await deductFromWallet(userId, rate, txnRef, "Realtime Validation");
 
-    // Save form submission
+    // Save form submission (use applications table as per schema)
     const [formResult] = await db.query(
-      `INSERT INTO form_submissions 
-        (user_id, form_type, applicant_name, loan_amount, purpose, aadhaar, pan, bank_account, amount_charged) 
-       VALUES (?, 'realtime', ?, ?, ?, ?, ?, ?, ?)`,
-      [userId, applicantName, loanAmount, purpose, aadhaar, pan, bankAccount, rate]
+      `INSERT INTO applications 
+        (user_id, form_type, amount_charged) 
+       VALUES (?, 'realtime_validation', ?)`,
+      [userId, rate]
     );
 
     // Auto-generate invoice

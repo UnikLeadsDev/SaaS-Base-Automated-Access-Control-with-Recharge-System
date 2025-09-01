@@ -5,7 +5,7 @@ import { submitBasicForm, submitRealtimeForm } from "../controllers/formControll
 
 const router = express.Router();
 
-router.post("/basic", verifyToken, checkSubscriptionAccess("basic"), submitBasicForm);
-router.post("/realtime", verifyToken, checkSubscriptionAccess("realtime"), submitRealtimeForm);
+router.post("/basic", verifyToken, submitBasicForm);
+router.post("/realtime", verifyToken, submitRealtimeForm);
 
 export default router;

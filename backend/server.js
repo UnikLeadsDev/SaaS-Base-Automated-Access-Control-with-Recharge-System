@@ -69,7 +69,8 @@ app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:5173', 
     'http://localhost:3000',
-    'https://saasfrontend123.netlify.app'
+    'https://saasfrontend123.netlify.app',
+    'http://34.227.47.231:5173'
   ],
   credentials: true
 }));
