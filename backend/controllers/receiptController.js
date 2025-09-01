@@ -5,7 +5,7 @@ import nodemailer from "nodemailer";
 export const listReceipts = async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT receipt_id, txn_id, user_name, email, amount, payment_mode, status, receipt_date, created_at FROM receipts WHERE user_id = ? ORDER BY created_at DESC",
+      "SELECT receipt_id, txn_ref as txn_id, amount, payment_mode, status, receipt_date, created_at FROM receipts WHERE user_id = ? ORDER BY created_at DESC",
       [req.user.id]
     );
     res.json(rows);
@@ -27,7 +27,7 @@ export const createReceipt = async (req, res) => {
 
     // Prevent duplicate receipts for same txn
     const [existing] = await db.query(
-      "SELECT receipt_id FROM receipts WHERE txn_id = ?",
+      "SELECT receipt_id FROM receipts WHERE txn_ref = ?",
       [txnId]
     );
     if (existing.length > 0) {
@@ -35,9 +35,9 @@ export const createReceipt = async (req, res) => {
     }
 
     await db.query(
-      `INSERT INTO receipts (user_id, txn_id, user_name, email, amount, payment_mode, status, receipt_date)
-       VALUES (?, ?, ?, ?, ?, ?, 'success', CURDATE())`,
-      [req.user.id, txnId, userName || null, userEmail || null, amount, paymentMode]
+      `INSERT INTO receipts (user_id, txn_ref, amount, payment_mode, status, receipt_date)
+       VALUES (?, ?, ?, ?, 'success', CURDATE())`,
+      [req.user.id, txnId, amount, paymentMode]
     );
 
     res.json({ success: true });
