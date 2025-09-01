@@ -13,7 +13,7 @@
 
 .login-wrapper {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.2fr 0.8fr;
   width: 100%;
   height: 100%;
   background: white;
@@ -22,37 +22,38 @@
 
 /* Form Section */
 .form-section {
-  padding: 60px 80px;
+  padding: 40px 60px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   background: #ffffff;
   height: 100vh;
   overflow-y: auto;
+  order: 2;
 }
 
 .form-header {
   text-align: center;
-  margin-bottom: 40px;
-  max-width: 400px;
+  margin-bottom: 30px;
+  max-width: 350px;
   margin-left: auto;
   margin-right: auto;
 }
 
 .company-logo {
-  width: 180px;
+  width: 140px;
   height: auto;
   max-width: 100%;
-  margin: 0 auto 20px auto;
+  margin: 0 auto 15px auto;
   object-fit: contain;
   display: block;
 }
 
 .welcome-text {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 300;
   color: #333;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   line-height: 1.2;
 }
 
@@ -60,7 +61,7 @@
   font-weight: 700;
   color: #6c63ff;
   display: block;
-  font-size: 32px;
+  font-size: 28px;
 }
 
 .subtitle {
@@ -72,12 +73,12 @@
 /* Form Styles */
 .login-form {
   width: 100%;
-  max-width: 400px;
+  max-width: 350px;
   margin: 0 auto;
 }
 
 .form-group {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .form-label {
@@ -94,6 +95,33 @@
 
 .input-wrapper {
   position: relative;
+}
+
+.password-wrapper {
+  position: relative;
+}
+
+.password-input {
+  padding-right: 45px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle:hover {
+  color: #6c63ff;
 }
 
 .form-input {
@@ -119,10 +147,26 @@
   opacity: 0.7;
 }
 
-/* Checkbox Options */
+/* Form Options */
 .form-options {
-  margin-bottom: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
+
+.forgot-link {
+  color: #6c63ff;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
+
 
 .checkbox-label {
   display: flex;
@@ -209,8 +253,8 @@
 /* Signup Section */
 .signup-section {
   text-align: center;
-  margin-top: 24px;
-  padding-top: 24px;
+  margin-top: 20px;
+  padding-top: 20px;
   border-top: 1px solid #e1e1e1;
 }
 
@@ -236,8 +280,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 60px;
+  padding: 40px;
   height: 100vh;
+  order: 1;
 }
 
 .image-wrapper {
@@ -265,6 +310,12 @@
     grid-template-rows: auto 1fr;
   }
   
+  .form-options {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
   .image-section {
     order: 1;
     padding: 30px;
@@ -273,7 +324,7 @@
   }
   
   .form-section {
-    padding: 40px 30px;
+    padding: 30px 25px;
     order: 2;
     height: auto;
     min-height: 60vh;
