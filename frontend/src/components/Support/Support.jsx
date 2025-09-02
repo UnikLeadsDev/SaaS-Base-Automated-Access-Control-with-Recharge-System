@@ -162,16 +162,19 @@ return (
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ticket ID</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {tickets.map((ticket) => (
                     <tr key={ticket.ticket_id}>
+                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
+                        {new Date(ticket.created_at).toLocaleDateString()}
+                      </td>
                       <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">#{ticket.ticket_id}</td>
                       <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">{ticket.subject}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -183,9 +186,6 @@ return (
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(ticket.priority)}`}>
                           {ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
-                        {new Date(ticket.created_at).toLocaleDateString()}
                       </td>
                     </tr>
                   ))}

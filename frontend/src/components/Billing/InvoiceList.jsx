@@ -70,9 +70,8 @@ const InvoiceList = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Invoices</h2>
         <div className="flex gap-2">
           <select
             value={filters.status}
