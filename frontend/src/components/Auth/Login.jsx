@@ -17,11 +17,7 @@ const Login = () => {
 
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-<<<<<<< HEAD
-  const { login } = useAuth();
-=======
   const { login, simpleLogin } = useAuth();
->>>>>>> e15def6ccad0a95792b1321a36b5b136107d3d1c
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -75,11 +71,6 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-<<<<<<< HEAD
-    
-
-=======
->>>>>>> e15def6ccad0a95792b1321a36b5b136107d3d1c
     setLoading(true);
 
     try {

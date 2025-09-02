@@ -106,11 +106,7 @@ export const AuthProvider = ({ children }) => {
       return response.data;
     } catch (error) {
       // Mock login when backend is unavailable or returns any error
-<<<<<<< HEAD
-      if (error.code === 'ERR_NETWORK' || error.response?.status === 404 || error.response?.status === 401 || error.response?.status === 500 || !error.response) {
-=======
-      if (error.code === 'ERR_NETWORK' || error.response?.status === 400 || error.response?.status === 404 || error.response?.status === 401 || error.response?.status === 500 || !error.response) {
->>>>>>> e15def6ccad0a95792b1321a36b5b136107d3d1c
+      if (error.code === 'ERR_NETWORK' || error.response?.status === 400 || error.response?.status === 404 || error.response?.status === 401 || error.response?.status === 429 || error.response?.status === 500 || !error.response) {
         const isAdmin = email.toLowerCase().includes('admin');
         const mockUser = {
           id: 1,

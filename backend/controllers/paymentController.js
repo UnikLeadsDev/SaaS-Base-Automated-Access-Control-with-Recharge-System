@@ -62,19 +62,28 @@ export const verifyPayment = async (req, res) => {
     const amount = payment.amount / 100; // Convert from paise
 
     // Add to wallet
-    await addToWallet(req.user.id, amount, razorpay_payment_id);
+    const walletResult = await addToWallet(req.user.id, amount, razorpay_payment_id, 'razorpay');
 
-    // Generate receipt
-    const receiptService = (await import('../services/receiptService.js')).default;
-    await receiptService.generateReceipt(req.user.id, amount, 'razorpay', razorpay_payment_id);
+    // Try to create receipt (ignore errors)
+    try {
+      const [user] = await db.query('SELECT name, email FROM users WHERE user_id = ?', [req.user.id]);
+      await db.query(`
+        INSERT IGNORE INTO receipts (user_id, txn_ref, amount, payment_mode, status)
+        VALUES (?, ?, ?, 'razorpay', 'success')
+      `, [req.user.id, razorpay_payment_id, amount]);
+    } catch (receiptError) {
+      console.log('Receipt creation failed:', receiptError.message);
+    }
 
-    // Send notification
-    await sendPaymentNotification(req.user.id, amount, "payment_success");
-
-    res.json({ message: "Payment verified and wallet updated", amount });
+    res.json({ 
+      success: true,
+      message: "Payment verified and wallet updated", 
+      amount,
+      newBalance: walletResult.newBalance
+    });
   } catch (error) {
     console.error("Payment Verification Error:", error);
-    res.status(500).json({ message: "Payment verification failed" });
+    res.status(500).json({ message: "Payment verification failed: " + error.message });
   }
 };
 

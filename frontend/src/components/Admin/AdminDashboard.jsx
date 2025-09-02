@@ -3,6 +3,7 @@ import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import { Users, DollarSign, FileText, AlertTriangle, TrendingUp, Activity, CreditCard, UserCheck } from 'lucide-react';
 import API_BASE_URL from '../../config/api';
+import EmptyBox from '../Common/EmptyBox';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -74,16 +75,6 @@ const AdminDashboard = () => {
 
     try {
       const token = localStorage.getItem('token');
-<<<<<<< HEAD
-      await axios.post(
-        'http://localhost:5000/api/admin/manual-payment',
-        {
-          userId: manualPayment.userId,
-          amount: parseFloat(manualPayment.amount),
-          txnRef: manualPayment.txnRef,
-          source: manualPayment.source,
-          reason: manualPayment.reason
-=======
       const response = await axios.post(
         `${API_BASE_URL}/admin/manual-payment`,
         {
@@ -92,25 +83,16 @@ const AdminDashboard = () => {
           txnRef: manualPayment.txnRef,
           source: manualPayment.source,
           reason: manualPayment.reason || 'Manual payment by admin'
->>>>>>> e15def6ccad0a95792b1321a36b5b136107d3d1c
         },
         { 
           headers: { 
             Authorization: `Bearer ${token}`,
-<<<<<<< HEAD
-            'X-Requested-With': 'XMLHttpRequest'
-=======
             'Content-Type': 'application/json'
->>>>>>> e15def6ccad0a95792b1321a36b5b136107d3d1c
           } 
         }
       );
       
-<<<<<<< HEAD
-      toast.success('Manual payment updated successfully');
-=======
       toast.success('Payment added successfully');
->>>>>>> e15def6ccad0a95792b1321a36b5b136107d3d1c
       setManualPayment({ userId: '', amount: '', txnRef: '', source: 'cash', reason: '' });
       fetchStats();
       fetchUsers();
@@ -185,70 +167,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const searchTransaction = async () => {
-    if (!transactionSearch.transactionId.trim()) {
-      toast.error('Please enter transaction ID');
-      return;
-    }
 
-    setTransactionSearch(prev => ({ ...prev, loading: true }));
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(
-        `http://localhost:5000/api/admin/transaction/${transactionSearch.transactionId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      setTransactionSearch(prev => ({ 
-        ...prev, 
-        result: response.data.transaction,
-        loading: false 
-      }));
-      
-      // Pre-fill payment update form
-      setPaymentUpdate({
-        transactionId: response.data.transaction.txn_ref,
-        status: 'success',
-        amount: response.data.transaction.amount,
-        reason: ''
-      });
-    } catch (error) {
-      setTransactionSearch(prev => ({ ...prev, loading: false, result: null }));
-      toast.error(error.response?.data?.message || 'Transaction not found');
-    }
-  };
-
-  const updatePaymentStatus = async () => {
-    if (!paymentUpdate.transactionId) {
-      toast.error('Please search for a transaction first');
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('token');
-      await axios.put(
-        `http://localhost:5000/api/admin/transaction/${paymentUpdate.transactionId}`,
-        {
-          status: paymentUpdate.status,
-          amount: paymentUpdate.amount,
-          reason: paymentUpdate.reason
-        },
-        { 
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'X-Requested-With': 'XMLHttpRequest'
-          } 
-        }
-      );
-      
-      toast.success('Payment status updated successfully');
-      setPaymentUpdate({ transactionId: '', status: 'success', amount: '', reason: '' });
-      setTransactionSearch({ transactionId: '', result: null, loading: false });
-      fetchStats();
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update payment status');
-    }
-  };
 
   const toggleUserStatus = async (userId, currentStatus) => {
     if (!confirm(`Are you sure you want to ${currentStatus === 'active' ? 'block' : 'activate'} this user?`)) {
@@ -265,11 +184,7 @@ const AdminDashboard = () => {
         { 
           headers: { 
             Authorization: `Bearer ${token}`,
-<<<<<<< HEAD
-            'X-Requested-With': 'XMLHttpRequest'
-=======
             'Content-Type': 'application/json'
->>>>>>> e15def6ccad0a95792b1321a36b5b136107d3d1c
           } 
         }
       );
@@ -650,11 +565,7 @@ const AdminDashboard = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {(users || []).map((user) => (
-<<<<<<< HEAD
-                <tr key={user.user_id}>
-=======
                 <tr key={user.user_id} className="hover:bg-gray-50">
->>>>>>> e15def6ccad0a95792b1321a36b5b136107d3d1c
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="h-10 w-10 flex-shrink-0">
@@ -732,6 +643,9 @@ const AdminDashboard = () => {
               ))}
             </tbody>
           </table>
+          {(!users || users.length === 0) && (
+            <EmptyBox message="" size={100} />
+          )}
         </div>
       </div>
     </div>

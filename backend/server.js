@@ -23,6 +23,7 @@ import { i18nMiddleware } from "./utils/i18n.js";
 import receiptRoutes from "./routes/receiptRoutes.js";
 import csrfRoutes from "./routes/csrfRoutes.js";
 import session from "express-session";
+import { initializeReceiptsTable } from "./utils/initializeReceipts.js";
 
 dotenv.config();
 
@@ -158,11 +159,14 @@ const checkSubscriptionExpiry = async () => {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📊 Health check: http://localhost:${PORT}/health`);
     console.log(`🔔 Automated alerts scheduled every hour`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    
+    // Initialize receipts table
+    await initializeReceiptsTable();
     
     // Start cron jobs (disabled for now)
     // startCronJobs();

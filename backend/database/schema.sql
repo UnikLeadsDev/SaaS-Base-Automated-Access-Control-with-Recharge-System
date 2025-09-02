@@ -111,6 +111,7 @@ CREATE TABLE notification_queue (
 CREATE TABLE support_tickets (
     ticket_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
+    category VARCHAR(100) NOT NULL DEFAULT 'general',
     subject VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
     status ENUM('open', 'in_progress', 'resolved', 'closed') DEFAULT 'open',

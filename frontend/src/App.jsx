@@ -14,13 +14,9 @@ import Support from './components/Support/Support';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import BillingDashboard from './components/Billing/BillingDashboard';
 import Layout from './components/Layout/Layout';
+import EmptyBoxDemo from './components/Demo/EmptyBoxDemo';
 import './App.css';
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> e15def6ccad0a95792b1321a36b5b136107d3d1c
 // Suppress console errors
 const originalConsoleError = console.error;
 console.error = (...args) => {
@@ -100,6 +96,12 @@ function App() {
             <Route path="/admin" element={
               <ProtectedRoute adminOnly>
                 <Layout><AdminDashboard /></Layout>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/demo/emptybox" element={
+              <ProtectedRoute>
+                <Layout><EmptyBoxDemo /></Layout>
               </ProtectedRoute>
             } />
           </Routes>

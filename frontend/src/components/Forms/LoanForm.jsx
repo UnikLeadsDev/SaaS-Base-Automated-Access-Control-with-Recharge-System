@@ -29,6 +29,8 @@ const LoanForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+
+
     if (!eligibility) {
       toast.error('Please wait while we check your eligibility');
       return;
@@ -45,7 +47,9 @@ const LoanForm = () => {
       const endpoint = formType === 'basic' ? '/forms/basic' : '/forms/realtime';
       const token = localStorage.getItem('token');
       
-      const response = await apiWrapper.post(`${API_BASE_URL}${endpoint}`, formData, {
+      const response = await apiWrapper.post(`${API_BASE_URL}${endpoint}`, {
+        ...formData
+      }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -102,8 +106,8 @@ const LoanForm = () => {
 
   const canSelectFormType = (type) => {
     if (!eligibility) return false;
-    return type === 'basic' ? eligibility.eligible || eligibility.balance >= (eligibility.rates?.basic || 5) : 
-           eligibility.eligible || eligibility.balance >= (eligibility.rates?.realtime || 50);
+    const requiredAmount = type === 'basic' ? (eligibility.rates?.basic || 5) : (eligibility.rates?.realtime || 50);
+    return eligibility.accessType === 'subscription' || eligibility.balance >= requiredAmount;
   };
 
   return (
@@ -117,51 +121,56 @@ const LoanForm = () => {
           onEligibilityChange={handleEligibilityChange} 
         />
 
-        {/* Form Type Selection */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Form Type
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div 
-              className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                formType === 'basic' 
-                  ? 'border-blue-500 bg-blue-50' 
-                  : 'border-gray-300 hover:border-gray-400'
-              } ${!canSelectFormType('basic') ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => canSelectFormType('basic') && setFormType('basic')}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium">Basic Form</h3>
-                  <p className="text-sm text-gray-600">Standard loan processing</p>
-                  <p className="text-lg font-bold text-green-600">₹{eligibility?.rates?.basic || 5}</p>
+        {eligibility && (
+          <>
+            {/* Form Type Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Form Type
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div 
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                    formType === 'basic' 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-300 hover:border-gray-400'
+                  } ${!canSelectFormType('basic') ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={() => canSelectFormType('basic') && setFormType('basic')}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">Basic Form</h3>
+                      <p className="text-sm text-gray-600">Standard loan processing</p>
+                      <p className="text-lg font-bold text-green-600">₹{eligibility?.rates?.basic || 5}</p>
+                    </div>
+                    {!canSelectFormType('basic') && <Lock className="h-5 w-5 text-red-500" />}
+                  </div>
                 </div>
-                {!canSelectFormType('basic') && <Lock className="h-5 w-5 text-red-500" />}
-              </div>
-            </div>
 
-            <div 
-              className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                formType === 'realtime' 
-                  ? 'border-blue-500 bg-blue-50' 
-                  : 'border-gray-300 hover:border-gray-400'
-              } ${!canSelectFormType('realtime') ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => canSelectFormType('realtime') && setFormType('realtime')}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium">Realtime Validation</h3>
-                  <p className="text-sm text-gray-600">Aadhaar, PAN, Bank verification</p>
-                  <p className="text-lg font-bold text-blue-600">₹{eligibility?.rates?.realtime || 50}</p>
+                <div 
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                    formType === 'realtime' 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-300 hover:border-gray-400'
+                  } ${!canSelectFormType('realtime') ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={() => canSelectFormType('realtime') && setFormType('realtime')}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">Realtime Validation</h3>
+                      <p className="text-sm text-gray-600">Aadhaar, PAN, Bank verification</p>
+                      <p className="text-lg font-bold text-blue-600">₹{eligibility?.rates?.realtime || 50}</p>
+                    </div>
+                    {!canSelectFormType('realtime') && <Lock className="h-5 w-5 text-red-500" />}
+                  </div>
                 </div>
-                {!canSelectFormType('realtime') && <Lock className="h-5 w-5 text-red-500" />}
               </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
 
         {/* Form Fields */}
+        {eligibility && (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -281,6 +290,7 @@ const LoanForm = () => {
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );

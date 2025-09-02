@@ -3,6 +3,7 @@ import { Download, Eye, Calendar, Filter } from 'lucide-react';
 import api from '../../config/api';
 import toast from 'react-hot-toast';
 import API_BASE_URL from '../../config/api';
+import EmptyBox from '../Common/EmptyBox';
 
 const InvoiceList = () => {
   const [invoices, setInvoices] = useState([]);
@@ -106,8 +107,8 @@ const InvoiceList = () => {
               <tbody>
                 {invoices.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
-                      No invoices found. Invoices will appear here after form submissions.
+                    <td colSpan="6" className="px-4 py-8">
+                      <EmptyBox message="" size={80} />
                     </td>
                   </tr>
                 ) : invoices.map((invoice) => (

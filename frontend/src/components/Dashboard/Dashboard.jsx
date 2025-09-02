@@ -5,6 +5,7 @@ import { Wallet, FileText, AlertCircle, TrendingUp } from 'lucide-react';
 import apiWrapper from '../../utils/apiWrapper.js';
 import toast from 'react-hot-toast';
 import API_BASE_URL from '../../config/api';
+import EmptyBox from '../Common/EmptyBox';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -77,8 +78,8 @@ const Dashboard = () => {
     {/* Top Section */}
     <div className="flex justify-between items-center mb-8">
       <div>
-        <h1 className="text-3xl  font-bold text-gray-800">Recharge Wallet Dashboard</h1>
-        <p className="text-sm text-gray-500">Welcome, <span className="font-medium">{user?.name}</span> ({user?.role})</p>
+        <p className="text-lg font-medium text-indigo-600 mb-2">Welcome, {user?.name} ({user?.role})</p>
+        <h1 className="text-3xl font-bold text-gray-800">Unik Leads Dashboard</h1>
       </div>
       {/* Optional: Add search, notifications, settings icons here */}
     </div>
@@ -90,7 +91,7 @@ const Dashboard = () => {
           <Wallet className="h-6 w-6" />
           <span className="text-sm">Wallet Balance</span>
         </div>
-        <p className="text-2xl font-bold mt-2">₹{stats.balance}</p>
+        <p className="text-2xl font-bold mt-2">₹ {stats.balance}</p>
       </div>
 
       <div className="bg-gradient-to-r from-green-400 to-teal-500 text-white p-5 rounded-xl shadow-md">
@@ -168,7 +169,7 @@ const Dashboard = () => {
               </div>
             ))
           ) : (
-            <p className="text-gray-500 text-sm">No transactions yet</p>
+            <EmptyBox message="" size={80} />
           )}
         </div>
       </div>

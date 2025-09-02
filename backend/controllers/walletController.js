@@ -47,16 +47,18 @@ export const getWalletBalanceCheck = async (req, res) => {
   try {
     const wallet = await ensureWalletForUser(req.user.id);
 
-    const basicRate = parseFloat(process.env.BASIC_FORM_RATE) || 0;
-    const realtimeRate = parseFloat(process.env.REALTIME_VALIDATION_RATE) || 0;
+    const basicRate = parseFloat(process.env.BASIC_FORM_RATE) || 5;
+    const realtimeRate = parseFloat(process.env.REALTIME_VALIDATION_RATE) || 50;
 
     res.json({
-      balance: wallet.balance,
+      balance: parseFloat(wallet.balance),
       status: wallet.status,
       validUntil: null,
       accessType: 'prepaid',
       canSubmitBasic: wallet.balance >= basicRate,
       canSubmitRealtime: wallet.balance >= realtimeRate,
+      demoMode: false,
+      paymentsEnabled: true,
       rates: {
         basic: basicRate,
         realtime: realtimeRate
@@ -198,10 +200,21 @@ export const addToWallet = async (userId, amount, txnRef, paymentMode = 'razorpa
 // Get transaction history
 export const getTransactionHistory = async (req, res) => {
   try {
-    const [transactions] = await db.query(
-      "SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 50",
-      [req.user.id]
-    );
+    // Try with created_at first, fallback to txn_id if column doesn't exist
+    let query = "SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 50";
+    let [transactions] = [];
+    
+    try {
+      [transactions] = await db.query(query, [req.user.id]);
+    } catch (columnError) {
+      if (columnError.code === 'ER_BAD_FIELD_ERROR') {
+        // Fallback to ordering by txn_id if created_at doesn't exist
+        query = "SELECT * FROM transactions WHERE user_id = ? ORDER BY txn_id DESC LIMIT 50";
+        [transactions] = await db.query(query, [req.user.id]);
+      } else {
+        throw columnError;
+      }
+    }
 
     res.json(transactions);
   } catch (error) {

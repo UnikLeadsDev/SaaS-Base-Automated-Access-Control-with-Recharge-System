@@ -39,10 +39,10 @@ export const WalletProvider = ({ children }) => {
       setBalance(parseFloat(balanceRes.data.balance) || 0);
 
       // transactions
-      const txnRes = await axios.get(`http://localhost:5000/api/wallet/transactions`, {
+      const txnRes = await axios.get(`${API_BASE_URL}/wallet/transactions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("these are transaction", encodeURIComponent(JSON.stringify(txnRes.data || {})));
+      console.log("Loaded transactions:", txnRes.data?.length || 0);
       setTransactions(txnRes.data || []);
     } catch (error) {
       console.error("Failed to fetch wallet data:", error);
@@ -55,6 +55,11 @@ export const WalletProvider = ({ children }) => {
       fetchWalletData();
     }
   }, []);
+
+  // Fetch data when user changes (login/logout)
+  useEffect(() => {
+    fetchWalletData();
+  }, [localStorage.getItem("token")]);
 
   // ✅ Deduct amount
  // ✅ Deduct amount
@@ -93,38 +98,53 @@ const deductAmount = async (amount, description = "Deduction", paymentTxnId) => 
 };
 
 
-  // ✅ Add amount
+  // ✅ Add amount - only update after backend success
 const addAmount = async (amount, description = "Top-up", txnRef) => {
-  setBalance((prev) => prev + amount);
+  const token = localStorage.getItem("token");
+  
+  // In demo mode, update locally
+  if (!token || isMockToken()) {
+    setBalance((prev) => prev + amount);
+    const newTxn = {
+      type: "credit",
+      amount,
+      description,
+      date: new Date().toISOString(),
+      txnRef: txnRef || `demo_${Date.now()}`,
+    };
+    setTransactions((prev) => [newTxn, ...prev]);
+    return true;
+  }
 
-  // Use provided txnRef or fallback to a generated UUID
-  const transactionId = txnRef;
-
-  const newTxn = {
-    type: "credit",
-    amount,
-    description,
-    date: new Date().toISOString(),
-    txnRef: transactionId,
-  };
-
-  setTransactions((prev) => [newTxn, ...prev]);
-
+  // For real payments, only update after backend confirms
   try {
-    const token = localStorage.getItem("token");
-    if (!token || isMockToken()) return; // skip in demo mode
+    const newTxn = {
+      type: "credit",
+      amount,
+      description,
+      date: new Date().toISOString(),
+      txnRef: txnRef,
+    };
+
+    // First save to backend
     await axios.post(`${API_BASE_URL}/wallet/transactions`, newTxn, {
       headers: { Authorization: `Bearer ${token}` },
     });
+
+    // Only update local state after backend success
+    setBalance((prev) => prev + amount);
+    setTransactions((prev) => [newTxn, ...prev]);
+    return true;
   } catch (err) {
     console.error("Failed to save transaction:", err);
+    throw err; // Re-throw to let caller handle the error
   }
 };
 
 
   return (
     <WalletContext.Provider
-      value={{ balance, transactions, deductAmount, addAmount }}
+      value={{ balance, transactions, deductAmount, addAmount, fetchWalletData }}
     >
       {children}
     </WalletContext.Provider>

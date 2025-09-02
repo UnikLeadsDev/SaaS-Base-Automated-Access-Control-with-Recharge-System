@@ -3,6 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import API_BASE_URL from "../../config/api";
+import EmptyBox from "../Common/EmptyBox";
 
 function Receipt() {
   const { user } = useAuth();
@@ -47,11 +48,15 @@ function Receipt() {
 
     doc.setFontSize(18);
     doc.setTextColor(40, 40, 160);
-    doc.text("SaaS Base", 105, 15, { align: "center" });
+    doc.text("Unik Leads", 105, 15, { align: "center" });
 
     doc.setFontSize(12);
     doc.setTextColor(100);
     doc.text("Recharge Wallet Receipt", 105, 25, { align: "center" });
+
+    const amountDisplay = receipt.payment_mode === 'usd' 
+      ? `$${(receipt.amount / 83).toFixed(2)} (₹${receipt.amount})` 
+      : `₹${receipt.amount}`;
 
     autoTable(doc, {
       startY: 40,
@@ -61,7 +66,7 @@ function Receipt() {
         ["Name", user?.name || "—"],
         ["Date", new Date(receipt.receipt_date).toLocaleDateString("en-IN")],
         ["Payment Mode", receipt.payment_mode],
-        ["Amount Added", `₹${receipt.amount}`],
+        ["Amount Added", amountDisplay],
       ],
       theme: "grid",
       headStyles: { fillColor: [63, 81, 181] },
@@ -71,8 +76,8 @@ function Receipt() {
     const finalY = doc.lastAutoTable.finalY + 15;
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text("Thank you for using SaaS Base.", 105, finalY, { align: "center" });
-    doc.text("For support, contact support@saasbase.com", 105, finalY + 6, { align: "center" });
+    doc.text("Thank you for using Unik Leads.", 105, finalY, { align: "center" });
+    doc.text("For support, contact support@unikleads.com", 105, finalY + 6, { align: "center" });
 
     doc.save(`receipt-${receipt.txn_id}.pdf`);
   };
@@ -83,11 +88,15 @@ function Receipt() {
 
     doc.setFontSize(18);
     doc.setTextColor(40, 40, 160);
-    doc.text("SaaS Base", 105, 15, { align: "center" });
+    doc.text("Unik Leads", 105, 15, { align: "center" });
 
     doc.setFontSize(12);
     doc.setTextColor(100);
     doc.text("Recharge Wallet Receipt", 105, 25, { align: "center" });
+
+    const amountDisplay = receipt.payment_mode === 'usd' 
+      ? `$${(receipt.amount / 83).toFixed(2)} (₹${receipt.amount})` 
+      : `₹${receipt.amount}`;
 
     autoTable(doc, {
       startY: 40,
@@ -97,7 +106,7 @@ function Receipt() {
         ["Name", user?.name || "—"],
         ["Date", new Date(receipt.receipt_date).toLocaleDateString("en-IN")],
         ["Payment Mode", receipt.payment_mode],
-        ["Amount Added", `₹${receipt.amount}`],
+        ["Amount Added", amountDisplay],
       ],
       theme: "grid",
       headStyles: { fillColor: [63, 81, 181] },
@@ -107,8 +116,8 @@ function Receipt() {
     const finalY = doc.lastAutoTable.finalY + 15;
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text("Thank you for using SaaS Base.", 105, finalY, { align: "center" });
-    doc.text("For support, contact support@saasbase.com", 105, finalY + 6, { align: "center" });
+    doc.text("Thank you for using Unik Leads.", 105, finalY, { align: "center" });
+    doc.text("For support, contact support@unikleads.com", 105, finalY + 6, { align: "center" });
 
     const pdfBase64 = doc.output("datauristring");
 
@@ -147,7 +156,12 @@ function Receipt() {
   }
 
   if (!receipts || receipts.length === 0) {
-    return <div className="text-center py-10 text-gray-500">No receipts found.</div>;
+    return (
+      <div className="flex flex-col items-center p-6 w-full">
+        <h2 className="text-xl font-bold text-indigo-600 mb-4">Your Receipts</h2>
+        <EmptyBox message="" size={120} />
+      </div>
+    );
   }
 
 return (
@@ -172,7 +186,9 @@ return (
           <td className="px-4 py-2 border">
             {new Date(receipt.receipt_date).toLocaleDateString("en-IN")}
           </td>
-          <td className="px-4 py-2 border">₹{receipt.amount}</td>
+          <td className="px-4 py-2 border">
+            {receipt.payment_mode === 'usd' ? `$${(receipt.amount / 83).toFixed(2)} (₹${receipt.amount})` : `₹${receipt.amount}`}
+          </td>
           <td className="px-4 py-2 border break-all">
             {receipt.transaction_id || receipt.txn_ref || receipt.receipt_id}
           </td>

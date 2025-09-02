@@ -14,14 +14,17 @@ import {
   Menu,
   X,
   Bell,
-  Receipt,
+  IndianRupee,
   Calculator,
   Calendar,
-  Clock
+  Clock,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [productsOpen, setProductsOpen] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -41,10 +44,17 @@ const Layout = ({ children }) => {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Loan Forms', href: '/forms', icon: FileText },
+    { 
+      name: 'Products', 
+      icon: FileText, 
+      isDropdown: true,
+      subItems: [
+        { name: 'Loan Forms', href: '/forms' }
+      ]
+    },
     { name: 'Wallet', href: '/wallet', icon: Wallet },
     { name: 'Billing', href: '/billing', icon: Calculator },
-    { name: 'Receipt', href: '/receipt', icon: Receipt }, 
+    { name: 'Receipt', href: '/receipt', icon: IndianRupee }, 
     { name: 'Subscriptions', href: '/subscriptions', icon: CreditCard },
     { name: 'Support', href: '/support', icon: HelpCircle },
   ];
@@ -79,14 +89,26 @@ const Layout = ({ children }) => {
             <X className="h-6 w-6 text-white" />
           </button>
         </div>
-        <SidebarContent navigation={navigation} currentPath={location.pathname} />
+        <SidebarContent 
+          navigation={navigation} 
+          currentPath={location.pathname}
+          productsOpen={productsOpen}
+          setProductsOpen={setProductsOpen}
+          user={user}
+        />
       </div>
     </div>
 
     {/* Desktop sidebar */}
     <div className="hidden md:flex md:flex-shrink-0">
       <div className="flex flex-col w-64 border-r border-gray-200 bg-white">
-        <SidebarContent navigation={navigation} currentPath={location.pathname} />
+        <SidebarContent 
+          navigation={navigation} 
+          currentPath={location.pathname}
+          productsOpen={productsOpen}
+          setProductsOpen={setProductsOpen}
+          user={user}
+        />
       </div>
     </div>
 
@@ -104,7 +126,7 @@ const Layout = ({ children }) => {
 
         {/* Main top bar content */}
         <div className="flex-1 px-2 sm:px-4 flex justify-between items-center">
-          {/* Left: Date & Time */}
+          {/* Left: Date/Time */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center sm:space-x-4 text-xs sm:text-sm text-gray-700 font-medium bg-gray-50 px-2 sm:px-3 py-1 rounded-lg shadow-sm space-y-1 sm:space-y-0">
             <div className="flex items-center space-x-1">
               <Calendar className="h-4 w-4 text-indigo-500" />
@@ -126,7 +148,7 @@ const Layout = ({ children }) => {
               className="flex items-center space-x-1 sm:space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium shadow-sm transition"
             >
               <Wallet className="h-4 w-4" />
-              <span>₹{balance?.toFixed(2) || "0.00"}</span>
+              <span>₹ {balance?.toFixed(2) || "0.00"}</span>
             </button>
 
             {/* Notification */}
@@ -160,7 +182,7 @@ const Layout = ({ children }) => {
 
       {/* Page content */}
       <main className="flex-1 relative overflow-y-auto focus:outline-none">
-        <div className="py-6">
+        <div className="py-2">
           <div className="max-w-7xl mx-auto px-2 sm:px-6 md:px-8 pb-20">
             {children}
           </div>
@@ -172,11 +194,15 @@ const Layout = ({ children }) => {
 
 };
 
-const SidebarContent = ({ navigation, currentPath }) => (
+const SidebarContent = ({ navigation, currentPath, productsOpen, setProductsOpen, user }) => (
   <div className="flex flex-col h-full pt-5 pb-4 overflow-y-auto bg-white border-r border-gray-200">
     {/* Branding */}
     <div className="flex items-center justify-center px-4 mb-6">
-      <h2 className="text-2xl font-bold text-indigo-600 tracking-tight">SaaS Base</h2>
+      <img 
+        src="/src/assets/Unik leads png.png" 
+        alt="Unik Leads" 
+        className="h-20 w-auto"
+      />
     </div>
 
     {/* Navigation */}
@@ -184,6 +210,40 @@ const SidebarContent = ({ navigation, currentPath }) => (
       {navigation.map((item) => {
         const Icon = item.icon;
         const isActive = currentPath === item.href;
+
+        if (item.isDropdown) {
+          return (
+            <div key={item.name}>
+              <button
+                onClick={() => setProductsOpen(!productsOpen)}
+                className="group flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+              >
+                <div className="flex items-center">
+                  <Icon className="mr-3 h-5 w-5 text-gray-400 group-hover:text-indigo-400" />
+                  {item.name}
+                </div>
+                {productsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </button>
+              {productsOpen && (
+                <div className="ml-6 mt-1 space-y-1">
+                  {item.subItems.map((subItem) => (
+                    <Link
+                      key={subItem.name}
+                      to={subItem.href}
+                      className={`block px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                        currentPath === subItem.href
+                          ? 'bg-indigo-100 text-indigo-900 font-semibold shadow-sm'
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
+                    >
+                      {subItem.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        }
 
         return (
           <Link

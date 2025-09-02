@@ -3,6 +3,7 @@ import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import { CreditCard, Calendar, CheckCircle } from 'lucide-react';
 import API_BASE_URL from '../../config/api.js';
+import EmptyBox from '../Common/EmptyBox';
 
 const Subscriptions = () => {
   const [subscriptions, setSubscriptions] = useState([]);
@@ -132,8 +133,9 @@ const subscribeToPlan = async (plan) => {
       {/* Available Plans */}
       <div className="bg-white shadow rounded-lg p-6">
         <h2 className="text-2xl font-bold mb-6">Subscription Plans</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {plans?.map(plan => (
+        {plans?.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {plans.map(plan => (
             <div key={plan.id} className="border p-6 rounded-lg">
               <div className="flex justify-between mb-4">
                 <h3 className="font-semibold">{plan.plan_name}</h3>
@@ -163,8 +165,11 @@ const subscribeToPlan = async (plan) => {
                 {isMockToken ? 'Subscribe (Demo Mode)' : 'Subscribe Now'}
               </button>
             </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyBox message="" size={100} />
+        )}
       </div>
 
       {/* User Subscriptions */}

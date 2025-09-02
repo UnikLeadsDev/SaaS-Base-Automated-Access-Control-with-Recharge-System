@@ -14,15 +14,19 @@ const FormEligibilityCheck = ({ formType, onEligibilityChange }) => {
 
 const checkEligibility = async () => {
   try {
-    const response = await apiWrapper.get(`${API_BASE_URL}/wallet/check-balance`);
+    const token = localStorage.getItem('token');
+    const response = await apiWrapper.get(`${API_BASE_URL}/wallet/check-balance`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
     const data = response.data;
     console.log("check-balance response", data);
 
-    // Treat subscription users as eligible
-    const isEligible = data.accessType === 'subscription' || 
-                       (formType === 'basic' ? data.canSubmitBasic : data.canSubmitRealtime);
-
-    const guidance = isEligible ? null : data.guidance?.[formType];
+    // Always allow form submission if user has sufficient balance
+    const basicCost = data.rates?.basic || 5;
+    const realtimeCost = data.rates?.realtime || 50;
+    const requiredAmount = formType === 'basic' ? basicCost : realtimeCost;
+    
+    const isEligible = data.accessType === 'subscription' || data.balance >= requiredAmount;
 
     const eligibilityData = {
       eligible: isEligible,
@@ -30,7 +34,6 @@ const checkEligibility = async () => {
       accessType: data.accessType,
       demoMode: data.demoMode,
       paymentsEnabled: data.paymentsEnabled,
-      guidance,
       rates: data.rates
     };
 
@@ -41,8 +44,7 @@ const checkEligibility = async () => {
     setEligibility({ 
       eligible: false, 
       error: true, 
-      errorMessage: errorInfo.message,
-      guidance: errorInfo.guidance 
+      errorMessage: errorInfo.message
     });
   } finally {
     setLoading(false);
