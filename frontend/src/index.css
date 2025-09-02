@@ -2,5 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom responsive breakpoints */
+@media (min-width: 475px) {
+  .xs\:block {
+    display: block;
+  }
+  
+  .xs\:hidden {
+    display: none;
+  }
+  
+  .xs\:flex {
+    display: flex;
+  }
+  
+  .xs\:inline {
+    display: inline;
+  }
+}
 
+/* Mobile-first improvements */
+@media (max-width: 474px) {
+  .mobile-optimized {
+    font-size: 14px;
+  }
+  
+  .mobile-padding {
+    padding: 0.5rem;
+  }
+}
 
+/* Ensure proper mobile viewport */
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Improve touch targets on mobile */
+@media (max-width: 768px) {
+  button, 
+  input[type="button"], 
+  input[type="submit"], 
+  .clickable {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

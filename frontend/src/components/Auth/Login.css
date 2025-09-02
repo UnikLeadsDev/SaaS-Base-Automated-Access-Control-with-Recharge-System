@@ -340,14 +340,27 @@
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+  .login-wrapper {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .form-section {
+    padding: 30px 40px;
+  }
+}
+
 @media (max-width: 768px) {
   .login-container {
     padding: 0;
+    height: 100vh;
+    overflow: hidden;
   }
   
   .login-wrapper {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
   }
   
   .form-options {
@@ -357,60 +370,132 @@
   }
   
   .image-section {
+    display: none;
+  }
+  
+  .form-section {
+    padding: 30px 20px 20px 20px;
     order: 1;
-    padding: 30px;
-    height: 40vh;
-    background: #f8f9fa;
+    height: 100vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
   }
   
-  .form-section {
-    padding: 30px 25px;
-    order: 2;
-    height: auto;
-    min-height: 60vh;
+  .form-header {
+    margin-bottom: 30px;
+    padding-top: 20px;
   }
   
   .welcome-text {
+    font-size: 20px;
+  }
+  
+  .brand-name {
     font-size: 24px;
-  }
-  
-  .brand-name {
-    font-size: 28px;
-  }
-  
-  .login-image {
-    max-height: 30vh;
-  }
-  
-  .company-logo {
-    width: 160px;
-  }
-}
-
-@media (max-width: 480px) {
-  .image-section {
-    padding: 20px;
-    height: 30vh;
-  }
-  
-  .form-section {
-    padding: 30px 20px;
-    min-height: 70vh;
-  }
-  
-  .welcome-text {
-    font-size: 22px;
-  }
-  
-  .brand-name {
-    font-size: 26px;
   }
   
   .company-logo {
     width: 140px;
+    margin-bottom: 20px;
   }
   
-  .login-image {
-    max-height: 25vh;
+  .form-input {
+    font-size: 16px;
+    padding: 14px 16px;
+  }
+  
+  .login-button {
+    padding: 16px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    height: 100vh;
+  }
+  
+  .form-section {
+    padding: 20px 15px 15px 15px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .form-header {
+    margin-bottom: 25px;
+    padding-top: 15px;
+  }
+  
+  .welcome-text {
+    font-size: 18px;
+  }
+  
+  .brand-name {
+    font-size: 22px;
+  }
+  
+  .company-logo {
+    width: 120px;
+    margin-bottom: 15px;
+  }
+  
+  .form-group {
+    margin-bottom: 16px;
+  }
+  
+  .form-input {
+    padding: 12px 14px;
+    font-size: 16px;
+  }
+  
+  .login-button {
+    padding: 14px;
+    font-size: 15px;
+  }
+  
+  .form-options {
+    gap: 10px;
+  }
+  
+  .checkbox-label {
+    font-size: 13px;
+  }
+  
+  .forgot-link {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 360px) {
+  .form-section {
+    padding: 15px 12px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .form-header {
+    padding-top: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .company-logo {
+    width: 100px;
+    margin-bottom: 12px;
+  }
+  
+  .welcome-text {
+    font-size: 16px;
+  }
+  
+  .brand-name {
+    font-size: 20px;
   }
 }
