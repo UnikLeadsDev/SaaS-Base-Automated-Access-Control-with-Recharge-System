@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
- import emptyBoxAnimation from '../../assets/EmptyBox.json';
+ import emptyBoxAnimation from '../../assets/Empty box.json';
 
 // Fallback SVG for when Lottie fails
 const FallbackEmptyBox = ({ size }) => (
