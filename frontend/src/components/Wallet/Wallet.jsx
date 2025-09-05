@@ -186,22 +186,22 @@ const Wallet = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Wallet Balance */}
       <div className="bg-white shadow rounded-lg">
-        <div className="px-3 py-4 sm:p-6">
+        <div className="p-4 sm:p-6">
           {/* Heading */}
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Your wallet current balance</h2>
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Your wallet current balance</h2>
           
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
             {/* Left: Logo, Amount, Status */}
-            <div className="flex items-center space-x-4">
-              <WalletIcon className="h-10 w-10 text-gray-400" />
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <WalletIcon className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" />
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-green-600">
+                <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-600">
                   ₹ {balance?.toFixed(2) || "0.00"}
                 </div>
-                <div className="text-sm text-green-600 flex items-center">
+                <div className="text-xs sm:text-sm text-green-600 flex items-center">
                   Status: active
                   <button
                     onClick={fetchWalletData}
@@ -215,10 +215,10 @@ const Wallet = () => {
             </div>
 
             {/* Right: Only Recharge Button */}
-            <div>
+            <div className="flex flex-col items-start sm:items-end">
               <button
                 onClick={() => setShowRecharge(true)}
-                className={`px-4 py-2 rounded-md shadow flex items-center ${
+                className={`px-3 sm:px-4 py-2 rounded-md shadow flex items-center text-sm sm:text-base ${
                   isDemoMode
                     ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                     : "bg-indigo-600 text-white hover:bg-indigo-700"
@@ -226,7 +226,8 @@ const Wallet = () => {
                 disabled={isDemoMode}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                {isDemoMode ? "Recharge (Demo Mode)" : "Recharge Wallet"}
+                <span className="hidden sm:inline">{isDemoMode ? "Recharge (Demo Mode)" : "Recharge Wallet"}</span>
+                <span className="sm:hidden">Recharge</span>
               </button>
 
               {isDemoMode && (
@@ -290,9 +291,9 @@ const Wallet = () => {
 
       {/* Transaction History */}
       <div className="bg-white shadow rounded-lg p-4 sm:p-6">
-        <div className="flex items-center mb-4">
-          <History className="h-5 w-5 text-gray-400 mr-2" />
-          <h3 className="text-lg font-medium text-gray-900">Transaction History</h3>
+        <div className="flex items-center mb-3 sm:mb-4">
+          <History className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 mr-2" />
+          <h3 className="text-base sm:text-lg font-medium text-gray-900">Transaction History</h3>
         </div>
 
         {/* Mobile */}
@@ -319,6 +320,12 @@ const Wallet = () => {
                 <span className="font-medium">Amount:</span> ₹{txn.amount}
               </div>
               <div className="flex justify-between text-sm">
+                <span className="font-medium">Status:</span>
+                <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                  Completed
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
                 <span className="font-medium">Reference:</span> {txn.txn_ref || "-"}
               </div>
             </div>
@@ -333,6 +340,7 @@ const Wallet = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium">Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium">Type</th>
                 <th className="px-6 py-3 text-left text-xs font-medium">Amount</th>
+                <th className="px-6 py-3 text-left text-xs font-medium">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium">Reference</th>
               </tr>
             </thead>
@@ -352,6 +360,11 @@ const Wallet = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm">₹{txn.amount}</td>
+                  <td className="px-6 py-4 text-sm">
+                    <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                      Completed
+                    </span>
+                  </td>
                   <td className="px-6 py-4 text-sm">{txn.txn_ref || "-"}</td>
                 </tr>
               ))}

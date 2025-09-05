@@ -54,51 +54,51 @@ const BillingDashboard = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Billing & Invoicing</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">Billing & Invoicing</h1>
       </div>
 
       {/* Summary Cards */}
       {!loading && summary && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-lg shadow">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Paid Invoices</p>
-                <p className="text-2xl font-bold text-green-600">{summary.paid_invoices}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Paid Invoices</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">{summary.paid_invoices}</p>
               </div>
-              <FileText className="text-green-600" size={24} />
+              <FileText className="text-green-600" size={20} />
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg shadow">
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Pending Invoices</p>
-                <p className="text-2xl font-bold text-yellow-600">{summary.pending_invoices}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Pending Invoices</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-yellow-600">{summary.pending_invoices}</p>
               </div>
-              <FileText className="text-yellow-600" size={24} />
+              <FileText className="text-yellow-600" size={20} />
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg shadow">
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Paid</p>
-                <p className="text-2xl font-bold text-blue-600">₹{summary.total_paid}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Total Paid</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">₹{summary.total_paid}</p>
               </div>
-              <TrendingUp className="text-blue-600" size={24} />
+              <TrendingUp className="text-blue-600" size={20} />
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-lg shadow">
+          <div className="bg-white p-3 sm:p-4 rounded-lg shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Outstanding</p>
-                <p className="text-2xl font-bold text-red-600">₹{summary.total_outstanding}</p>
+                <p className="text-xs sm:text-sm text-gray-600">Outstanding</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600">₹{summary.total_outstanding}</p>
               </div>
-              <Download className="text-red-600" size={24} />
+              <Download className="text-red-600" size={20} />
             </div>
           </div>
         </div>

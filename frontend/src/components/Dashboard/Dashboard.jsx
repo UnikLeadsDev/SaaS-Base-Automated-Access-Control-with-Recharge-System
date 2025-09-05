@@ -74,58 +74,58 @@ const Dashboard = () => {
   }
 
   return (
-  <div className="min-h-screen bg-gray-50 p-6">
+  <div className="min-h-screen bg-gray-50 p-2 sm:p-4 lg:p-6">
     {/* Top Section */}
-    <div className="flex justify-between items-center mb-8">
+    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8">
       <div>
-        <p className="text-lg font-medium text-indigo-600 mb-2">Welcome, {user?.name} ({user?.role})</p>
-        <h1 className="text-3xl font-bold text-gray-800">Unik Leads Dashboard</h1>
+        <p className="text-sm sm:text-lg font-medium text-indigo-600 mb-1 sm:mb-2">Welcome, {user?.name} ({user?.role})</p>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800">Unik Leads Dashboard</h1>
       </div>
       {/* Optional: Add search, notifications, settings icons here */}
     </div>
 
     {/* Overview Cards */}
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <div className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-5 rounded-xl shadow-md">
-        <div className="flex items-center gap-4">
-          <Wallet className="h-6 w-6" />
-          <span className="text-sm">Wallet Balance</span>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+      <div className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-3 sm:p-4 lg:p-5 rounded-xl shadow-md">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Wallet className="h-5 w-5 sm:h-6 sm:w-6" />
+          <span className="text-xs sm:text-sm">Wallet Balance</span>
         </div>
-        <p className="text-2xl font-bold mt-2">₹ {stats.balance}</p>
+        <p className="text-lg sm:text-xl lg:text-2xl font-bold mt-1 sm:mt-2">₹ {stats.balance}</p>
       </div>
 
-      <div className="bg-gradient-to-r from-green-400 to-teal-500 text-white p-5 rounded-xl shadow-md">
-        <div className="flex items-center gap-4">
-          <FileText className="h-6 w-6" />
-          <span className="text-sm">Applications</span>
+      <div className="bg-gradient-to-r from-green-400 to-teal-500 text-white p-3 sm:p-4 lg:p-5 rounded-xl shadow-md">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
+          <span className="text-xs sm:text-sm">Applications</span>
         </div>
-        <p className="text-2xl font-bold mt-2">{stats.totalApplications}</p>
+        <p className="text-lg sm:text-xl lg:text-2xl font-bold mt-1 sm:mt-2">{stats.totalApplications}</p>
       </div>
 
-      <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-5 rounded-xl shadow-md">
-        <div className="flex items-center gap-4">
-          <TrendingUp className="h-6 w-6" />
-          <span className="text-sm">Access Type</span>
+      <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-3 sm:p-4 lg:p-5 rounded-xl shadow-md">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6" />
+          <span className="text-xs sm:text-sm">Access Type</span>
         </div>
-        <p className="text-lg font-semibold mt-2 capitalize">{stats.accessType}</p>
+        <p className="text-base sm:text-lg font-semibold mt-1 sm:mt-2 capitalize">{stats.accessType}</p>
       </div>
 
-      <div className={`p-5 rounded-xl shadow-md ${stats.canSubmitBasic ? 'bg-green-100' : 'bg-red-100'}`}>
-        <div className="flex items-center gap-4">
-          <AlertCircle className={`h-6 w-6 ${stats.canSubmitBasic ? 'text-green-600' : 'text-red-600'}`} />
-          <span className="text-sm text-gray-700">Form Access</span>
+      <div className={`p-3 sm:p-4 lg:p-5 rounded-xl shadow-md ${stats.canSubmitBasic ? 'bg-green-100' : 'bg-red-100'}`}>
+        <div className="flex items-center gap-2 sm:gap-4">
+          <AlertCircle className={`h-5 w-5 sm:h-6 sm:w-6 ${stats.canSubmitBasic ? 'text-green-600' : 'text-red-600'}`} />
+          <span className="text-xs sm:text-sm text-gray-700">Form Access</span>
         </div>
-        <p className={`text-lg font-bold mt-2 ${stats.canSubmitBasic ? 'text-green-700' : 'text-red-700'}`}>
+        <p className={`text-base sm:text-lg font-bold mt-1 sm:mt-2 ${stats.canSubmitBasic ? 'text-green-700' : 'text-red-700'}`}>
           {stats.canSubmitBasic ? 'Active' : 'Blocked'}
         </p>
       </div>
     </div>
 
     {/* Two-Column Section */}
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
       {/* Form Access Status */}
-      <div className="bg-white p-6 rounded-xl shadow-md">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Form Access Status</h3>
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Form Access Status</h3>
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <span className="text-gray-700">Basic Form (₹{stats.rates?.basic})</span>
@@ -147,8 +147,8 @@ const Dashboard = () => {
       </div>
 
       {/* Recent Transactions */}
-      <div className="bg-white p-6 rounded-xl shadow-md">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Transactions</h3>
+      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Recent Transactions</h3>
         <div className="space-y-4">
           {stats.recentTransactions && stats.recentTransactions.length > 0 ? (
             stats.recentTransactions.map((txn) => (
