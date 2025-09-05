@@ -35,7 +35,7 @@ export const createReceipt = async (req, res) => {
     }
 
     await db.query(
-      `INSERT INTO receipts (user_id, txn_ref, amount, payment_mode, status, receipt_date)
+      `INSERT INTO receipts (user_id, txn_id, amount, payment_mode, status, receipt_date)
        VALUES (?, ?, ?, ?, 'success', CURDATE())`,
       [req.user.id, txnId, amount, paymentMode]
     );
