@@ -5,7 +5,7 @@ import nodemailer from "nodemailer";
 export const listReceipts = async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT id as receipt_id, txn_ref as txn_id, amount, payment_mode, status, receipt_date, created_at FROM receipts WHERE user_id = ? ORDER BY created_at DESC",
+      "SELECT receipt_id, txn_id as txn_ref, amount, payment_mode, status, receipt_date, created_at FROM receipts WHERE user_id = ? ORDER BY created_at DESC",
       [req.user.id]
     );
     res.json(rows);

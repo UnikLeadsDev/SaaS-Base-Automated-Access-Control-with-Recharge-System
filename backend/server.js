@@ -12,6 +12,7 @@ import subscriptionRoutes from "./routes/subscriptionRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
 import billingRoutes from "./routes/billingRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
 import { checkLowBalanceAndExpiry } from "./controllers/notificationController.js";
 import { startCronJobs } from "./jobs/cronJobs.js";
 import { rawBodyMiddleware } from "./middleware/rawBody.js";
@@ -101,6 +102,7 @@ app.use("/api/billing", billingRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/receipts", receiptRoutes);
 app.use("/api/security", csrfRoutes);
+app.use("/api/profile", profileRoutes);
 
 
 

@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Profiler } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useWallet } from "../../context/WalletContext";
 
 import { useAuth } from '../../context/AuthContext';
 import { 
+  User,
   Home, 
   FileText, 
   Wallet, 
@@ -56,6 +57,7 @@ const Layout = ({ children }) => {
     { name: 'Billing', href: '/billing', icon: Calculator },
     { name: 'Receipt', href: '/receipt', icon: IndianRupee }, 
     { name: 'Subscriptions', href: '/subscriptions', icon: CreditCard },
+    { name: 'Profile Settings', href: '/profile', icon: User },
     { name: 'Support', href: '/support', icon: HelpCircle },
   ];
 

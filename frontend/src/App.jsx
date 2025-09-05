@@ -15,6 +15,7 @@ import AdminDashboard from './components/Admin/AdminDashboard';
 import BillingDashboard from './components/Billing/BillingDashboard';
 import Layout from './components/Layout/Layout';
 import EmptyBoxDemo from './components/Demo/EmptyBoxDemo';
+import Profile from './components/Profile/Profile';
 import './App.css';
 
 // Suppress console errors
@@ -72,6 +73,12 @@ function App() {
             <Route path="/receipt" element={
               <ProtectedRoute>
                 <Layout><Receipt /></Layout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Layout><Profile /></Layout>
               </ProtectedRoute>
             } />
             

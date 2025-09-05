@@ -90,3 +90,9 @@ BEGIN
     END IF;
 END//
 DELIMITER ;
+
+-- 6. Company_details table adjustment for future scalability
+ALTER TABLE company_details
+ADD COLUMN user_id INT NOT NULL,
+ADD CONSTRAINT fk_user_company FOREIGN KEY (user_id) REFERENCES users(user_id);
+ALTER TABLE company_details ADD COLUMN industry VARCHAR(100);
