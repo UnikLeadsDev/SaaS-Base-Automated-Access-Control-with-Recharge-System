@@ -105,7 +105,7 @@ const Login = () => {
           <div className="form-header">
             <img src={companyLogo} alt="Unik Leads" className="company-logo" />
             <h1 className="welcome-text">
-              Welcome to <span className="brand-name">Unik Leads</span>
+              Welcome 
             </h1>
             <p className="subtitle">Login to your Dashboard</p>
           </div>

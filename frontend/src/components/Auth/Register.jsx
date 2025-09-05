@@ -56,7 +56,7 @@ const Register = () => {
           <div className="text-center">
             <img src={companyLogo} alt="Unik Leads" className="company-logo" />
              <h1 className="welcome-text">
-              Welcome to <span className="brand-name">Unik Leads</span>
+              Welcome
             </h1>
              <p className="subtitle">Register to your Dashboard</p>
             <p className="mt-1 text-xs text-gray-600">Join our platform</p>
