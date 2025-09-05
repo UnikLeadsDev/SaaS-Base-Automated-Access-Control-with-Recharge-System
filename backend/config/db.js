@@ -53,18 +53,39 @@ const database = {
     if (!dbConnected) {
       // Return mock data for demo mode
       if (sql.includes('SELECT') && sql.includes('users')) {
+        if (sql.includes("role != 'admin'")) {
+          return [[{
+            user_id: 2,
+            name: 'Demo User',
+            email: 'demo@example.com',
+            mobile: '9876543210',
+            role: 'DSA',
+            status: 'active',
+            balance: 1000,
+            join_date: '2024-01-01',
+            last_login: new Date(),
+            last_ip: '127.0.0.1',
+            active_sessions: 1
+          }]];
+        }
         return [[{
           id: 1,
           user_id: 1,
-          name: 'Demo User',
-          email: 'demo@example.com',
+          name: 'Admin User',
+          email: 'admin@example.com',
           password: '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
-          role: 'DSA',
+          role: 'admin',
           status: 'active'
         }]];
       }
       if (sql.includes('SELECT') && sql.includes('wallets')) {
         return [[{ balance: 1000, status: 'active' }]];
+      }
+      if (sql.includes('COUNT')) {
+        return [[{ count: 5 }]];
+      }
+      if (sql.includes('SUM')) {
+        return [[{ total: 50000 }]];
       }
       return [[]];
     }
@@ -72,7 +93,13 @@ const database = {
   },
   getConnection: async () => {
     if (!dbConnected) {
-      throw new Error('Database not connected');
+      return {
+        beginTransaction: () => Promise.resolve(),
+        commit: () => Promise.resolve(),
+        rollback: () => Promise.resolve(),
+        release: () => {},
+        query: database.query
+      };
     }
     return await db.getConnection();
   }

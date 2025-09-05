@@ -65,11 +65,12 @@ export const AuthProvider = ({ children }) => {
       const userEmail = localStorage.getItem('userEmail');
       if (userName && userEmail) {
         console.log('Using stored user data for demo mode');
+        const isAdmin = userEmail.toLowerCase().includes('admin');
         setUser({
           id: 1,
           name: userName,
           email: userEmail,
-          role: 'DSA'
+          role: isAdmin ? 'admin' : 'DSA'
         });
       } else {
         console.log('No stored user data, clearing token');
