@@ -87,8 +87,8 @@ app.use(express.json());
 app.use(sanitizeInput);
 app.use(i18nMiddleware);
 
-// CSRF protection for state-changing requests
-app.use(csrfProtection);
+// CSRF protection for state-changing requests (disabled for development)
+// app.use(csrfProtection);
 
 // Routes
 app.use("/api/auth", authRoutes);

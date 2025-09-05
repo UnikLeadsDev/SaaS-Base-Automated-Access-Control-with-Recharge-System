@@ -7,8 +7,8 @@ import { validate } from "../middleware/validation.js";
 
 const router = express.Router();
 
-// Apply strict rate limiting to auth endpoints
-router.use(authRateLimit);
+// Apply strict rate limiting to auth endpoints (disabled for development)
+// router.use(authRateLimit);
 
 router.post("/register", validate('register'), registerUser);
 router.post("/login", validate('login'), loginUser);
