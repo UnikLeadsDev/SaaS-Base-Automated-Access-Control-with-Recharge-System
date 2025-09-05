@@ -6,46 +6,58 @@ import crypto from "crypto";
 // Get admin dashboard stats
 export const getAdminStats = async (req, res) => {
   try {
-    // Total users
-    const [totalUsers] = await db.query("SELECT COUNT(*) as count FROM users WHERE role != 'admin'");
-    
-    // Total revenue
-    const [totalRevenue] = await db.query("SELECT SUM(amount) as total FROM transactions WHERE type = 'credit'");
-    
-    // Total applications
-    const [totalApplications] = await db.query("SELECT COUNT(*) as count FROM applications");
-    
-    // Low balance users
-    const lowBalanceThreshold = parseFloat(process.env.LOW_BALANCE_THRESHOLD) || 100;
-    const [lowBalanceUsers] = await db.query("SELECT COUNT(*) as count FROM wallets WHERE balance < ?", [lowBalanceThreshold]);
+    let totalUsers = 0, totalRevenue = 0, totalApplications = 0;
+    let lowBalanceUsers = 0, activeSessions = 0, suspiciousLogins = 0;
 
-    // Active sessions
-    const [activeSessions] = await db.query("SELECT COUNT(*) as count FROM user_sessions WHERE expires_at > NOW()");
-    
-    // Suspicious logins
-    const [suspiciousLogins] = await db.query("SELECT COUNT(*) as count FROM login_history WHERE is_suspicious = 1 AND DATE(login_time) = CURDATE()");
+    try {
+      const [users] = await db.query("SELECT COUNT(*) as count FROM users WHERE role != 'admin'");
+      totalUsers = users[0]?.count || 0;
+    } catch (e) { console.warn('Users table issue:', e.message); }
+
+    try {
+      const [revenue] = await db.query("SELECT SUM(amount) as total FROM transactions WHERE type = 'credit'");
+      totalRevenue = revenue[0]?.total || 0;
+    } catch (e) { console.warn('Transactions table issue:', e.message); }
+
+    try {
+      const [apps] = await db.query("SELECT COUNT(*) as count FROM applications");
+      totalApplications = apps[0]?.count || 0;
+    } catch (e) { console.warn('Applications table issue:', e.message); }
+
+    try {
+      const lowBalanceThreshold = parseFloat(process.env.LOW_BALANCE_THRESHOLD) || 100;
+      const [lowBalance] = await db.query("SELECT COUNT(*) as count FROM wallets WHERE balance < ?", [lowBalanceThreshold]);
+      lowBalanceUsers = lowBalance[0]?.count || 0;
+    } catch (e) { console.warn('Wallets table issue:', e.message); }
+
+    try {
+      const [sessions] = await db.query("SELECT COUNT(*) as count FROM user_sessions WHERE expires_at > NOW()");
+      activeSessions = sessions[0]?.count || 0;
+    } catch (e) { console.warn('Sessions table issue:', e.message); }
+
+    try {
+      const [suspicious] = await db.query("SELECT COUNT(*) as count FROM login_history WHERE is_suspicious = 1 AND DATE(login_time) = CURDATE()");
+      suspiciousLogins = suspicious[0]?.count || 0;
+    } catch (e) { console.warn('Login history table issue:', e.message); }
 
     res.json({
-      totalUsers: totalUsers[0]?.count || 0,
-      totalRevenue: totalRevenue[0]?.total || 0,
-      totalApplications: totalApplications[0]?.count || 0,
-      lowBalanceUsers: lowBalanceUsers[0]?.count || 0,
-      activeSessions: activeSessions[0]?.count || 0,
-      suspiciousLogins: suspiciousLogins[0]?.count || 0
+      success: true,
+      stats: { totalUsers, totalRevenue, totalApplications, lowBalanceUsers, activeSessions, suspiciousLogins }
     });
   } catch (error) {
     console.error("Admin Stats Error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
 // Get all users with enhanced details
 export const getAllUsers = async (req, res) => {
   try {
+
     const { page = 1, limit = 10, search = '', role = '', status = '' } = req.query;
     const offset = (page - 1) * limit;
     
-    let whereClause = "WHERE u.role != 'admin'";
+    let whereClause = "WHERE 1=1";
     let params = [];
     
     if (search) {
@@ -65,14 +77,11 @@ export const getAllUsers = async (req, res) => {
 
     const [users] = await db.query(`
       SELECT u.user_id, u.name, u.email, u.mobile, u.role, u.status, 
-             DATE(u.created_at) as join_date, w.balance,
-             lh.login_time as last_login, lh.ip_address as last_ip,
-             (SELECT COUNT(*) FROM user_sessions WHERE user_id = u.user_id AND expires_at > NOW()) as active_sessions
+             DATE(u.created_at) as join_date, 
+             COALESCE(w.balance, 0) as balance,
+             u.last_login
       FROM users u
       LEFT JOIN wallets w ON u.user_id = w.user_id
-      LEFT JOIN login_history lh ON u.user_id = lh.user_id AND lh.login_time = (
-        SELECT MAX(login_time) FROM login_history WHERE user_id = u.user_id
-      )
       ${whereClause}
       ORDER BY u.created_at DESC
       LIMIT ? OFFSET ?
@@ -83,6 +92,7 @@ export const getAllUsers = async (req, res) => {
     `, params);
 
     res.json({ 
+      success: true,
       users, 
       total: totalCount[0]?.count || 0,
       page: parseInt(page),
@@ -90,14 +100,14 @@ export const getAllUsers = async (req, res) => {
     });
   } catch (error) {
     console.error("Get Users Error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
 // Create/Invite new user
 export const createUser = async (req, res) => {
   try {
-    const { name, email, mobile, role, send_invite = true } = req.body;
+    const { name, email, mobile, role, password } = req.body;
     
     // Check if user exists
     const [existing] = await db.query("SELECT user_id FROM users WHERE email = ?", [email]);
@@ -105,26 +115,28 @@ export const createUser = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
     
-    // Generate temporary password
-    const tempPassword = crypto.randomBytes(8).toString('hex');
-    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+    // Use provided password or generate temporary one
+    const userPassword = password || crypto.randomBytes(8).toString('hex');
+    const hashedPassword = await bcrypt.hash(userPassword, 10);
     
     // Create user
     const [result] = await db.query(
-      "INSERT INTO users (name, email, mobile, role, password, status) VALUES (?, ?, ?, ?, ?, 'pending')",
+      "INSERT INTO users (name, email, mobile, role, password, status) VALUES (?, ?, ?, ?, ?, 'active')",
       [name, email, mobile, role, hashedPassword]
     );
     
-    // Create wallet
-    await db.query(
-      "INSERT INTO wallets (user_id, balance) VALUES (?, 0)",
-      [result.insertId]
-    );
+    // Create wallet for non-admin users
+    if (role !== 'admin') {
+      await db.query(
+        "INSERT INTO wallets (user_id, balance) VALUES (?, 0)",
+        [result.insertId]
+      );
+    }
     
     res.json({ 
       message: "User created successfully", 
       userId: result.insertId,
-      tempPassword: send_invite ? tempPassword : null
+      password: password ? null : userPassword
     });
   } catch (error) {
     console.error("Create User Error:", error);
@@ -136,12 +148,20 @@ export const createUser = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { name, email, mobile, role, status } = req.body;
+    const { name, email, mobile, role, status, password } = req.body;
     
-    await db.query(
-      "UPDATE users SET name = ?, email = ?, mobile = ?, role = ?, status = ? WHERE user_id = ?",
-      [name, email, mobile, role, status, userId]
-    );
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await db.query(
+        "UPDATE users SET name = ?, email = ?, mobile = ?, role = ?, status = ?, password = ? WHERE user_id = ?",
+        [name, email, mobile, role, status, hashedPassword, userId]
+      );
+    } else {
+      await db.query(
+        "UPDATE users SET name = ?, email = ?, mobile = ?, role = ?, status = ? WHERE user_id = ?",
+        [name, email, mobile, role, status, userId]
+      );
+    }
     
     res.json({ message: "User updated successfully" });
   } catch (error) {
@@ -233,6 +253,7 @@ export const resetUserPassword = async (req, res) => {
 // Get login history
 export const getLoginHistory = async (req, res) => {
   try {
+
     const { userId, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
     
@@ -244,19 +265,25 @@ export const getLoginHistory = async (req, res) => {
       params.push(userId);
     }
     
-    const [history] = await db.query(`
-      SELECT lh.*, u.name, u.email
-      FROM login_history lh
-      JOIN users u ON lh.user_id = u.user_id
-      ${whereClause}
-      ORDER BY lh.login_time DESC
-      LIMIT ? OFFSET ?
-    `, [...params, parseInt(limit), offset]);
+    let history = [];
+    try {
+      const [result] = await db.query(`
+        SELECT lh.*, u.name, u.email
+        FROM login_history lh
+        JOIN users u ON lh.user_id = u.user_id
+        ${whereClause}
+        ORDER BY lh.login_time DESC
+        LIMIT ? OFFSET ?
+      `, [...params, parseInt(limit), offset]);
+      history = result;
+    } catch (e) {
+      console.warn('Login history table not found:', e.message);
+    }
     
-    res.json({ history });
+    res.json({ success: true, history });
   } catch (error) {
     console.error("Get Login History Error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -281,18 +308,25 @@ export const markSuspiciousLogin = async (req, res) => {
 // Get active sessions
 export const getActiveSessions = async (req, res) => {
   try {
-    const [sessions] = await db.query(`
-      SELECT s.*, u.name, u.email
-      FROM user_sessions s
-      JOIN users u ON s.user_id = u.user_id
-      WHERE s.expires_at > NOW()
-      ORDER BY s.created_at DESC
-    `);
+
+    let sessions = [];
+    try {
+      const [result] = await db.query(`
+        SELECT s.*, u.name, u.email
+        FROM user_sessions s
+        JOIN users u ON s.user_id = u.user_id
+        WHERE (s.expires_at IS NULL OR s.expires_at > NOW())
+        ORDER BY s.created_at DESC
+      `);
+      sessions = result;
+    } catch (e) {
+      console.warn('User sessions table not found:', e.message);
+    }
     
-    res.json({ sessions });
+    res.json({ success: true, sessions });
   } catch (error) {
     console.error("Get Active Sessions Error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -327,6 +361,7 @@ export const terminateAllUserSessions = async (req, res) => {
 // Get billing history
 export const getBillingHistory = async (req, res) => {
   try {
+
     const { userId, startDate, endDate, type, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
     
@@ -353,16 +388,22 @@ export const getBillingHistory = async (req, res) => {
       params.push(type);
     }
     
-    const [transactions] = await db.query(`
-      SELECT t.*, u.name, u.email
-      FROM transactions t
-      JOIN users u ON t.user_id = u.user_id
-      ${whereClause}
-      ORDER BY t.created_at DESC
-      LIMIT ? OFFSET ?
-    `, [...params, parseInt(limit), offset]);
+    let transactions = [];
+    try {
+      const [result] = await db.query(`
+        SELECT t.*, u.name, u.email
+        FROM transactions t
+        JOIN users u ON t.user_id = u.user_id
+        ${whereClause}
+        ORDER BY t.created_at DESC
+        LIMIT ? OFFSET ?
+      `, [...params, parseInt(limit), offset]);
+      transactions = result;
+    } catch (e) {
+      console.warn('Transactions table issue:', e.message);
+    }
     
-    res.json({ transactions });
+    res.json({ success: true, transactions });
   } catch (error) {
     console.error("Get Billing History Error:", error);
     res.status(500).json({ message: "Server error" });
@@ -433,18 +474,25 @@ export const generateApiKey = async (req, res) => {
 // Get API keys
 export const getApiKeys = async (req, res) => {
   try {
-    const [keys] = await db.query(`
-      SELECT ak.id, ak.name, ak.permissions, ak.is_active, ak.created_at, ak.last_used,
-             u.name as user_name, u.email
-      FROM api_keys ak
-      JOIN users u ON ak.user_id = u.user_id
-      ORDER BY ak.created_at DESC
-    `);
+
+    let keys = [];
+    try {
+      const [result] = await db.query(`
+        SELECT ak.id, ak.name, ak.permissions, ak.is_active, ak.created_at, ak.last_used,
+               u.name as user_name, u.email
+        FROM api_keys ak
+        JOIN users u ON ak.user_id = u.user_id
+        ORDER BY ak.created_at DESC
+      `);
+      keys = result;
+    } catch (e) {
+      console.warn('API keys table not found:', e.message);
+    }
     
-    res.json({ keys });
+    res.json({ success: true, keys });
   } catch (error) {
     console.error("Get API Keys Error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 

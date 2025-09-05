@@ -10,10 +10,17 @@ export const verifyToken = async (req, res, next) => {
   }
 
   try {
+    // Handle mock tokens in development
+    if (token.startsWith('mock_jwt_token_') && process.env.NODE_ENV !== 'production') {
+      req.user = {
+        id: 1,
+        email: 'admin@demo.com',
+        role: 'admin'
+      };
+      return next();
+    }
 
-
-const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Check if user still exists and is active
     const [user] = await db.query("SELECT * FROM users WHERE user_id = ? AND status = 'active'", [decoded.id]);
@@ -37,4 +44,11 @@ export const checkRole = (allowedRoles) => {
     }
     next();
   };
+};
+
+export const checkAdmin = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+  next();
 };

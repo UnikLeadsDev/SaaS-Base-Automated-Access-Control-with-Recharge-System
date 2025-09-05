@@ -20,6 +20,7 @@ const AdminDashboard = () => {
     activeSessions: 0,
     suspiciousLogins: 0
   });
+  const [loading, setLoading] = useState(true);
   
   const [users, setUsers] = useState([]);
   const [loginHistory, setLoginHistory] = useState([]);
@@ -42,7 +43,8 @@ const AdminDashboard = () => {
     email: '',
     mobile: '',
     role: 'DSA',
-    status: 'active'
+    status: 'active',
+    password: ''
   });
 
   const [manualPayment, setManualPayment] = useState({
@@ -70,13 +72,40 @@ const AdminDashboard = () => {
 
   const fetchStats = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('token');
       const response = await axios.get(`${API_BASE_URL}/admin/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setStats(response.data);
+      
+      // Handle both response formats
+      if (response.data.success !== false) {
+        const statsData = response.data.stats || response.data;
+        setStats(statsData);
+      } else {
+        toast.error('Failed to fetch dashboard stats');
+        setStats({
+          totalUsers: 0,
+          totalRevenue: 0,
+          totalApplications: 0,
+          lowBalanceUsers: 0,
+          activeSessions: 0,
+          suspiciousLogins: 0
+        });
+      }
     } catch (error) {
       console.error('Failed to fetch stats:', error);
+      toast.error('Failed to load dashboard data');
+      setStats({
+        totalUsers: 0,
+        totalRevenue: 0,
+        totalApplications: 0,
+        lowBalanceUsers: 0,
+        activeSessions: 0,
+        suspiciousLogins: 0
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -87,9 +116,17 @@ const AdminDashboard = () => {
       const response = await axios.get(`${API_BASE_URL}/admin/users?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setUsers(response.data.users || []);
+      
+      if (response.data.success !== false) {
+        setUsers(response.data.users || []);
+      } else {
+        setUsers([]);
+        toast.error('Failed to fetch users');
+      }
     } catch (error) {
       console.error('Failed to fetch users:', error);
+      setUsers([]);
+      toast.error('Failed to load users data');
     }
   };
 
@@ -99,9 +136,15 @@ const AdminDashboard = () => {
       const response = await axios.get(`${API_BASE_URL}/admin/login-history`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setLoginHistory(response.data.history || []);
+      
+      if (response.data.success !== false) {
+        setLoginHistory(response.data.history || []);
+      } else {
+        setLoginHistory([]);
+      }
     } catch (error) {
       console.error('Failed to fetch login history:', error);
+      setLoginHistory([]);
     }
   };
 
@@ -111,9 +154,15 @@ const AdminDashboard = () => {
       const response = await axios.get(`${API_BASE_URL}/admin/sessions`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setActiveSessions(response.data.sessions || []);
+      
+      if (response.data.success !== false) {
+        setActiveSessions(response.data.sessions || []);
+      } else {
+        setActiveSessions([]);
+      }
     } catch (error) {
       console.error('Failed to fetch sessions:', error);
+      setActiveSessions([]);
     }
   };
 
@@ -123,9 +172,15 @@ const AdminDashboard = () => {
       const response = await axios.get(`${API_BASE_URL}/admin/billing-history`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setBillingHistory(response.data.transactions || []);
+      
+      if (response.data.success !== false) {
+        setBillingHistory(response.data.transactions || []);
+      } else {
+        setBillingHistory([]);
+      }
     } catch (error) {
       console.error('Failed to fetch billing history:', error);
+      setBillingHistory([]);
     }
   };
 
@@ -135,9 +190,15 @@ const AdminDashboard = () => {
       const response = await axios.get(`${API_BASE_URL}/admin/api-keys`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setApiKeys(response.data.keys || []);
+      
+      if (response.data.success !== false) {
+        setApiKeys(response.data.keys || []);
+      } else {
+        setApiKeys([]);
+      }
     } catch (error) {
       console.error('Failed to fetch API keys:', error);
+      setApiKeys([]);
     }
   };
 
@@ -149,7 +210,7 @@ const AdminDashboard = () => {
       });
       toast.success('User created successfully');
       setShowUserModal(false);
-      setUserForm({ name: '', email: '', mobile: '', role: 'DSA', status: 'active' });
+      setUserForm({ name: '', email: '', mobile: '', role: 'DSA', status: 'active', password: '' });
       fetchUsers();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create user');
@@ -216,13 +277,19 @@ const AdminDashboard = () => {
 
   const renderDashboard = () => (
     <div className="space-y-6">
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      ) : (
+        <>
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-lg text-white">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-100">Total Users</p>
-              <p className="text-3xl font-bold">{stats.totalUsers}</p>
+              <p className="text-3xl font-bold">{stats.totalUsers || 0}</p>
             </div>
             <Users className="h-12 w-12 text-blue-200" />
           </div>
@@ -232,7 +299,7 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-100">Total Revenue</p>
-              <p className="text-3xl font-bold">₹{stats.totalRevenue.toLocaleString()}</p>
+              <p className="text-3xl font-bold">₹{(stats.totalRevenue || 0).toLocaleString()}</p>
             </div>
             <DollarSign className="h-12 w-12 text-green-200" />
           </div>
@@ -242,7 +309,7 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-purple-100">Active Sessions</p>
-              <p className="text-3xl font-bold">{stats.activeSessions}</p>
+              <p className="text-3xl font-bold">{stats.activeSessions || 0}</p>
             </div>
             <Monitor className="h-12 w-12 text-purple-200" />
           </div>
@@ -252,7 +319,7 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-red-100">Low Balance Users</p>
-              <p className="text-3xl font-bold">{stats.lowBalanceUsers}</p>
+              <p className="text-3xl font-bold">{stats.lowBalanceUsers || 0}</p>
             </div>
             <AlertTriangle className="h-12 w-12 text-red-200" />
           </div>
@@ -262,7 +329,7 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-yellow-100">Suspicious Logins</p>
-              <p className="text-3xl font-bold">{stats.suspiciousLogins}</p>
+              <p className="text-3xl font-bold">{stats.suspiciousLogins || 0}</p>
             </div>
             <Shield className="h-12 w-12 text-yellow-200" />
           </div>
@@ -272,12 +339,14 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-indigo-100">Applications</p>
-              <p className="text-3xl font-bold">{stats.totalApplications}</p>
+              <p className="text-3xl font-bold">{stats.totalApplications || 0}</p>
             </div>
             <FileText className="h-12 w-12 text-indigo-200" />
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 
@@ -289,7 +358,7 @@ const AdminDashboard = () => {
         <button
           onClick={() => {
             setEditingUser(null);
-            setUserForm({ name: '', email: '', mobile: '', role: 'DSA', status: 'active' });
+            setUserForm({ name: '', email: '', mobile: '', role: 'DSA', status: 'active', password: '' });
             setShowUserModal(true);
           }}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700"
@@ -317,6 +386,7 @@ const AdminDashboard = () => {
           <option value="DSA">DSA</option>
           <option value="NBFC">NBFC</option>
           <option value="Co-op">Co-op</option>
+          <option value="admin">Admin</option>
         </select>
         <select
           value={filters.status}
@@ -372,7 +442,7 @@ const AdminDashboard = () => {
                   </span>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-900">
-                  ₹{user.balance?.toLocaleString() || 0}
+                  {user.role === 'admin' ? 'N/A' : `₹${user.balance?.toLocaleString() || 0}`}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-500">
                   {user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}
@@ -387,7 +457,8 @@ const AdminDashboard = () => {
                           email: user.email,
                           mobile: user.mobile || '',
                           role: user.role,
-                          status: user.status
+                          status: user.status,
+                          password: ''
                         });
                         setShowUserModal(true);
                       }}
@@ -439,7 +510,7 @@ const AdminDashboard = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {loginHistory.map((login) => (
+            {loginHistory.length > 0 ? loginHistory.map((login) => (
               <tr key={login.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4">
                   <div className="text-sm font-medium text-gray-900">{login.name}</div>
@@ -459,7 +530,13 @@ const AdminDashboard = () => {
                   </span>
                 </td>
               </tr>
-            ))}
+            )) : (
+              <tr>
+                <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                  <EmptyBox message="No login history found" size={80} />
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -483,7 +560,7 @@ const AdminDashboard = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {activeSessions.map((session) => (
+            {activeSessions.length > 0 ? activeSessions.map((session) => (
               <tr key={session.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4">
                   <div className="text-sm font-medium text-gray-900">{session.name}</div>
@@ -504,7 +581,13 @@ const AdminDashboard = () => {
                   </button>
                 </td>
               </tr>
-            ))}
+            )) : (
+              <tr>
+                <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                  <EmptyBox message="No active sessions found" size={80} />
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -578,6 +661,13 @@ const AdminDashboard = () => {
                 onChange={(e) => setUserForm({ ...userForm, mobile: e.target.value })}
                 className="w-full px-3 py-2 border rounded-md"
               />
+              <input
+                type="password"
+                placeholder="Password"
+                value={userForm.password}
+                onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                className="w-full px-3 py-2 border rounded-md"
+              />
               <select
                 value={userForm.role}
                 onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
@@ -586,6 +676,7 @@ const AdminDashboard = () => {
                 <option value="DSA">DSA</option>
                 <option value="NBFC">NBFC</option>
                 <option value="Co-op">Co-op</option>
+                <option value="admin">Admin</option>
               </select>
               <select
                 value={userForm.status}

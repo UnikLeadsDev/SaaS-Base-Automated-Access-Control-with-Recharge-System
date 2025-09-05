@@ -61,6 +61,31 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
+    // Update last login
+    await db.query('UPDATE users SET last_login = NOW() WHERE user_id = ?', [user[0].user_id]);
+
+    // Log login history and create session
+    try {
+      const userAgent = req.headers['user-agent'] || 'Unknown';
+      const ipAddress = req.ip || req.connection.remoteAddress || 'Unknown';
+      
+      await db.query(
+        'INSERT INTO login_history (user_id, ip_address, browser, login_method) VALUES (?, ?, ?, ?)',
+        [user[0].user_id, ipAddress, userAgent, 'email']
+      );
+
+      // Create active session
+      const sessionToken = token.substring(0, 32);
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      
+      await db.query(
+        'INSERT INTO user_sessions (user_id, session_token, ip_address, browser, expires_at) VALUES (?, ?, ?, ?, ?)',
+        [user[0].user_id, sessionToken, ipAddress, userAgent, expiresAt]
+      );
+    } catch (e) {
+      console.warn('Failed to log session:', e.message);
+    }
+
     // Generate JWT token
     const token = jwt.sign(
       { id: user[0].user_id, email: user[0].email, role: user[0].role },
