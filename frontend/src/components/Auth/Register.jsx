@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import { motion } from 'framer-motion';
+import { Eye, EyeOff } from 'lucide-react';
 import API_BASE_URL from '../../config/api';
 import previewImage from '../../assets/preview.webp';
+import unikLeadsLogo from '../../assets/Unik leads png.png';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -16,6 +18,8 @@ const Register = () => {
     confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -49,87 +53,143 @@ const Register = () => {
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
-          className="w-full max-w-xs space-y-3"
+          className="w-full max-w-md space-y-4"
         >
           {/* Branding */}
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-indigo-600">SaaS Base</h1>
+            <img src={unikLeadsLogo} alt="Unik Leads" className="h-20 mx-auto mb-2" />
             <h2 className="mt-1 text-lg font-semibold text-gray-800">Create Account</h2>
             <p className="mt-1 text-xs text-gray-600">Join our platform</p>
           </div>
 
           {/* Form */}
-          <form className="space-y-2" onSubmit={handleSubmit}>
-            <input
-              name="name"
-              type="text"
-              required
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Full Name"
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              disabled={loading}
-            />
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Full Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                name="name"
+                type="text"
+                required
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Enter your full name"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                disabled={loading}
+              />
+            </div>
 
-            <input
-              name="email"
-              type="email"
-              required
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Email Address"
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              disabled={loading}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email Address <span className="text-red-500">*</span>
+              </label>
+              <input
+                name="email"
+                type="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter your email address"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                disabled={loading}
+              />
+            </div>
 
-            <input
-              name="mobile"
-              type="tel"
-              value={formData.mobile}
-              onChange={handleChange}
-              placeholder="Mobile Number"
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              disabled={loading}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Mobile Number
+              </label>
+              <input
+                name="mobile"
+                type="tel"
+                value={formData.mobile}
+                onChange={handleChange}
+                placeholder="Enter your mobile number"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                disabled={loading}
+              />
+            </div>
 
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              disabled={loading}
-            >
-              <option value="DSA">DSA</option>
-              <option value="NBFC">NBFC</option>
-              <option value="Co-op">Co-op Bank</option>
-            </select>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Role <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                disabled={loading}
+              >
+                <option value="DSA">DSA</option>
+                <option value="NBFC">NBFC</option>
+                <option value="Co-op">Co-op Bank</option>
+              </select>
+            </div>
 
-            <input
-              name="password"
-              type="password"
-              required
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Password"
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              disabled={loading}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Password <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Enter your password"
+                  className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
+              </div>
+            </div>
 
-            <input
-              name="confirmPassword"
-              type="password"
-              required
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="Confirm Password"
-              className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              disabled={loading}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Confirm Password <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  required
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Confirm your password"
+                  className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
+              </div>
+            </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-1.5 px-3 text-sm bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
+              className="w-full py-2.5 px-4 text-sm bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 transition disabled:opacity-50"
             >
               {loading ? 'Creating...' : 'Create Account'}
             </button>

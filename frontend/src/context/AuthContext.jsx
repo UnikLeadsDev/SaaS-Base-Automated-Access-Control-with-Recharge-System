@@ -66,12 +66,15 @@ export const AuthProvider = ({ children }) => {
       if (userName && userEmail) {
         console.log('Using stored user data for demo mode');
         const isAdmin = userEmail.toLowerCase().includes('admin');
-        setUser({
+        console.log('Is admin user:', isAdmin, 'Email:', userEmail);
+        const userData = {
           id: 1,
           name: userName,
           email: userEmail,
           role: isAdmin ? 'admin' : 'DSA'
-        });
+        };
+        console.log('Setting user data:', userData);
+        setUser(userData);
       } else {
         console.log('No stored user data, clearing token');
         localStorage.removeItem('token');
@@ -121,6 +124,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('userName', mockUser.name);
         localStorage.setItem('userEmail', mockUser.email);
         axios.defaults.headers.common['Authorization'] = `Bearer ${mockToken}`;
+        console.log('Mock login - User created:', mockUser);
         setUser(mockUser);
         
         return { success: true, token: mockToken, user: mockUser };

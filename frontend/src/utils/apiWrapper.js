@@ -1,6 +1,21 @@
 import axios from 'axios';
 import { getMockResponse } from './mockApi.js';
 
+// Add user email header for mock tokens
+axios.interceptors.request.use(
+  config => {
+    const token = localStorage.getItem('token');
+    if (token && token.startsWith('mock_jwt_token_')) {
+      const userEmail = localStorage.getItem('userEmail');
+      if (userEmail) {
+        config.headers['x-user-email'] = userEmail;
+      }
+    }
+    return config;
+  },
+  error => Promise.reject(error)
+);
+
 // Suppress axios network errors in console
 axios.interceptors.response.use(
   response => response,

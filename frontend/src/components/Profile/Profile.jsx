@@ -368,19 +368,18 @@ const Profile = () => {
               >
                 Update Password
               </button>
-              
             </div>
-          
-        </div>
-        <div className="flex gap-4 mt-4">
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-            >
-              Save Profile
-            </button>
-            
           </div>
+        </div>
+        
+        <div className="flex gap-4 mt-4">
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          >
+            Save Profile
+          </button>
+        </div>
       </form>
     </div>
   );

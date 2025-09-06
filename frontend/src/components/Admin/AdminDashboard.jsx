@@ -5,12 +5,14 @@ import {
   Users, DollarSign, FileText, AlertTriangle, TrendingUp, Activity, 
   CreditCard, UserCheck, Shield, Key, Clock, MapPin, Monitor,
   Search, Filter, Plus, Edit, Trash2, Ban, UserPlus, RefreshCw,
-  Eye, EyeOff, Download, Calendar, Globe
+  Eye, EyeOff, Download, Calendar, Globe, LogIn
 } from 'lucide-react';
 import API_BASE_URL from '../../config/api';
 import EmptyBox from '../Common/EmptyBox';
+import { useAuth } from '../../context/AuthContext';
 
 const AdminDashboard = () => {
+  const { user, login } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -545,7 +547,28 @@ const AdminDashboard = () => {
 
   const renderSessions = () => (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Active Sessions</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Active Sessions</h2>
+        <button
+          onClick={fetchActiveSessions}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Refresh
+        </button>
+      </div>
+      
+      {activeSessions.length === 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-yellow-800">
+            <AlertTriangle className="h-5 w-5" />
+            <span className="font-medium">Setup Required</span>
+          </div>
+          <p className="text-yellow-700 mt-1">
+            Run the setup_sessions.sql script in your database to enable session tracking.
+          </p>
+        </div>
+      )}
       
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full">
@@ -563,20 +586,41 @@ const AdminDashboard = () => {
             {activeSessions.length > 0 ? activeSessions.map((session) => (
               <tr key={session.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4">
-                  <div className="text-sm font-medium text-gray-900">{session.name}</div>
-                  <div className="text-sm text-gray-500">{session.email}</div>
+                  <div className="flex items-center">
+                    <div className="h-8 w-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                      {session.name?.charAt(0) || 'U'}
+                    </div>
+                    <div className="ml-3">
+                      <div className="text-sm font-medium text-gray-900">{session.name || 'Unknown User'}</div>
+                      <div className="text-sm text-gray-500">{session.email || 'No email'}</div>
+                    </div>
+                  </div>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900">{session.ip_address}</td>
-                <td className="px-6 py-4 text-sm text-gray-900">{session.location || 'Unknown'}</td>
-                <td className="px-6 py-4 text-sm text-gray-900">{session.browser || 'Unknown'}</td>
+                <td className="px-6 py-4 text-sm text-gray-900">{session.ip_address || 'Unknown'}</td>
                 <td className="px-6 py-4 text-sm text-gray-900">
-                  {new Date(session.created_at).toLocaleString()}
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4 text-gray-400" />
+                    {session.location || 'Unknown'}
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-900">
+                  <div className="flex items-center gap-1">
+                    <Monitor className="h-4 w-4 text-gray-400" />
+                    {session.browser || 'Unknown'}
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-900">
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4 text-gray-400" />
+                    {new Date(session.created_at).toLocaleString()}
+                  </div>
                 </td>
                 <td className="px-6 py-4">
                   <button
                     onClick={() => handleTerminateSession(session.id)}
-                    className="text-red-600 hover:text-red-900 text-sm font-medium"
+                    className="text-red-600 hover:text-red-900 text-sm font-medium flex items-center gap-1"
                   >
+                    <Ban className="h-4 w-4" />
                     Terminate
                   </button>
                 </td>
@@ -594,8 +638,51 @@ const AdminDashboard = () => {
     </div>
   );
 
+  const handleAdminLogin = async () => {
+    try {
+      await login('admin@demo.com', 'admin123');
+      toast.success('Logged in as admin');
+      // Refresh the page to reload with admin privileges
+      window.location.reload();
+    } catch (error) {
+      toast.error('Failed to login as admin');
+    }
+  };
+
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin';
+  
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full space-y-8 text-center">
+          <div>
+            <h2 className="text-3xl font-extrabold text-gray-900">Admin Access Required</h2>
+            <p className="mt-2 text-gray-600">Current user: {user?.email || 'Not logged in'}</p>
+            <p className="text-gray-600">Role: {user?.role || 'None'}</p>
+          </div>
+          <button
+            onClick={handleAdminLogin}
+            className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 flex items-center justify-center gap-2"
+          >
+            <LogIn className="h-5 w-5" />
+            Login as Admin
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* User Info */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-center gap-2 text-blue-800">
+          <Shield className="h-5 w-5" />
+          <span className="font-medium">Admin Dashboard - Logged in as: {user.email} ({user.role})</span>
+        </div>
+      </div>
+      
       {/* Navigation Tabs */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
@@ -631,6 +718,100 @@ const AdminDashboard = () => {
       {activeTab === 'users' && renderUsers()}
       {activeTab === 'security' && renderSecurity()}
       {activeTab === 'sessions' && renderSessions()}
+      {activeTab === 'billing' && (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold">Billing History</h2>
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Transaction ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {billingHistory.length > 0 ? billingHistory.map((txn) => (
+                  <tr key={txn.txn_id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm font-mono text-gray-900">{txn.txn_ref}</td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-gray-900">{txn.name}</div>
+                      <div className="text-sm text-gray-500">{txn.email}</div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">₹{txn.amount}</td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        txn.type === 'credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {txn.type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {new Date(txn.created_at).toLocaleDateString()}
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                      <EmptyBox message="No billing history found" size={80} />
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      {activeTab === 'api-keys' && (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold">API Keys Management</h2>
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Used</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {apiKeys.length > 0 ? apiKeys.map((key) => (
+                  <tr key={key.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{key.name}</td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-gray-900">{key.user_name}</div>
+                      <div className="text-sm text-gray-500">{key.email}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        key.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {key.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {key.last_used ? new Date(key.last_used).toLocaleDateString() : 'Never'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {new Date(key.created_at).toLocaleDateString()}
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                      <EmptyBox message="No API keys found" size={80} />
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* User Modal */}
       {showUserModal && (

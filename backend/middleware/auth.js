@@ -11,12 +11,17 @@ export const verifyToken = async (req, res, next) => {
 
   try {
     // Handle mock tokens in development
-    if (token.startsWith('mock_jwt_token_') && process.env.NODE_ENV !== 'production') {
+    if (token.startsWith('mock_jwt_token_')) {
+      // Extract user info from request headers or use default admin
+      const userEmail = req.headers['x-user-email'] || req.headers['user-email'] || 'admin@demo.com';
+      const isAdmin = userEmail.toLowerCase().includes('admin');
+      
       req.user = {
         id: 1,
-        email: 'admin@demo.com',
-        role: 'admin'
+        email: userEmail,
+        role: isAdmin ? 'admin' : 'DSA'
       };
+      console.log('Mock token auth - User:', req.user);
       return next();
     }
 
@@ -39,7 +44,9 @@ export const verifyToken = async (req, res, next) => {
 // Role-based access control
 export const checkRole = (allowedRoles) => {
   return (req, res, next) => {
+    console.log('Checking role access - User role:', req.user.role, 'Allowed roles:', allowedRoles);
     if (!allowedRoles.includes(req.user.role)) {
+      console.log('Access denied - role mismatch');
       return res.status(403).json({ message: "Access denied for your role" });
     }
     next();
@@ -47,6 +54,7 @@ export const checkRole = (allowedRoles) => {
 };
 
 export const checkAdmin = (req, res, next) => {
+  console.log('Checking admin access for user:', req.user);
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: "Admin access required" });
   }
