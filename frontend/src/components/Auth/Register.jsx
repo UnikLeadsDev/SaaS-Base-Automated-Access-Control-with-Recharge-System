@@ -6,7 +6,11 @@ import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import API_BASE_URL from '../../config/api';
 import previewImage from '../../assets/preview.webp';
+<<<<<<< HEAD
 import unikLeadsLogo from '../../assets/Unik leads png.png';
+=======
+import companyLogo from '../../assets/Unik leads png.png';
+>>>>>>> 270d56461277ae27b6f5111b90cd93bc16b51f0d
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -57,15 +61,30 @@ const Register = () => {
         >
           {/* Branding */}
           <div className="text-center">
+<<<<<<< HEAD
             <img src={unikLeadsLogo} alt="Unik Leads" className="h-20 mx-auto mb-2" />
             <h2 className="mt-1 text-lg font-semibold text-gray-800">Create Account</h2>
+=======
+            <img src={companyLogo} alt="Unik Leads" className="company-logo" />
+             <h1 className="welcome-text">
+              Welcome
+            </h1>
+             <p className="subtitle">Register to your Dashboard</p>
+>>>>>>> 270d56461277ae27b6f5111b90cd93bc16b51f0d
             <p className="mt-1 text-xs text-gray-600">Join our platform</p>
           </div>
 
           {/* Form */}
+<<<<<<< HEAD
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+=======
+          <form className="space-y-3" onSubmit={handleSubmit}>
+            {/* Full Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+>>>>>>> 270d56461277ae27b6f5111b90cd93bc16b51f0d
                 Full Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -75,13 +94,23 @@ const Register = () => {
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="Enter your full name"
+<<<<<<< HEAD
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+=======
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+>>>>>>> 270d56461277ae27b6f5111b90cd93bc16b51f0d
                 disabled={loading}
               />
             </div>
 
+<<<<<<< HEAD
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+=======
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+>>>>>>> 270d56461277ae27b6f5111b90cd93bc16b51f0d
                 Email Address <span className="text-red-500">*</span>
               </label>
               <input
@@ -90,27 +119,48 @@ const Register = () => {
                 required
                 value={formData.email}
                 onChange={handleChange}
+<<<<<<< HEAD
                 placeholder="Enter your email address"
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+=======
+                placeholder="Enter your email"
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+>>>>>>> 270d56461277ae27b6f5111b90cd93bc16b51f0d
                 disabled={loading}
               />
             </div>
 
+<<<<<<< HEAD
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Mobile Number
+=======
+            {/* Mobile */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Mobile Number <span className="text-red-500">*</span>
+>>>>>>> 270d56461277ae27b6f5111b90cd93bc16b51f0d
               </label>
               <input
                 name="mobile"
                 type="tel"
+<<<<<<< HEAD
                 value={formData.mobile}
                 onChange={handleChange}
                 placeholder="Enter your mobile number"
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+=======
+                required
+                value={formData.mobile}
+                onChange={handleChange}
+                placeholder="Enter your mobile number"
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+>>>>>>> 270d56461277ae27b6f5111b90cd93bc16b51f0d
                 disabled={loading}
               />
             </div>
 
+<<<<<<< HEAD
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Role <span className="text-red-500">*</span>
@@ -120,6 +170,19 @@ const Register = () => {
                 value={formData.role}
                 onChange={handleChange}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+=======
+            {/* Role */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Select Role <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="role"
+                required
+                value={formData.role}
+                onChange={handleChange}
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+>>>>>>> 270d56461277ae27b6f5111b90cd93bc16b51f0d
                 disabled={loading}
               >
                 <option value="DSA">DSA</option>
@@ -128,6 +191,7 @@ const Register = () => {
               </select>
             </div>
 
+<<<<<<< HEAD
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Password <span className="text-red-500">*</span>
@@ -184,6 +248,40 @@ const Register = () => {
                   )}
                 </button>
               </div>
+=======
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Password <span className="text-red-500">*</span>
+              </label>
+              <input
+                name="password"
+                type="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                disabled={loading}
+              />
+            </div>
+
+            {/* Confirm Password */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Confirm Password <span className="text-red-500">*</span>
+              </label>
+              <input
+                name="confirmPassword"
+                type="password"
+                required
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Re-enter your password"
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                disabled={loading}
+              />
+>>>>>>> 270d56461277ae27b6f5111b90cd93bc16b51f0d
             </div>
 
             <button
@@ -205,9 +303,9 @@ const Register = () => {
 
       {/* Right: Image Section */}
       <div className="hidden md:flex items-center justify-center bg-gray-50 p-8">
-        <img 
-          src={previewImage} 
-          alt="SaaS Platform Preview" 
+        <img
+          src={previewImage}
+          alt="SaaS Platform Preview"
           className="w-full h-auto max-w-lg object-contain rounded-lg shadow-lg"
         />
       </div>

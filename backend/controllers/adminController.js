@@ -2,6 +2,12 @@ import db from "../config/db.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import fs from "fs";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const ENV_PATH = ".env";
 
 // Get admin dashboard stats
 export const getAdminStats = async (req, res) => {
@@ -451,68 +457,71 @@ export const manualBalanceUpdate = async (req, res) => {
   }
 };
 
-// Generate API key
-export const generateApiKey = async (req, res) => {
-  try {
-    const { userId, name, permissions } = req.body;
-    
-    const apiKey = 'ak_' + crypto.randomBytes(32).toString('hex');
-    const hashedKey = crypto.createHash('sha256').update(apiKey).digest('hex');
-    
-    await db.query(
-      "INSERT INTO api_keys (user_id, name, key_hash, permissions, created_by) VALUES (?, ?, ?, ?, ?)",
-      [userId, name, hashedKey, JSON.stringify(permissions), req.user.id]
-    );
-    
-    res.json({ message: "API key generated", apiKey });
-  } catch (error) {
-    console.error("Generate API Key Error:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-};
 
-// Get API keys
+// Utility to update env file
+function updateEnvFile(updates) {
+  let envConfig = fs.readFileSync(ENV_PATH, "utf-8").split("\n");
+
+  for (let key in updates) {
+    const regex = new RegExp(`^${key}=.*$`, "m");
+    const newLine = `${key}=${updates[key]}`;
+    let found = false;
+
+    envConfig = envConfig.map(line => {
+      if (line.startsWith(`${key}=`)) {
+        found = true;
+        return newLine;
+      }
+      return line;
+    });
+
+    if (!found) {
+      envConfig.push(newLine);
+    }
+  }
+
+  fs.writeFileSync(ENV_PATH, envConfig.join("\n"));
+}
+
+// Get API Keys
 export const getApiKeys = async (req, res) => {
   try {
-
-    let keys = [];
-    try {
-      const [result] = await db.query(`
-        SELECT ak.id, ak.name, ak.permissions, ak.is_active, ak.created_at, ak.last_used,
-               u.name as user_name, u.email
-        FROM api_keys ak
-        JOIN users u ON ak.user_id = u.user_id
-        ORDER BY ak.created_at DESC
-      `);
-      keys = result;
-    } catch (e) {
-      console.warn('API keys table not found:', e.message);
-    }
-    
-    res.json({ success: true, keys });
+    res.json({
+      razorpayKeyId: process.env.RAZORPAY_KEY_ID,
+      razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET,
+      msg91AuthKey: process.env.MSG91_AUTH_KEY,
+      msg91OtpTemplateId: process.env.MSG91_OTP_TEMPLATE_ID
+    });
   } catch (error) {
-    console.error("Get API Keys Error:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
-};
-
-// Toggle API key status
-export const toggleApiKey = async (req, res) => {
-  try {
-    const { keyId } = req.params;
-    const { is_active } = req.body;
-    
-    await db.query(
-      "UPDATE api_keys SET is_active = ? WHERE id = ?",
-      [is_active ? 1 : 0, keyId]
-    );
-    
-    res.json({ message: "API key status updated" });
-  } catch (error) {
-    console.error("Toggle API Key Error:", error);
+    console.error("Error fetching API keys:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
+// Update API Keys
+export const updateApiKeys = async (req, res) => {
+  try {
+    const { razorpayKeyId, razorpayKeySecret, msg91AuthKey, msg91OtpTemplateId } = req.body;
+
+    const updates = {};
+    if (razorpayKeyId) updates.RAZORPAY_KEY_ID = razorpayKeyId;
+    if (razorpayKeySecret) updates.RAZORPAY_KEY_SECRET = razorpayKeySecret;
+    if (msg91AuthKey) updates.MSG91_AUTH_KEY = msg91AuthKey;
+    if (msg91OtpTemplateId) updates.MSG91_OTP_TEMPLATE_ID = msg91OtpTemplateId;
+
+    // Update in .env file
+    updateEnvFile(updates);
+
+    // Refresh process.env
+    dotenv.config();
+
+    res.json({ message: "API keys updated successfully" });
+  } catch (error) {
+    console.error("Error updating API keys:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 
 // Search transaction by ID
 export const searchTransaction = async (req, res) => {

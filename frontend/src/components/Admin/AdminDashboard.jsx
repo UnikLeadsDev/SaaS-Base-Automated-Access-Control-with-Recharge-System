@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { useAuth } from "../../context/AuthContext";
 import axios from 'axios';
 import { 
   Users, DollarSign, FileText, AlertTriangle, TrendingUp, Activity, 
@@ -14,6 +15,7 @@ import { useAuth } from '../../context/AuthContext';
 const AdminDashboard = () => {
   const { user, login } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [newKeys, setNewKeys] = useState({});
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalRevenue: 0,
@@ -23,7 +25,7 @@ const AdminDashboard = () => {
     suspiciousLogins: 0
   });
   const [loading, setLoading] = useState(true);
-  
+  const { user } = useAuth();
   const [users, setUsers] = useState([]);
   const [loginHistory, setLoginHistory] = useState([]);
   const [activeSessions, setActiveSessions] = useState([]);
@@ -63,13 +65,24 @@ const AdminDashboard = () => {
     loading: false
   });
 
+  const [keys, setKeys] = useState({
+  RAZORPAY_KEY_ID: "",
+  RAZORPAY_KEY_SECRET: "",
+  MSG91_AUTH_KEY: "",
+  MSG91_OTP_TEMPLATE_ID: ""
+});
+
+
   useEffect(() => {
     fetchStats();
     if (activeTab === 'users') fetchUsers();
     if (activeTab === 'security') fetchLoginHistory();
     if (activeTab === 'sessions') fetchActiveSessions();
     if (activeTab === 'billing') fetchBillingHistory();
-    if (activeTab === 'api-keys') fetchApiKeys();
+  //  if (activeTab === 'api-keys') fetchApiKeys();
+   if (activeTab === "api-keys") fetchEnvKeys();
+   
+
   }, [activeTab, filters]);
 
   const fetchStats = async () => {
@@ -186,23 +199,95 @@ const AdminDashboard = () => {
     }
   };
 
-  const fetchApiKeys = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/admin/api-keys`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+  const fetchEnvKeys = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    const res = await axios.get(`${API_BASE_URL}/admin/get-api-keys`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setKeys({
+  RAZORPAY_KEY_ID: res.data.razorpayKeyId,
+  RAZORPAY_KEY_SECRET: res.data.razorpayKeySecret,
+  MSG91_AUTH_KEY: res.data.msg91AuthKey,
+  MSG91_OTP_TEMPLATE_ID: res.data.msg91OtpTemplateId,
+});
+
+    console.log(res.data);
+  } catch (err) {
+    console.error("Error fetching keys:", err);
+  }
+};
+
+const handleUpdateEnvKeys = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    await axios.put(
+      `${API_BASE_URL}/admin/api-keys`,
+      keys,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    toast.success("API Keys updated successfully!");
+    fetchEnvKeys();
+  } catch (err) {
+    console.error("Error updating keys:", err);
+    toast.error("Failed to update keys");
+  }
+};
+
+
+//   const fetchApiKeys = async () => {
+//     try {
+//       const token = localStorage.getItem('token');
+//       const response = await axios.get(`${API_BASE_URL}/admin/api-keys`, {
+//         headers: { Authorization: `Bearer ${token}` }
+//       });
       
-      if (response.data.success !== false) {
-        setApiKeys(response.data.keys || []);
-      } else {
-        setApiKeys([]);
-      }
-    } catch (error) {
-      console.error('Failed to fetch API keys:', error);
-      setApiKeys([]);
-    }
-  };
+//       if (response.data.success !== false) {
+//         setApiKeys(response.data.keys || []);
+//       } else {
+//         setApiKeys([]);
+//       }
+//     } catch (error) {
+//       console.error('Failed to fetch API keys:', error);
+//       setApiKeys([]);
+//     }
+//   };
+
+//   // Generate new API key
+// const handleGenerateApiKey = async (name, permissions = ["read", "write"]) => {
+//   try {
+//     const token = localStorage.getItem("token");
+//     const response = await axios.post(
+//       `${API_BASE_URL}/admin/api-keys`,
+//       { userId: 2, name, permissions }, // attach to Omkar (user_id=2)
+//       { headers: { Authorization: `Bearer ${token}` } }
+//     );
+
+//     if (response.data.apiKey) {
+//       toast.success(`API Key generated for ${name}`);
+//       fetchApiKeys();
+//     }
+//   } catch (error) {
+//     console.error("Failed to generate API key:", error);
+//     toast.error("Failed to generate API key");
+//   }
+// };
+
+// // Toggle API key status
+// const handleToggleApiKey = async (keyId, currentStatus) => {
+//   try {
+//     const token = localStorage.getItem("token");
+//     await axios.put(
+//       `${API_BASE_URL}/admin/api-keys/${keyId}/toggle`,
+//       { is_active: !currentStatus },
+//       { headers: { Authorization: `Bearer ${token}` } }
+//     );
+
+//     fetchApiKeys(); // refresh after update
+//   } catch (error) {
+//     console.error("Failed to toggle API key:", error);
+//   }
+// };
 
   const handleCreateUser = async () => {
     try {
@@ -638,41 +723,6 @@ const AdminDashboard = () => {
     </div>
   );
 
-  const handleAdminLogin = async () => {
-    try {
-      await login('admin@demo.com', 'admin123');
-      toast.success('Logged in as admin');
-      // Refresh the page to reload with admin privileges
-      window.location.reload();
-    } catch (error) {
-      toast.error('Failed to login as admin');
-    }
-  };
-
-  // Check if user is admin
-  const isAdmin = user?.role === 'admin';
-  
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full space-y-8 text-center">
-          <div>
-            <h2 className="text-3xl font-extrabold text-gray-900">Admin Access Required</h2>
-            <p className="mt-2 text-gray-600">Current user: {user?.email || 'Not logged in'}</p>
-            <p className="text-gray-600">Role: {user?.role || 'None'}</p>
-          </div>
-          <button
-            onClick={handleAdminLogin}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 flex items-center justify-center gap-2"
-          >
-            <LogIn className="h-5 w-5" />
-            Login as Admin
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* User Info */}
@@ -718,100 +768,6 @@ const AdminDashboard = () => {
       {activeTab === 'users' && renderUsers()}
       {activeTab === 'security' && renderSecurity()}
       {activeTab === 'sessions' && renderSessions()}
-      {activeTab === 'billing' && (
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold">Billing History</h2>
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Transaction ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {billingHistory.length > 0 ? billingHistory.map((txn) => (
-                  <tr key={txn.txn_id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm font-mono text-gray-900">{txn.txn_ref}</td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">{txn.name}</div>
-                      <div className="text-sm text-gray-500">{txn.email}</div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">₹{txn.amount}</td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        txn.type === 'credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {txn.type}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {new Date(txn.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-                      <EmptyBox message="No billing history found" size={80} />
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-      {activeTab === 'api-keys' && (
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold">API Keys Management</h2>
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Used</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {apiKeys.length > 0 ? apiKeys.map((key) => (
-                  <tr key={key.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{key.name}</td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">{key.user_name}</div>
-                      <div className="text-sm text-gray-500">{key.email}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        key.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {key.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {key.last_used ? new Date(key.last_used).toLocaleDateString() : 'Never'}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {new Date(key.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-                      <EmptyBox message="No API keys found" size={80} />
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
       {/* User Modal */}
       {showUserModal && (

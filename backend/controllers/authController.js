@@ -42,6 +42,8 @@ export const registerUser = async (req, res) => {
   }
 };
 
+import crypto from "crypto";
+
 // Login Controller
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
@@ -120,12 +122,13 @@ export const loginUser = async (req, res) => {
         walletStatus: wallet[0]?.status || "active",
       },
     });
-
   } catch (error) {
     console.error("Login Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
 
 // Get user profile
 export const getUserProfile = async (req, res) => {

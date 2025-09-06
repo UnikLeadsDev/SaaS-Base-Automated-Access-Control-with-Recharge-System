@@ -16,9 +16,8 @@ import {
   terminateAllUserSessions,
   getBillingHistory,
   manualBalanceUpdate,
-  generateApiKey,
   getApiKeys,
-  toggleApiKey,
+  updateApiKeys,
   searchTransaction, 
   updatePaymentByTransactionId 
 } from "../controllers/adminController.js";
@@ -68,8 +67,10 @@ router.get("/transaction/:transactionId", searchTransaction);
 router.put("/transaction/:transactionId", updatePaymentByTransactionId);
 
 // API Key Management
-router.post("/api-keys", generateApiKey);
-router.get("/api-keys", getApiKeys);
-router.put("/api-keys/:keyId/toggle", toggleApiKey);
+// GET API keys (admin only)
+router.get("/get-api-keys", verifyToken, getApiKeys);
+
+// UPDATE API keys (admin only)
+router.put("/api-keys", verifyToken, updateApiKeys);
 
 export default router;
