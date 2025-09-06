@@ -43,20 +43,6 @@ const Profile = () => {
           email: res.data.user?.email || "",
           phone: res.data.user?.mobile || "",
         });
-
-        // setCompany({
-        //   company_name: res.data.company?.company_name || "",
-        //   industry: res.data.company?.industry || "",
-        //   country: res.data.company?.country || "",
-        //   state: res.data.company?.state || "",
-        //   zipcode: res.data.company?.pincode || "",
-        //   city: res.data.company?.city || "",
-        //   address: res.data.company?.address || "",
-        //   gst_no: res.data.company?.gstin || "",
-        //   pan_no: res.data.company?.pan || "",
-        //   website: res.data.company?.website || "",
-        //   logo_url: res.data.company?.logo_url || "",
-        // });
       } catch (error) {
         console.error("Error fetching profile:", error);
       }
@@ -112,6 +98,33 @@ const Profile = () => {
     } catch (error) {
       console.error("Error saving profile:", error);
       alert("Failed to save profile!");
+    }
+  };
+
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("token");
+
+      const payload = {
+        oldPassword: passwords.oldPassword,
+        newPassword: passwords.newPassword,
+        confirmPassword: passwords.confirmPassword,
+      };
+
+      const res = await axios.post(
+        `${API_BASE_URL}/profile/update-password`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      alert("Password updated successfully!");
+      setPasswords({ oldPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (error) {
+      console.error("Error updating password:", error);
+      alert(
+        error.response?.data?.message || "Failed to update password!"
+      );
     }
   };
 
@@ -249,8 +262,6 @@ const Profile = () => {
                   className="w-full border rounded-md px-3 py-2"
                 />
               </div>
-
-            
           </div>
         </div>
 
@@ -295,9 +306,8 @@ const Profile = () => {
             </div>
           </div>
 
-          
-           <h2 className="text-lg font-semibold mb-4 border-b pb-2">Password</h2>
-         
+          <h2 className="text-lg font-semibold mb-4 border-b pb-2">Password</h2>
+          <div className="space-y-4">
             <div>
               <label className="block mb-1 text-sm font-medium">Old Password</label>
               <input
@@ -330,24 +340,27 @@ const Profile = () => {
                 className="w-full border rounded-md px-3 py-2"
               />
             </div>
+
+            <div className="flex gap-4 mt-4">
+              <button
+                type="button"
+                onClick={handleUpdatePassword}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              >
+                Update Password
+              </button>
+            </div>
           </div>
         </div>
         
         <div className="flex gap-4 mt-4">
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-            >
-              Save Profile
-            </button>
-            <button
-              type="button"
-              className="border border-blue-600 text-blue-600 px-4 py-2 rounded-md hover:bg-blue-50"
-              onClick={() => alert("Generate password logic goes here")}
-            >
-              Generate Password
-            </button>
-          </div>
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          >
+            Save Profile
+          </button>
+        </div>
       </form>
     </div>
   );

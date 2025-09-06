@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import API_BASE_URL from '../../config/api';
 import EmptyBox from '../Common/EmptyBox';
-import { useAuth } from '../../context/AuthContext';
 
 const AdminDashboard = () => {
   const { user, login } = useAuth();
@@ -25,7 +24,6 @@ const AdminDashboard = () => {
     suspiciousLogins: 0
   });
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
   const [users, setUsers] = useState([]);
   const [loginHistory, setLoginHistory] = useState([]);
   const [activeSessions, setActiveSessions] = useState([]);

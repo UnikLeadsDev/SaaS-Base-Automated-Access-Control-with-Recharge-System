@@ -42,8 +42,6 @@ export const registerUser = async (req, res) => {
   }
 };
 
-import crypto from "crypto";
-
 // Login Controller
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
