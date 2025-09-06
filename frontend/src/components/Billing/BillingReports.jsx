@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Download, TrendingUp, FileText } from 'lucide-react';
 import api from '../../config/api';
+import axios from "axios";
+import API_BASE_URL from "../../config/api";
 import toast from 'react-hot-toast';
 
 const BillingReports = () => {
@@ -16,29 +18,40 @@ const BillingReports = () => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const generateReport = async () => {
-    try {
-      setLoading(true);
-      let response;
+ const generateReport = async () => {
+  try {
+    setLoading(true);
+    let response;
 
-      if (reportType === 'monthly') {
-        response = await api.get(`/billing/statement?year=${monthYear.year}&month=${monthYear.month}`);
-      } else {
-        const params = new URLSearchParams(dateRange).toString();
-        response = await api.get(`/billing/report?${params}`);
-      }
-
-      if (response.data.success) {
-        setReport(response.data.statement || response.data.report);
-        toast.success('Report generated successfully');
-      }
-    } catch (error) {
-      // Set empty report instead of showing error
-      setReport({ summary: { totalInvoiced: 0, totalGST: 0 }, invoices: [], transactions: [] });
-    } finally {
-      setLoading(false);
+    if (reportType === "monthly") {
+      response = await axios.get(
+        `${API_BASE_URL}/billing/statement?year=${monthYear.year}&month=${monthYear.month}`
+      );
+    } else {
+      const params = new URLSearchParams(dateRange).toString();
+      response = await axios.get(`${API_BASE_URL}/billing/report?${params}`);
     }
-  };
+
+    if (response.data.success) {
+      setReport(response.data.statement || response.data.report);
+      toast.success("Report generated successfully");
+    }
+  } catch (error) {
+    console.error(
+      "Error generating report:",
+      error.response?.data || error.message
+    );
+
+    // fallback empty report
+    setReport({
+      summary: { totalInvoiced: 0, totalGST: 0 },
+      invoices: [],
+      transactions: [],
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   const calculateGST = async () => {
     try {

@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Download, Eye, Calendar, Filter } from 'lucide-react';
 import api from '../../config/api';
 import toast from 'react-hot-toast';
-import API_BASE_URL from '../../config/api';
+
 import EmptyBox from '../Common/EmptyBox';
+import axios from "axios";
+import API_BASE_URL from "../../config/api";
+
 
 const InvoiceList = () => {
   const [invoices, setInvoices] = useState([]);
@@ -19,45 +22,52 @@ const InvoiceList = () => {
     fetchInvoices();
   }, [filters]);
 
-  const fetchInvoices = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams(filters).toString();
-     const response = await api.get(`${API_BASE_URL}/billing/invoices?${params}`);
-      
-      if (response.data.success) {
-        setInvoices(response.data.invoices);
-        setPagination(response.data.pagination);
-      }
-    } catch (error) {
-      // Set empty data instead of showing error
-      setInvoices([]);
-      setPagination({ page: 1, pages: 1, total: 0 });
-    } finally {
-      setLoading(false);
-    }
-  };
+const fetchInvoices = async () => {
+  try {
+    setLoading(true);
+    const params = new URLSearchParams(filters).toString();
 
-  const downloadPDF = async (invoiceId, invoiceNumber) => {
-    try {
-      const response = await api.get(`/billing/invoice/${invoiceId}/pdf`, {
-        responseType: 'blob'
-      });
-      
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `invoice-${invoiceNumber}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      
-      toast.success('Invoice downloaded successfully');
-    } catch (error) {
-      toast.error('Failed to download invoice');
+    const response = await axios.get(`${API_BASE_URL}/billing/invoices?${params}`);
+    console.log("Invoices Response:", response.data);
+
+    if (response.data.success) {
+      setInvoices(response.data.invoices);
+      setPagination(response.data.pagination);
     }
-  };
+  } catch (error) {
+    console.error("Error fetching invoices:", error.response?.data || error.message);
+
+    // fallback empty data
+    setInvoices([]);
+    setPagination({ page: 1, pages: 1, total: 0 });
+  } finally {
+    setLoading(false);
+  }
+};
+
+// ✅ Download invoice as PDF
+const downloadPDF = async (invoiceId, invoiceNumber) => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/billing/invoice/${invoiceId}/pdf`,
+      { responseType: "blob" }
+    );
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `invoice-${invoiceNumber}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+    toast.success("Invoice downloaded successfully");
+  } catch (error) {
+    console.error("Error downloading invoice:", error.response?.data || error.message);
+    toast.error("Failed to download invoice");
+  }
+};
 
   const getStatusColor = (status) => {
     const colors = {

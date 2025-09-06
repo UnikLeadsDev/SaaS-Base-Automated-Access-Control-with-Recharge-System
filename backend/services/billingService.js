@@ -259,10 +259,18 @@ class BillingService {
     `, [userId, year, month]);
 
     const [transactions] = await db.query(`
-      SELECT transaction_id, type, amount, description, created_at, status
-      FROM transactions
-      WHERE user_id = ? AND YEAR(created_at) = ? AND MONTH(created_at) = ?
-      ORDER BY created_at DESC
+      SELECT 
+  txn_id, 
+  type, 
+  amount, 
+  payment_mode, 
+  txn_ref, 
+  created_at
+FROM transactions
+WHERE user_id = ? 
+  AND YEAR(created_at) = ? 
+  AND MONTH(created_at) = ?
+ORDER BY created_at DESC;
     `, [userId, year, month]);
 
     const totalInvoiced = invoices.reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0);

@@ -4,7 +4,9 @@ import InvoiceList from './InvoiceList';
 import BillingReports from './BillingReports';
 import TaxCalculator from './TaxCalculator';
 import api from '../../config/api';
+import API_BASE_URL from "../../config/api";
 import toast from 'react-hot-toast';
+import axios from "axios";
 
 const BillingDashboard = () => {
   const [activeTab, setActiveTab] = useState('invoices');
@@ -15,24 +17,32 @@ const BillingDashboard = () => {
     fetchBillingSummary();
   }, []);
 
-  const fetchBillingSummary = async () => {
-    try {
-      const response = await api.get('/billing/summary');
-      if (response.data.success) {
-        setSummary(response.data.summary);
-      }
-    } catch (error) {
-      // Set fallback data instead of showing error
-      setSummary({
-        paid_invoices: 0,
-        pending_invoices: 0,
-        total_paid: 0,
-        total_outstanding: 0
-      });
-    } finally {
-      setLoading(false);
+const fetchBillingSummary = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/billing/summary`);
+    console.log("Billing Summary Response:", response.data);
+
+    if (response.data.success) {
+      setSummary(response.data.summary);
     }
-  };
+  } catch (error) {
+    console.error(
+      "Error fetching billing summary:",
+      error.response?.data || error.message
+    );
+
+    // fallback summary
+    setSummary({
+      paid_invoices: 0,
+      pending_invoices: 0,
+      total_paid: 0,
+      total_outstanding: 0,
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const tabs = [
     { id: 'invoices', label: 'Invoices', icon: FileText },
