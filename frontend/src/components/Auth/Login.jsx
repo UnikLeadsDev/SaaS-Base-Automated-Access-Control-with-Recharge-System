@@ -17,7 +17,7 @@ const Login = () => {
 
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login, simpleLogin } = useAuth();
+  const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -57,15 +57,15 @@ const Login = () => {
     try {
       const payload = JSON.parse(atob(response.credential.split('.')[1]));
       const userData = {
-        id: payload.sub,
         name: payload.name,
-        email: payload.email,
-        role: 'DSA'
+        email: payload.email
       };
-      await simpleLogin(userData);
+      await googleLogin(userData);
+      toast.success('Google login successful!');
       navigate('/dashboard');
     } catch (error) {
       console.error('Google login failed:', error);
+      toast.error('Google login failed. Please try again.');
     }
   };
 

@@ -7,14 +7,17 @@ CREATE TABLE users (
     user_id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
+    google_id VARCHAR(255) NULL,
     mobile VARCHAR(15),
     password VARCHAR(255) NOT NULL,
     role ENUM('DSA', 'NBFC', 'Co-op', 'admin') NOT NULL,
     status ENUM('active', 'blocked') DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    last_login TIMESTAMP NULL,
     INDEX idx_email_status (email, status),
-    INDEX idx_role_status (role, status)
+    INDEX idx_role_status (role, status),
+    INDEX idx_google_id (google_id)
 );
 
 -- Wallets table

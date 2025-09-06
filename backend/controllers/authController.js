@@ -128,6 +128,77 @@ export const loginUser = async (req, res) => {
 
 
 
+// Google OAuth Login
+export const googleLogin = async (req, res) => {
+  const { email, name } = req.body;
+
+  if (!email || !name) {
+    return res.status(400).json({ message: "Email and name are required" });
+  }
+
+  try {
+    // Check if user exists with this email
+    const [existingUser] = await db.query(
+      "SELECT * FROM users WHERE email = ? AND status = 'active'",
+      [email]
+    );
+
+    let user;
+    if (existingUser.length > 0) {
+      // User exists, log them in
+      user = existingUser[0];
+      
+      // Update last login
+      await db.query(
+        "UPDATE users SET updated_at = NOW() WHERE user_id = ?",
+        [user.user_id]
+      );
+    } else {
+      // Create new user with empty password for Google OAuth
+      const result = await db.query(
+        "INSERT INTO users (name, email, role, status, password) VALUES (?, ?, 'DSA', 'active', '')",
+        [name, email]
+      );
+      
+      const [newUser] = await db.query(
+        "SELECT * FROM users WHERE user_id = ?",
+        [result[0].insertId]
+      );
+      user = newUser[0];
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user.user_id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "24h" }
+    );
+
+    // Get wallet info
+    const [wallet] = await db.query(
+      "SELECT balance, status FROM wallets WHERE user_id = ?",
+      [user.user_id]
+    );
+
+    res.json({
+      success: true,
+      message: "Google login successful",
+      token,
+      user: {
+        id: user.user_id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        walletBalance: wallet[0]?.balance || 0,
+        walletStatus: wallet[0]?.status || "active",
+      },
+    });
+  } catch (error) {
+    console.error("Google Login Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 // Get user profile
 export const getUserProfile = async (req, res) => {
   try {
