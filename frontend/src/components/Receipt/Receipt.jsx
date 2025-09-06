@@ -57,12 +57,13 @@ function Receipt() {
     const amountDisplay = receipt.payment_mode === 'usd' 
       ? `$${(receipt.amount / 83).toFixed(2)} (₹${receipt.amount})` 
       : `₹${receipt.amount}`;
+      
 
     autoTable(doc, {
       startY: 40,
       head: [["Field", "Details"]],
       body: [
-        ["Transaction ID", receipt.txn_id],
+        ["Transaction ID", receipt.transaction_id || receipt.txn_ref || receipt.receipt_id],
         ["Name", user?.name || "—"],
         ["Date", new Date(receipt.receipt_date).toLocaleDateString("en-IN")],
         ["Payment Mode", receipt.payment_mode],
@@ -102,7 +103,7 @@ function Receipt() {
       startY: 40,
       head: [["Field", "Details"]],
       body: [
-        ["Transaction ID", receipt.txn_id],
+        ["Transaction ID", receipt.transaction_id || receipt.txn_ref || receipt.receipt_id],
         ["Name", user?.name || "—"],
         ["Date", new Date(receipt.receipt_date).toLocaleDateString("en-IN")],
         ["Payment Mode", receipt.payment_mode],

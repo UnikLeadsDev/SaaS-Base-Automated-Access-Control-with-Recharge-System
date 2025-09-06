@@ -34,11 +34,17 @@ export const createReceipt = async (req, res) => {
       return res.status(200).json({ success: true, message: "Receipt already exists" });
     }
 
+    const [user] = await db.query(
+  "SELECT name, email FROM users WHERE user_id = ?",
+  [req.user.id]
+);
+
+
     await db.query(
-      `INSERT INTO receipts (user_id, txn_id, amount, payment_mode, status, receipt_date)
-       VALUES (?, ?, ?, ?, 'success', CURDATE())`,
-      [req.user.id, txnId, amount, paymentMode]
-    );
+  `INSERT INTO receipts (user_id, txn_id, user_name, email, amount, payment_mode, status, receipt_date)
+   VALUES (?, ?, ?, ?, ?, ?, 'success', CURDATE())`,
+  [req.user.id, txnId, user[0].name, user[0].email, amount, paymentMode]
+);
 
     res.json({ success: true });
   } catch (error) {
