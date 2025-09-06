@@ -115,6 +115,36 @@ const Profile = () => {
     }
   };
 
+
+   // Update Password
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("token");
+
+      const payload = {
+        oldPassword: passwords.oldPassword,
+        newPassword: passwords.newPassword,
+        confirmPassword: passwords.confirmPassword,
+      };
+
+      const res = await axios.post(
+        `${API_BASE_URL}/profile/update-password`,
+   
+     payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      alert("Password upadted Sucessfully",res.data.message);
+      setPasswords({ oldPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (error) {
+      console.error("Error updating password:", error);
+      alert(
+        error.response?.data?.message || "Failed to update password!"
+      );
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-6 bg-white shadow-md rounded-lg">
       <h1 className="text-2xl font-semibold mb-6">Profile</h1>
@@ -329,7 +359,18 @@ const Profile = () => {
                 className="w-full border rounded-md px-3 py-2"
               />
             </div>
-          </div>
+
+            <div className="flex gap-4 mt-4">
+              <button
+                type="submit"
+                onClick={handleUpdatePassword}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              >
+                Update Password
+              </button>
+              
+            </div>
+          
         </div>
         <div className="flex gap-4 mt-4">
             <button
@@ -338,13 +379,7 @@ const Profile = () => {
             >
               Save Profile
             </button>
-            <button
-              type="button"
-              className="border border-blue-600 text-blue-600 px-4 py-2 rounded-md hover:bg-blue-50"
-              onClick={() => alert("Generate password logic goes here")}
-            >
-              Generate Password
-            </button>
+            
           </div>
       </form>
     </div>
