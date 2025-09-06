@@ -1,4 +1,5 @@
 import db from "../config/db.js"; // your MySQL connection
+import bcrypt from "bcryptjs";
 
 // Fetch user profile (basic info + company if exists)
 export const getProfile = async (req, res) => {
@@ -106,6 +107,51 @@ export const saveCompanyProfile = async (req, res) => {
     }
   } catch (error) {
     console.error("Error saving company profile:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+
+export const updatePassword = async (req, res) => {
+  try {
+    const userId = req.user.id; // coming from JWT middleware
+    console.log("🔒 Updating password for user ID:", userId);
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: "Passwords do not match" });
+    }
+
+    // Fetch user
+    const [rows] = await db.query("SELECT password FROM users WHERE user_id = ?", [userId]);
+    if (!rows.length) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const hashedPassword = rows[0].password;
+
+    // Compare old password
+    const isMatch = await bcrypt.compare(oldPassword, hashedPassword);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Old password is incorrect" });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const newHashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update in DB
+    await db.query("UPDATE users SET password = ? WHERE user_id = ?", [newHashedPassword, userId]);
+    console.log("✅ Password updated for user ID:", userId);
+
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error("❌ Error updating password:", error.message);
     res.status(500).json({ message: "Server error" });
   }
 };

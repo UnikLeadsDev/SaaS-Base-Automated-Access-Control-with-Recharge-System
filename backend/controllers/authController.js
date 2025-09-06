@@ -41,6 +41,8 @@ export const registerUser = async (req, res) => {
   }
 };
 
+import crypto from "crypto";
+
 // Login Controller
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
@@ -51,70 +53,81 @@ export const loginUser = async (req, res) => {
 
   try {
     // Check if user exists and is active
-    const [user] = await db.query("SELECT * FROM users WHERE email = ? AND status = 'active'", [email]);
+    const [user] = await db.query(
+      "SELECT * FROM users WHERE email = ? AND status = 'active'",
+      [email]
+    );
     if (user.length === 0) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
+    // Validate password
     const validPassword = await bcrypt.compare(password, user[0].password);
     if (!validPassword) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
     // Update last login
-    await db.query('UPDATE users SET last_login = NOW() WHERE user_id = ?', [user[0].user_id]);
+    await db.query("UPDATE users SET last_login = NOW() WHERE user_id = ?", [
+      user[0].user_id,
+    ]);
 
-    // Log login history and create session
-    try {
-      const userAgent = req.headers['user-agent'] || 'Unknown';
-      const ipAddress = req.ip || req.connection.remoteAddress || 'Unknown';
-      
-      await db.query(
-        'INSERT INTO login_history (user_id, ip_address, browser, login_method) VALUES (?, ?, ?, ?)',
-        [user[0].user_id, ipAddress, userAgent, 'email']
-      );
-
-      // Create active session
-      const sessionToken = token.substring(0, 32);
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-      
-      await db.query(
-        'INSERT INTO user_sessions (user_id, session_token, ip_address, browser, expires_at) VALUES (?, ?, ?, ?, ?)',
-        [user[0].user_id, sessionToken, ipAddress, userAgent, expiresAt]
-      );
-    } catch (e) {
-      console.warn('Failed to log session:', e.message);
-    }
-
-    // Generate JWT token
+    // ✅ Generate JWT token
     const token = jwt.sign(
       { id: user[0].user_id, email: user[0].email, role: user[0].role },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
 
-    // Get wallet info
-    const [wallet] = await db.query("SELECT balance, status FROM wallets WHERE user_id = ?", [user[0].user_id]);
+    // ✅ Generate a random unique session token
+    const sessionToken = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    res.json({ 
+    // Log login history and create session
+    try {
+      const userAgent = req.headers["user-agent"] || "Unknown";
+      const ipAddress = req.ip || req.connection.remoteAddress || "Unknown";
+
+      await db.query(
+        "INSERT INTO login_history (user_id, ip_address, browser, login_method) VALUES (?, ?, ?, ?)",
+        [user[0].user_id, ipAddress, userAgent, "email"]
+      );
+
+      await db.query(
+        "INSERT INTO user_sessions (user_id, session_token, ip_address, browser, expires_at) VALUES (?, ?, ?, ?, ?)",
+        [user[0].user_id, sessionToken, ipAddress, userAgent, expiresAt]
+      );
+    } catch (e) {
+      console.warn("Failed to log session:", e.message);
+    }
+
+    // Get wallet info
+    const [wallet] = await db.query(
+      "SELECT balance, status FROM wallets WHERE user_id = ?",
+      [user[0].user_id]
+    );
+
+    res.json({
       success: true,
-      message: "Login successful", 
-      token,
+      message: "Login successful",
+      token, // JWT for client auth
+      sessionToken, // session token stored in DB
       user: {
         id: user[0].user_id,
         name: user[0].name,
         email: user[0].email,
         role: user[0].role,
         walletBalance: wallet[0]?.balance || 0,
-        walletStatus: wallet[0]?.status || 'active'
-      }
+        walletStatus: wallet[0]?.status || "active",
+      },
     });
-
   } catch (error) {
     console.error("Login Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
 
 // Get user profile
 export const getUserProfile = async (req, res) => {
