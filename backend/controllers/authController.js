@@ -15,6 +15,8 @@ export const registerUser = async (req, res) => {
   try {
     // Check if email exists
     const [existingUser] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
+    console.log(existingUser)
+    console.log(existingUser.length)
     if (existingUser.length > 0) {
       return res.status(400).json({ message: "Email already exists" });
     }

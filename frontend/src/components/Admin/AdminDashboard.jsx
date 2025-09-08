@@ -370,7 +370,7 @@ const handleUpdateEnvKeys = async () => {
         <>
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-lg text-white">
+        <div  onClick={()=>setActiveTab("users")} className="cursor-pointer bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-lg text-white">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-100">Total Users</p>
@@ -390,7 +390,7 @@ const handleUpdateEnvKeys = async () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-6 rounded-lg text-white">
+        <div  onClick={()=>setActiveTab("sessions")} className=" cursor-pointer bg-gradient-to-r from-purple-500 to-purple-600 p-6 rounded-lg text-white">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-purple-100">Active Sessions</p>
@@ -410,7 +410,7 @@ const handleUpdateEnvKeys = async () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 p-6 rounded-lg text-white">
+        <div onClick={()=>setActiveTab("security")} className="cursor-pointer bg-gradient-to-r from-yellow-500 to-yellow-600 p-6 rounded-lg text-white">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-yellow-100">Suspicious Logins</p>
