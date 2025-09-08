@@ -175,42 +175,45 @@ class NotificationService {
   }
 
   /**
-   * High-level notifications
+   * Generic notification sender
    */
-  async sendWelcomeMessage(mobile, name, userId = null) {
-    const template = MSG91_TEMPLATES.WELCOME;
-    const message = `Welcome ${name}! Your SaaS Base account has been created successfully.`;
-    await this.queueNotification(userId, 'sms', 'welcome', mobile, message, template?.SMS);
-    if (this.enableWhatsApp) {
-      await this.queueNotification(userId, 'whatsapp', 'welcome', mobile, message, template?.WHATSAPP);
+  async sendNotification(type, mobile, data, userId = null) {
+    const templates = {
+      welcome: { template: MSG91_TEMPLATES.WELCOME, message: `Welcome ${data.name}! Your SaaS Base account has been created successfully.` },
+      payment_success: { template: MSG91_TEMPLATES.PAYMENT_SUCCESS, message: `Payment of ₹${data.amount} received${data.newBalance ? `. New balance: ₹${data.newBalance}` : ''}.` },
+      low_balance: { template: MSG91_TEMPLATES.LOW_BALANCE, message: `Alert: Wallet balance is ₹${data.balance}. Please recharge.` },
+      expiry_alert: { template: MSG91_TEMPLATES.SUBSCRIPTION_EXPIRY, message: `Hi ${data.name}, your ${data.planName} expires on ${data.expiryDate}. Renew now.` },
+      form_submitted: { template: MSG91_TEMPLATES.FORM_SUBMITTED, message: `Your form "${data.formName}" has been submitted successfully.` }
+    };
+
+    const config = templates[type];
+    if (!config) return;
+
+    await this.queueNotification(userId, 'sms', type, mobile, config.message, config.template?.SMS);
+    if (this.enableWhatsApp && ['welcome', 'form_submitted'].includes(type)) {
+      await this.queueNotification(userId, 'whatsapp', type, mobile, config.message, config.template?.WHATSAPP);
     }
+  }
+
+  // Convenience methods
+  async sendWelcomeMessage(mobile, name, userId = null) {
+    return this.sendNotification('welcome', mobile, { name }, userId);
   }
 
   async sendPaymentSuccess(mobile, amount, newBalance, userId = null) {
-    const template = MSG91_TEMPLATES.PAYMENT_SUCCESS;
-    const message = `Payment of ₹${amount} received. New balance: ₹${newBalance}.`;
-    await this.queueNotification(userId, 'sms', 'payment_success', mobile, message, template?.SMS);
+    return this.sendNotification('payment_success', mobile, { amount, newBalance }, userId);
   }
 
   async sendLowBalanceAlert(mobile, currentBalance, userId = null) {
-    const template = MSG91_TEMPLATES.LOW_BALANCE;
-    const message = `Alert: Wallet balance is ₹${currentBalance}. Please recharge.`;
-    await this.queueNotification(userId, 'sms', 'low_balance', mobile, message, template?.SMS);
+    return this.sendNotification('low_balance', mobile, { balance: currentBalance }, userId);
   }
 
   async sendSubscriptionExpiryAlert(mobile, name, planName, expiryDate, userId = null) {
-    const template = MSG91_TEMPLATES.SUBSCRIPTION_EXPIRY;
-    const message = `Hi ${name}, your ${planName} expires on ${expiryDate}. Renew now.`;
-    await this.queueNotification(userId, 'sms', 'expiry_alert', mobile, message, template?.SMS);
+    return this.sendNotification('expiry_alert', mobile, { name, planName, expiryDate }, userId);
   }
 
   async sendFormSubmitted(mobile, formName, userId = null) {
-    const template = MSG91_TEMPLATES.FORM_SUBMITTED;
-    const message = `Your form "${formName}" has been submitted successfully.`;
-    await this.queueNotification(userId, 'sms', 'form_submitted', mobile, message, template?.SMS);
-    if (this.enableWhatsApp) {
-      await this.queueNotification(userId, 'whatsapp', 'form_submitted', mobile, message, template?.WHATSAPP);
-    }
+    return this.sendNotification('form_submitted', mobile, { formName }, userId);
   }
 }
 

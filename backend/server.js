@@ -134,21 +134,15 @@ app.get("/health", (req, res) => {
 // Check and update subscription statuses
 const checkSubscriptionExpiry = async () => {
     try {
-        // Update expired subscriptions
+        // Update both expired and grace period subscriptions in single query
         await db.query(`
             UPDATE subscriptions 
-            SET status = 'expired' 
-            WHERE status IN ('active', 'grace') 
-            AND grace_end_date < CURDATE()
-        `);
-        
-        // Update subscriptions in grace period
-        await db.query(`
-            UPDATE subscriptions 
-            SET status = 'grace' 
-            WHERE status = 'active' 
-            AND end_date < CURDATE() 
-            AND grace_end_date >= CURDATE()
+            SET status = CASE 
+                WHEN grace_end_date < CURDATE() THEN 'expired'
+                WHEN end_date < CURDATE() AND grace_end_date >= CURDATE() THEN 'grace'
+                ELSE status
+            END
+            WHERE status IN ('active', 'grace')
         `);
         
         console.log('Subscription statuses updated');

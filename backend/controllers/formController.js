@@ -3,118 +3,59 @@ import { deductFromWallet } from "./walletController.js";
 import notificationService from "../services/notificationService.js";
 import { autoGenerateInvoice } from "./billingController.js";
 
-// Submit basic form
-export const submitBasicForm = async (req, res) => {
-  const { applicantName, loanAmount, purpose } = req.body;
-  const userId = req.user.id;  // ✅ logged-in userId
-  const rate = parseFloat(process.env.BASIC_FORM_RATE) || 5;
-
-  try {
-    // Generate unique transaction reference
-    const txnRef = `BASIC_${Date.now()}_${userId}`;
-    
-    // Deduct amount from wallet
-    await deductFromWallet(userId, rate, txnRef, "Basic Form");
-
-    // Save form submission (use applications table as per schema)
-    const [formResult] = await db.query(
-      `INSERT INTO applications 
-        (user_id, form_type, amount_charged) 
-       VALUES (?, 'basic', ?)`,
-      [userId, rate]
-    );
-
-    // Auto-generate invoice
-    try {
-      await autoGenerateInvoice(
-        userId,
-        "basic",
-        rate,
-        `FORM_${formResult.insertId}`
-      );
-    } catch (invoiceError) {
-      console.error("Invoice generation failed:", invoiceError);
-    }
-
-    // Get user mobile & wallet balance
-    const [user] = await db.query("SELECT mobile FROM users WHERE user_id = ?", [userId]);
-    const [wallet] = await db.query("SELECT balance FROM wallets WHERE user_id = ?", [userId]);
-
-    // Send notification
-    if (user[0]?.mobile) {
-      await notificationService.sendFormSubmitted(
-        user[0].mobile,
-        "Basic Form",
-        userId // ✅ fixed
-      );
-    }
-
-    res.json({
-      success: true,
-      message: "Basic form submitted successfully",
-      amountDeducted: rate,
-      remainingBalance: wallet[0].balance
-    });
-  } catch (error) {
-    console.error("Form submission error:", error);
-    res.status(500).json({ message: "Form submission failed" });
-  }
+// Form rates cache
+const FORM_RATES = {
+  basic: () => parseFloat(process.env.BASIC_FORM_RATE) || 5,
+  realtime: () => parseFloat(process.env.REALTIME_VALIDATION_RATE) || 50
 };
 
-// Submit realtime validation form
-export const submitRealtimeForm = async (req, res) => {
-  const { applicantName, loanAmount, purpose, aadhaar, pan, bankAccount } = req.body;
+// Common form submission handler
+const submitForm = async (req, res, formType) => {
   const userId = req.user.id;
-  const rate = parseFloat(process.env.REALTIME_VALIDATION_RATE) || 50;
+  const rate = FORM_RATES[formType]();
+  const formName = formType === 'basic' ? 'Basic Form' : 'Realtime Validation';
+  const dbFormType = formType === 'basic' ? 'basic' : 'realtime_validation';
 
   try {
-    // Generate unique transaction reference
-    const txnRef = `REALTIME_${Date.now()}_${userId}`;
+    const txnRef = `${formType.toUpperCase()}_${Date.now()}_${userId}`;
     
-    // Deduct amount from wallet
-    await deductFromWallet(userId, rate, txnRef, "Realtime Validation");
+    // Deduct from wallet
+    await deductFromWallet(userId, rate, txnRef, formName);
 
-    // Save form submission (use applications table as per schema)
+    // Save form and get user data in single query
     const [formResult] = await db.query(
-      `INSERT INTO applications 
-        (user_id, form_type, amount_charged) 
-       VALUES (?, 'realtime_validation', ?)`,
-      [userId, rate]
+      `INSERT INTO applications (user_id, form_type, amount_charged) VALUES (?, ?, ?)`,
+      [userId, dbFormType, rate]
     );
 
-    // Auto-generate invoice
-    try {
-      await autoGenerateInvoice(
-        userId,
-        "realtime_validation",
-        rate,
-        `FORM_${formResult.insertId}`
-      );
-    } catch (invoiceError) {
-      console.error("Invoice generation failed:", invoiceError);
-    }
+    const [userData] = await db.query(
+      `SELECT u.mobile, w.balance FROM users u 
+       LEFT JOIN wallets w ON u.user_id = w.user_id 
+       WHERE u.user_id = ?`,
+      [userId]
+    );
 
-    // Get user mobile & wallet balance
-    const [user] = await db.query("SELECT mobile FROM users WHERE user_id = ?", [userId]);
-    const [wallet] = await db.query("SELECT balance FROM wallets WHERE user_id = ?", [userId]);
+    // Auto-generate invoice (non-blocking)
+    autoGenerateInvoice(userId, dbFormType, rate, `FORM_${formResult.insertId}`)
+      .catch(err => console.error("Invoice generation failed:", err));
 
-    // Send notification
-    if (user[0]?.mobile) {
-      await notificationService.sendFormSubmitted(
-        user[0].mobile,
-        "Realtime Validation",
-        userId // ✅ fixed
-      );
+    // Send notification (non-blocking)
+    if (userData[0]?.mobile) {
+      notificationService.sendFormSubmitted(userData[0].mobile, formName, userId)
+        .catch(err => console.error("Notification failed:", err));
     }
 
     res.json({
       success: true,
-      message: "Realtime validation form submitted successfully",
+      message: `${formName} submitted successfully`,
       amountDeducted: rate,
-      remainingBalance: wallet[0].balance
+      remainingBalance: userData[0]?.balance || 0
     });
   } catch (error) {
     console.error("Form submission error:", error);
     res.status(500).json({ message: "Form submission failed" });
   }
 };
+
+export const submitBasicForm = (req, res) => submitForm(req, res, 'basic');
+export const submitRealtimeForm = (req, res) => submitForm(req, res, 'realtime');

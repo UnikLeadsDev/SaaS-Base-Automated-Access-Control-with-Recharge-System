@@ -15,27 +15,46 @@ const ensureWalletForUser = async (userId) => {
       "INSERT INTO wallets (user_id, balance, status) VALUES (?, 0, 'active')",
       [userId]
     );
-
-    const [created] = await db.query(
-      "SELECT balance, status FROM wallets WHERE user_id = ?",
-      [userId]
-    );
-    return created[0];
+    return { balance: 0, status: 'active' };
   }
 
   return wallet[0];
+};
+
+// Cached rates
+const getRates = () => ({
+  basic: parseFloat(process.env.BASIC_FORM_RATE) || 5,
+  realtime: parseFloat(process.env.REALTIME_VALIDATION_RATE) || 50
+});
+
+// Common wallet response builder
+const buildWalletResponse = (wallet, includeAccess = false) => {
+  const response = {
+    balance: parseFloat(wallet.balance),
+    status: wallet.status,
+    validUntil: null
+  };
+
+  if (includeAccess) {
+    const rates = getRates();
+    Object.assign(response, {
+      accessType: 'prepaid',
+      canSubmitBasic: wallet.balance >= rates.basic,
+      canSubmitRealtime: wallet.balance >= rates.realtime,
+      demoMode: false,
+      paymentsEnabled: true,
+      rates
+    });
+  }
+
+  return response;
 };
 
 // Get wallet balance
 export const getWalletBalance = async (req, res) => {
   try {
     const wallet = await ensureWalletForUser(req.user.id);
-
-    res.json({
-      balance: wallet.balance,
-      status: wallet.status,
-      validUntil: null
-    });
+    res.json(buildWalletResponse(wallet));
   } catch (error) {
     console.error("Get Wallet Error:", error);
     res.status(500).json({ message: req.t('error.server') });
@@ -46,24 +65,7 @@ export const getWalletBalance = async (req, res) => {
 export const getWalletBalanceCheck = async (req, res) => {
   try {
     const wallet = await ensureWalletForUser(req.user.id);
-
-    const basicRate = parseFloat(process.env.BASIC_FORM_RATE) || 5;
-    const realtimeRate = parseFloat(process.env.REALTIME_VALIDATION_RATE) || 50;
-
-    res.json({
-      balance: parseFloat(wallet.balance),
-      status: wallet.status,
-      validUntil: null,
-      accessType: 'prepaid',
-      canSubmitBasic: wallet.balance >= basicRate,
-      canSubmitRealtime: wallet.balance >= realtimeRate,
-      demoMode: false,
-      paymentsEnabled: true,
-      rates: {
-        basic: basicRate,
-        realtime: realtimeRate
-      }
-    });
+    res.json(buildWalletResponse(wallet, true));
   } catch (error) {
     console.error("Get Wallet Balance Check Error:", error);
     res.status(500).json({ message: req.t('error.server') });
@@ -118,7 +120,7 @@ export const deductFromWallet = async (userId, amount, txnRef, description = nul
       [userId]
     );
 
-    // Low balance notification
+    // Low balance notification (non-blocking)
     const threshold = parseFloat(process.env.LOW_BALANCE_THRESHOLD) || 100;
     if (updatedWallet[0].balance <= threshold) {
       const [user] = await connection.query(
@@ -126,7 +128,8 @@ export const deductFromWallet = async (userId, amount, txnRef, description = nul
         [userId]
       );
       if (user[0]?.mobile) {
-        await notificationService.sendLowBalanceAlert(user[0].mobile, updatedWallet[0].balance);
+        notificationService.sendLowBalanceAlert(user[0].mobile, updatedWallet[0].balance, userId)
+          .catch(err => console.error('Low balance notification failed:', err));
       }
     }
 

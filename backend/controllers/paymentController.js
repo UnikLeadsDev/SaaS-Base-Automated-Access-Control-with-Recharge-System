@@ -299,12 +299,11 @@ export const updateManualPayment = async (req, res) => {
 // Helper function to send payment notifications
 const sendPaymentNotification = async (userId, amount, type) => {
   try {
-    const message = `Payment of ₹${amount} has been successfully added to your wallet.`;
-    
-    await db.query(
-      "INSERT INTO notifications (user_id, channel, message_type, message) VALUES (?, 'sms', ?, ?)",
-      [userId, type, message]
-    );
+    const [user] = await db.query('SELECT mobile FROM users WHERE user_id = ?', [userId]);
+    if (user[0]?.mobile) {
+      const notificationService = (await import('../services/notificationService.js')).default;
+      await notificationService.sendPaymentSuccess(user[0].mobile, amount, null, userId);
+    }
   } catch (error) {
     console.error("Notification Error:", error);
   }
