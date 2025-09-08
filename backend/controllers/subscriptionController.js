@@ -84,19 +84,19 @@ export const verifySubscriptionPayment = async (req, res) => {
     const graceEndDate = new Date(endDate.getTime() + plan.grace_period_days * 24 * 60 * 60 * 1000);
 
     const [result] = await connection.query(
-  `INSERT INTO subscriptions 
-     (user_id, plan_id, plan_name, amount, start_date, end_date, grace_end_date) 
-   VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  [
-    req.user.id,
-    plan.plan_id,
-    plan.plan_name, // add this
-    amount,
-    startDate.toISOString().split('T')[0],
-    endDate.toISOString().split('T')[0],
-    graceEndDate.toISOString().split('T')[0]
-  ]
-);
+      `INSERT INTO subscriptions 
+       (user_id, plan_id, plan_name, amount, start_date, end_date, grace_end_date) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        req.user.id,
+        plan.plan_id,
+        plan.plan_name,
+        amount,
+        startDate.toISOString().split('T')[0],
+        endDate.toISOString().split('T')[0],
+        graceEndDate.toISOString().split('T')[0]
+      ]
+    );
 
     // Record transaction
     await connection.query(
@@ -225,21 +225,106 @@ export const checkSubscriptionAccess = async (req, res) => {
   }
 };
 
+// Cancel subscription
+export const cancelSubscription = async (req, res) => {
+  const { subscriptionId } = req.params;
+  
+  try {
+    const [result] = await db.query(
+      "UPDATE subscriptions SET status = 'cancelled' WHERE sub_id = ? AND user_id = ? AND status IN ('active', 'grace')",
+      [subscriptionId, req.user.id]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Subscription not found or already cancelled" });
+    }
+    
+    res.json({ success: true, message: "Subscription cancelled successfully" });
+  } catch (error) {
+    console.error("Cancel Subscription Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Auto-renewal handler
+export const processAutoRenewal = async (userId, planId) => {
+  try {
+    const [preferences] = await db.query(
+      "SELECT auto_renewal, preferred_plan_id FROM user_preferences WHERE user_id = ?",
+      [userId]
+    );
+    
+    if (!preferences[0]?.auto_renewal) return false;
+    
+    const targetPlanId = preferences[0].preferred_plan_id || planId;
+    const [plans] = await db.query(
+      "SELECT * FROM subscription_plans WHERE plan_id = ? AND status = 'active'",
+      [targetPlanId]
+    );
+    
+    if (!plans.length) return false;
+    
+    const plan = plans[0];
+    const startDate = new Date();
+    const endDate = new Date(startDate.getTime() + plan.duration_days * 24 * 60 * 60 * 1000);
+    const graceEndDate = new Date(endDate.getTime() + plan.grace_period_days * 24 * 60 * 60 * 1000);
+    
+    await db.query(
+      `INSERT INTO subscriptions (user_id, plan_id, plan_name, amount, start_date, end_date, grace_end_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [userId, plan.plan_id, plan.plan_name, plan.amount, 
+       startDate.toISOString().split('T')[0], 
+       endDate.toISOString().split('T')[0], 
+       graceEndDate.toISOString().split('T')[0]]
+    );
+    
+    return true;
+  } catch (error) {
+    console.error("Auto-renewal Error:", error);
+    return false;
+  }
+};
+
 // Update preferences
 export const updatePreferences = async (req, res) => {
   const { autoRenewal, preferredPlanId, notificationDays } = req.body;
   
   try {
     await db.query(
-      `UPDATE user_preferences 
-       SET auto_renewal = ?, preferred_plan_id = ?, notification_days_before = ?
-       WHERE user_id = ?`,
-      [autoRenewal, preferredPlanId, notificationDays, req.user.id]
+      `INSERT INTO user_preferences (user_id, auto_renewal, preferred_plan_id, notification_days_before)
+       VALUES (?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE 
+       auto_renewal = VALUES(auto_renewal),
+       preferred_plan_id = VALUES(preferred_plan_id),
+       notification_days_before = VALUES(notification_days_before)`,
+      [req.user.id, autoRenewal, preferredPlanId, notificationDays]
     );
     
     res.json({ success: true, message: "Preferences updated" });
   } catch (error) {
     console.error("Update Preferences Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Get user preferences
+export const getUserPreferences = async (req, res) => {
+  try {
+    const [preferences] = await db.query(
+      "SELECT * FROM user_preferences WHERE user_id = ?",
+      [req.user.id]
+    );
+    
+    res.json({ 
+      success: true, 
+      preferences: preferences[0] || {
+        auto_renewal: false,
+        preferred_plan_id: null,
+        notification_days_before: 7
+      }
+    });
+  } catch (error) {
+    console.error("Get Preferences Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

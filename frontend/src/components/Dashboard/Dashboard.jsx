@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useWallet } from '../../context/WalletContext';
+import { useSubscription } from '../../context/SubscriptionContext';
 import { Wallet, FileText, AlertCircle, TrendingUp } from 'lucide-react';
 import apiWrapper from '../../utils/apiWrapper.js';
 import toast from 'react-hot-toast';
 import API_BASE_URL from '../../config/api';
 import EmptyBox from '../Common/EmptyBox';
+import SubscriptionUsage from '../Subscriptions/SubscriptionUsage';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const { transactions } = useWallet(); // keep transactions from context if you want
+  const { transactions } = useWallet();
+  const { hasActiveSubscription } = useSubscription();
   const [stats, setStats] = useState({
     balance: 0,
     totalApplications: 0,
@@ -37,33 +40,38 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await apiWrapper.get(`${API_BASE_URL}/wallet/balance`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      // backend returns: { balance: "105.00", status: "active", validUntil: null }
-      const data = response.data;
+      const token = localStorage.getToken('token');
+      
+      // Fetch both wallet and subscription data
+      const [walletResponse, subscriptionResponse] = await Promise.all([
+        apiWrapper.get(`${API_BASE_URL}/wallet/balance-check`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        apiWrapper.get(`${API_BASE_URL}/subscription/status`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => ({ data: { hasActiveSubscription: false } }))
+      ]);
 
-      const balance = parseFloat(data.balance); // convert string → number
+      const walletData = walletResponse.data;
+      const subscriptionData = subscriptionResponse.data;
 
       setStats({
-        balance: balance,
-        accessType: data.status === 'active' ? 'prepaid' : 'blocked',
-        canSubmitBasic: balance >= 5,
-        canSubmitRealtime: balance >= 50,
-        rates: { basic: 5, realtime: 50 },
-        totalApplications: 0, // if you have API for this, replace here
-        recentTransactions: transactions.slice(0, 5) // still using context for txn
+        balance: parseFloat(walletData.balance || 0),
+        accessType: subscriptionData.hasActiveSubscription ? 'subscription' : 'wallet',
+        canSubmitBasic: walletData.canSubmitBasic,
+        canSubmitRealtime: walletData.canSubmitRealtime,
+        rates: walletData.rates || { basic: 5, realtime: 50 },
+        totalApplications: 0,
+        recentTransactions: transactions.slice(0, 5),
+        subscription: subscriptionData.subscription
       });
     } catch (err) {
       if (err?.response?.status === 401) {
         toast.error('Session expired or unauthorized. Please log in again.');
-      } else if (err?.response?.status === 404) {
-        toast.error('Wallet not found.');
       } else {
-        toast.error('Failed to fetch wallet balance');
+        toast.error('Failed to fetch dashboard data');
       }
-      console.error('Error fetching wallet balance:', err);
+      console.error('Error fetching dashboard data:', err);
     } finally {
       setLoading(false);
     }
@@ -118,8 +126,20 @@ const Dashboard = () => {
         <p className={`text-base sm:text-lg font-bold mt-1 sm:mt-2 ${stats.canSubmitBasic ? 'text-green-700' : 'text-red-700'}`}>
           {stats.canSubmitBasic ? 'Active' : 'Blocked'}
         </p>
+        {stats.subscription && (
+          <p className="text-xs text-gray-600 mt-1">
+            {stats.subscription.planName} - {stats.subscription.status}
+          </p>
+        )}
       </div>
     </div>
+
+    {/* Subscription Usage Analytics */}
+    {hasActiveSubscription && (
+      <div className="mb-6 sm:mb-8">
+        <SubscriptionUsage />
+      </div>
+    )}
 
     {/* Two-Column Section */}
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">

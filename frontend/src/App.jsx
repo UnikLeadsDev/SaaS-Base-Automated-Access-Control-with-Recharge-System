@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WalletProvider } from './context/WalletContext';
+import { SubscriptionProvider } from './context/SubscriptionContext';
 
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
@@ -42,6 +43,7 @@ function App() {
 
   return (
     <AuthProvider>
+      <SubscriptionProvider>
         <WalletProvider>
           <Router>
         <div className=" min-h-screen w-screen bg-gray-50">
@@ -113,8 +115,9 @@ function App() {
             } />
           </Routes>
         </div>
-        </Router>
-      </WalletProvider>
+          </Router>
+        </WalletProvider>
+      </SubscriptionProvider>
     </AuthProvider>
   );
 }

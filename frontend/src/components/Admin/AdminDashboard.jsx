@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import API_BASE_URL from '../../config/api';
 import EmptyBox from '../Common/EmptyBox';
+import SubscriptionManagement from './SubscriptionManagement';
 
 const AdminDashboard = () => {
   const { user, login } = useAuth();
@@ -798,6 +799,7 @@ const handleUpdateEnvKeys = async () => {
             { id: 'users', name: 'Users', icon: Users },
             { id: 'security', name: 'Security', icon: Shield },
             { id: 'sessions', name: 'Sessions', icon: Monitor },
+            { id: 'subscriptions', name: 'Subscriptions', icon: Calendar },
             { id: 'billing', name: 'Billing', icon: CreditCard },
             { id: 'api-keys', name: 'API Keys', icon: Key }
           ].map((tab) => {
@@ -825,6 +827,7 @@ const handleUpdateEnvKeys = async () => {
       {activeTab === 'users' && renderUsers()}
       {activeTab === 'security' && renderSecurity()}
       {activeTab === 'sessions' && renderSessions()}
+      {activeTab === 'subscriptions' && <SubscriptionManagement />}
       {activeTab === 'api-keys' && renderEnvKeys()}
 
       {/* User Modal */}

@@ -212,6 +212,52 @@ class NotificationService {
     return this.sendNotification('expiry_alert', mobile, { name, planName, expiryDate }, userId);
   }
 
+  // Real-time subscription expiry notifications
+  async sendRealTimeExpiryAlert(userId, daysRemaining) {
+    try {
+      const [users] = await db.query(
+        "SELECT u.name, u.mobile, s.plan_name FROM users u JOIN subscriptions s ON u.user_id = s.user_id WHERE u.user_id = ? AND s.status = 'active'",
+        [userId]
+      );
+      
+      if (users.length > 0) {
+        const user = users[0];
+        const message = `Urgent: Your ${user.plan_name} expires in ${daysRemaining} day(s). Renew now to avoid service interruption.`;
+        
+        await this.queueNotification(userId, 'sms', 'urgent_expiry', user.mobile, message);
+        
+        if (this.enableWhatsApp) {
+          await this.queueNotification(userId, 'whatsapp', 'urgent_expiry', user.mobile, message);
+        }
+      }
+    } catch (error) {
+      console.error('Real-time expiry alert error:', error);
+    }
+  }
+
+  // Batch process expiry notifications
+  async processExpiryNotifications() {
+    try {
+      const [expiringSubscriptions] = await db.query(`
+        SELECT s.user_id, u.mobile, u.name, s.plan_name, s.end_date,
+               DATEDIFF(s.end_date, CURDATE()) as days_remaining
+        FROM subscriptions s
+        JOIN users u ON s.user_id = u.user_id
+        WHERE s.status = 'active'
+        AND DATEDIFF(s.end_date, CURDATE()) IN (7, 3, 1)
+        AND u.mobile IS NOT NULL
+      `);
+
+      for (const sub of expiringSubscriptions) {
+        await this.sendRealTimeExpiryAlert(sub.user_id, sub.days_remaining);
+      }
+
+      console.log(`Processed ${expiringSubscriptions.length} expiry notifications`);
+    } catch (error) {
+      console.error('Batch expiry notification error:', error);
+    }
+  }
+
   async sendFormSubmitted(mobile, formName, userId = null) {
     return this.sendNotification('form_submitted', mobile, { formName }, userId);
   }

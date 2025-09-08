@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { Settings } from "lucide-react";
 import API_BASE_URL from "../../config/api";
+import SubscriptionPreferences from "../Subscriptions/SubscriptionPreferences";
 
 const Profile = () => {
   const [profile, setProfile] = useState({ name: "", email: "", phone: "" });
@@ -9,6 +11,7 @@ const Profile = () => {
     city: "", address: "", gst_no: "", pan_no: "", website: "", logo_url: ""
   });
   const [passwords, setPasswords] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
+  const [showSubscriptionPrefs, setShowSubscriptionPrefs] = useState(false);
 
   const getToken = () => localStorage.getItem("token");
   const getAuthHeaders = () => ({ Authorization: `Bearer ${getToken()}` });
@@ -107,6 +110,23 @@ const Profile = () => {
             <InputField label="Username" name="name" value={profile.name} onChange={handleChange(setProfile)} disabled />
             <InputField label="Email" name="email" value={profile.email} onChange={handleChange(setProfile)} type="email" disabled />
             <InputField label="Phone" name="phone" value={profile.phone} onChange={handleChange(setProfile)} type="tel" />
+          </div>
+
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-4 border-b pb-2">
+              <h2 className="text-lg font-semibold">Subscription Settings</h2>
+              <button
+                onClick={() => setShowSubscriptionPrefs(!showSubscriptionPrefs)}
+                className="inline-flex items-center px-3 py-2 text-sm bg-indigo-100 hover:bg-indigo-200 rounded-md"
+              >
+                <Settings className="h-4 w-4 mr-1" /> Preferences
+              </button>
+            </div>
+            {showSubscriptionPrefs && (
+              <div className="mt-4">
+                <SubscriptionPreferences />
+              </div>
+            )}
           </div>
 
           <div>

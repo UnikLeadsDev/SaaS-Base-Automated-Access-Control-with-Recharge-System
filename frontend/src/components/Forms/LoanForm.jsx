@@ -3,6 +3,7 @@ import { AlertCircle, Lock, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useWallet } from '../../context/WalletContext';
+import { useSubscriptionAccess } from '../../hooks/useSubscriptionAccess';
 import { handleApiError } from '../../utils/errorHandler';
 import apiWrapper from '../../utils/apiWrapper';
 import FormEligibilityCheck from './FormEligibilityCheck';
@@ -10,6 +11,7 @@ import API_BASE_URL from '../../config/api';
 
 const LoanForm = () => {
   const { balance, transactions, deductAmount, addAmount } = useWallet();
+  const { hasActiveSubscription, checkFormAccess, getAccessMessage } = useSubscriptionAccess();
   const [formType, setFormType] = useState('basic');
   const [eligibility, setEligibility] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -29,7 +31,12 @@ const LoanForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-
+    // Check access using the hook
+    const access = checkFormAccess(formType);
+    if (!access.hasAccess) {
+      toast.error(`Cannot submit form: ${getAccessMessage(formType)}`);
+      return;
+    }
 
     if (!eligibility) {
       toast.error('Please wait while we check your eligibility');
@@ -107,7 +114,7 @@ const LoanForm = () => {
   const canSelectFormType = (type) => {
     if (!eligibility) return false;
     const requiredAmount = type === 'basic' ? (eligibility.rates?.basic || 5) : (eligibility.rates?.realtime || 50);
-    return eligibility.accessType === 'subscription' || eligibility.balance >= requiredAmount;
+    return hasActiveSubscription || eligibility.accessType === 'subscription' || eligibility.balance >= requiredAmount;
   };
 
   return (
@@ -271,11 +278,7 @@ const LoanForm = () => {
 
           <div className="flex justify-between items-center pt-4">
             <div className="text-sm text-gray-600">
-              {eligibility?.accessType === 'subscription' ? (
-                'No charge - Subscription active'
-              ) : (
-                `This form will cost ₹${getFormRate()}`
-              )}
+              {getAccessMessage(formType)}
               {eligibility?.demoMode && (
                 <span className="ml-2 text-orange-600">(Demo Mode)</span>
               )}

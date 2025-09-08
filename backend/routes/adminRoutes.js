@@ -19,7 +19,11 @@ import {
   getApiKeys,
   updateApiKeys,
   searchTransaction, 
-  updatePaymentByTransactionId 
+  updatePaymentByTransactionId,
+  getAllSubscriptions,
+  overrideSubscription,
+  createSubscriptionPlan,
+  updateSubscriptionPlan
 } from "../controllers/adminController.js";
 
 const router = express.Router();
@@ -65,6 +69,12 @@ router.post("/manual-balance-update", manualBalanceUpdate);
 router.post("/manual-payment", updateManualPayment);
 router.get("/transaction/:transactionId", searchTransaction);
 router.put("/transaction/:transactionId", updatePaymentByTransactionId);
+
+// Subscription Management
+router.get("/subscriptions", getAllSubscriptions);
+router.put("/subscriptions/:subscriptionId/override", overrideSubscription);
+router.post("/subscription-plans", createSubscriptionPlan);
+router.put("/subscription-plans/:planId", updateSubscriptionPlan);
 
 // API Key Management
 // GET API keys (admin only)

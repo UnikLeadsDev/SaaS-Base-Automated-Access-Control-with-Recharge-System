@@ -20,10 +20,21 @@ export const getAdminStats = async (req, res) => {
       totalUsers = users[0]?.count || 0;
     } catch (e) { console.warn('Users table issue:', e.message); }
 
+    // Enhanced revenue tracking
+    let monthlyRevenue = 0, subscriptionRevenue = 0, walletRevenue = 0;
     try {
       const [revenue] = await db.query("SELECT SUM(amount) as total FROM transactions WHERE type = 'credit'");
       totalRevenue = revenue[0]?.total || 0;
-    } catch (e) { console.warn('Transactions table issue:', e.message); }
+      
+      const [monthly] = await db.query("SELECT SUM(amount) as total FROM transactions WHERE type = 'credit' AND MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())");
+      monthlyRevenue = monthly[0]?.total || 0;
+      
+      const [subRevenue] = await db.query("SELECT SUM(amount) as total FROM transactions WHERE payment_mode = 'subscription'");
+      subscriptionRevenue = subRevenue[0]?.total || 0;
+      
+      const [walletRev] = await db.query("SELECT SUM(amount) as total FROM transactions WHERE payment_mode IN ('razorpay', 'manual') AND type = 'credit'");
+      walletRevenue = walletRev[0]?.total || 0;
+    } catch (e) { console.warn('Revenue calculation issue:', e.message); }
 
     try {
       const [apps] = await db.query("SELECT COUNT(*) as count FROM applications");
@@ -46,9 +57,29 @@ export const getAdminStats = async (req, res) => {
       suspiciousLogins = suspicious[0]?.count || 0;
     } catch (e) { console.warn('Login history table issue:', e.message); }
 
+    // Usage analytics
+    let totalForms = 0, basicForms = 0, realtimeForms = 0, activeSubscriptions = 0;
+    try {
+      const [forms] = await db.query("SELECT COUNT(*) as count FROM applications");
+      totalForms = forms[0]?.count || 0;
+      
+      const [basic] = await db.query("SELECT COUNT(*) as count FROM applications WHERE form_type = 'basic'");
+      basicForms = basic[0]?.count || 0;
+      
+      const [realtime] = await db.query("SELECT COUNT(*) as count FROM applications WHERE form_type = 'realtime'");
+      realtimeForms = realtime[0]?.count || 0;
+      
+      const [activeSubs] = await db.query("SELECT COUNT(*) as count FROM subscriptions WHERE status = 'active'");
+      activeSubscriptions = activeSubs[0]?.count || 0;
+    } catch (e) { console.warn('Usage analytics issue:', e.message); }
+
     res.json({
       success: true,
-      stats: { totalUsers, totalRevenue, totalApplications, lowBalanceUsers, activeSessions, suspiciousLogins }
+      stats: { 
+        totalUsers, totalRevenue, monthlyRevenue, subscriptionRevenue, walletRevenue,
+        totalApplications, totalForms, basicForms, realtimeForms,
+        activeSubscriptions, lowBalanceUsers, activeSessions, suspiciousLogins 
+      }
     });
   } catch (error) {
     console.error("Admin Stats Error:", error);
@@ -545,6 +576,124 @@ export const searchTransaction = async (req, res) => {
     res.json({ transaction: transaction[0] });
   } catch (error) {
     console.error("Search Transaction Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Get all subscriptions for admin
+export const getAllSubscriptions = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status = '', planId = '' } = req.query;
+    const offset = (page - 1) * limit;
+    
+    let whereClause = "WHERE 1=1";
+    let params = [];
+    
+    if (status) {
+      whereClause += " AND s.status = ?";
+      params.push(status);
+    }
+    
+    if (planId) {
+      whereClause += " AND s.plan_id = ?";
+      params.push(planId);
+    }
+
+    const [subscriptions] = await db.query(`
+      SELECT s.sub_id, s.user_id, u.name, u.email, s.plan_name, s.amount,
+             s.start_date, s.end_date, s.status, s.created_at
+      FROM subscriptions s
+      JOIN users u ON s.user_id = u.user_id
+      ${whereClause}
+      ORDER BY s.created_at DESC
+      LIMIT ? OFFSET ?
+    `, [...params, parseInt(limit), offset]);
+
+    const [totalCount] = await db.query(`
+      SELECT COUNT(*) as count FROM subscriptions s
+      JOIN users u ON s.user_id = u.user_id
+      ${whereClause}
+    `, params);
+
+    res.json({ 
+      success: true,
+      subscriptions, 
+      total: totalCount[0]?.count || 0,
+      page: parseInt(page),
+      limit: parseInt(limit)
+    });
+  } catch (error) {
+    console.error("Get Subscriptions Error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// Override subscription status
+export const overrideSubscription = async (req, res) => {
+  try {
+    const { subscriptionId } = req.params;
+    const { status, endDate, reason } = req.body;
+    
+    if (!['active', 'expired', 'cancelled', 'grace'].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+    
+    let updateQuery = "UPDATE subscriptions SET status = ?";
+    let params = [status];
+    
+    if (endDate) {
+      updateQuery += ", end_date = ?";
+      params.push(endDate);
+    }
+    
+    updateQuery += " WHERE sub_id = ?";
+    params.push(subscriptionId);
+    
+    await db.query(updateQuery, params);
+    
+    // Log admin action
+    await db.query(
+      "INSERT INTO admin_actions (admin_id, action_type, target_id, description) VALUES (?, 'subscription_override', ?, ?)",
+      [req.user.id, subscriptionId, reason || `Status changed to ${status}`]
+    );
+    
+    res.json({ message: "Subscription updated successfully" });
+  } catch (error) {
+    console.error("Override Subscription Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Manage subscription plans
+export const createSubscriptionPlan = async (req, res) => {
+  try {
+    const { planName, amount, durationDays, gracePeriodDays, features } = req.body;
+    
+    const [result] = await db.query(
+      "INSERT INTO subscription_plans (plan_name, amount, duration_days, grace_period_days, features) VALUES (?, ?, ?, ?, ?)",
+      [planName, amount, durationDays, gracePeriodDays, JSON.stringify(features)]
+    );
+    
+    res.json({ message: "Plan created successfully", planId: result.insertId });
+  } catch (error) {
+    console.error("Create Plan Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const updateSubscriptionPlan = async (req, res) => {
+  try {
+    const { planId } = req.params;
+    const { planName, amount, durationDays, gracePeriodDays, features, status } = req.body;
+    
+    await db.query(
+      "UPDATE subscription_plans SET plan_name = ?, amount = ?, duration_days = ?, grace_period_days = ?, features = ?, status = ? WHERE plan_id = ?",
+      [planName, amount, durationDays, gracePeriodDays, JSON.stringify(features), status, planId]
+    );
+    
+    res.json({ message: "Plan updated successfully" });
+  } catch (error) {
+    console.error("Update Plan Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };

@@ -16,6 +16,7 @@ export const useWallet = () => {
 export const WalletProvider = ({ children }) => {
   const [balance, setBalance] = useState(0);
   const [transactions, setTransactions] = useState([]);
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
 
   // 🔹 Detect mock token (from demo mode in AuthContext)
   const isMockToken = () => {
@@ -23,12 +24,17 @@ export const WalletProvider = ({ children }) => {
     return token && token.startsWith("mock_jwt_token_");
   };
 
-  // 🔹 Fetch wallet balance + transactions
+  // 🔹 Fetch wallet balance + transactions + subscription
   const fetchWalletData = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token || isMockToken()) {
-        // In demo mode or no token: skip hitting protected endpoints
+        // In demo mode: set mock subscription
+        setSubscriptionStatus({
+          hasActiveSubscription: true,
+          plan_name: 'Demo Plan',
+          daysRemaining: 30
+        });
         return;
       }
 
@@ -44,6 +50,17 @@ export const WalletProvider = ({ children }) => {
       });
       console.log("Loaded transactions:", txnRes.data?.length || 0);
       setTransactions(txnRes.data || []);
+      
+      // subscription status
+      try {
+        const subRes = await axios.get(`${API_BASE_URL}/subscription/status`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setSubscriptionStatus(subRes.data);
+      } catch (subError) {
+        console.warn("Subscription status unavailable:", subError.message);
+        setSubscriptionStatus({ hasActiveSubscription: false });
+      }
     } catch (error) {
       console.error("Failed to fetch wallet data:", error);
     }
@@ -142,9 +159,24 @@ const addAmount = async (amount, description = "Top-up", txnRef) => {
 };
 
 
+  // Check if user has access (subscription or sufficient balance)
+  const hasAccess = (formType, requiredAmount = 0) => {
+    if (isMockToken()) return true; // Demo mode
+    if (subscriptionStatus?.hasActiveSubscription) return true;
+    return balance >= requiredAmount;
+  };
+
   return (
     <WalletContext.Provider
-      value={{ balance, transactions, deductAmount, addAmount, fetchWalletData }}
+      value={{ 
+        balance, 
+        transactions, 
+        subscriptionStatus,
+        deductAmount, 
+        addAmount, 
+        fetchWalletData,
+        hasAccess
+      }}
     >
       {children}
     </WalletContext.Provider>

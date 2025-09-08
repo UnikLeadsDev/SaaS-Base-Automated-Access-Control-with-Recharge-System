@@ -7,7 +7,9 @@ import {
   getSubscriptionStatus,
   checkSubscriptionAccess,
   updatePreferences,
-  getUserSubscriptions
+  getUserSubscriptions,
+  getUserPreferences,
+  cancelSubscription
 } from "../controllers/subscriptionController.js";
 
 const router = express.Router();
@@ -19,5 +21,7 @@ router.get("/list", verifyToken, getUserSubscriptions);
 router.get("/status", verifyToken, getSubscriptionStatus);
 router.get("/access/:formType", verifyToken, checkSubscriptionAccess);
 router.put("/preferences", verifyToken, updatePreferences);
+router.get("/preferences", verifyToken, getUserPreferences);
+router.put("/cancel/:subscriptionId", verifyToken, cancelSubscription);
 
 export default router;

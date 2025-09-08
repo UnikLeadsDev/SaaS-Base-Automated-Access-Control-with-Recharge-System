@@ -15,6 +15,7 @@ import reportRoutes from "./routes/reportRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import { checkLowBalanceAndExpiry } from "./controllers/notificationController.js";
 import { startCronJobs } from "./jobs/cronJobs.js";
+import { startSubscriptionCron } from "./jobs/subscriptionCron.js";
 import { rawBodyMiddleware } from "./middleware/rawBody.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { csrfProtection } from "./middleware/csrf.js";
@@ -120,16 +121,30 @@ app.get("/health", (req, res) => {
     res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
 
-// Cron job for automated alerts (disabled for now)
-// cron.schedule('0 * * * *', async () => {
-//     console.log('Running automated alerts check...');
-//     try {
-//         await checkLowBalanceAndExpiry();
-//         await checkSubscriptionExpiry();
-//     } catch (error) {
-//         console.error('Cron job error:', error);
-//     }
-// });
+// Enable automated alerts with enhanced notifications
+cron.schedule('0 * * * *', async () => {
+    console.log('Running automated alerts check...');
+    try {
+        await checkLowBalanceAndExpiry();
+        await checkSubscriptionExpiry();
+        
+        // Process real-time expiry notifications
+        const notificationService = (await import('./services/notificationService.js')).default;
+        await notificationService.processExpiryNotifications();
+    } catch (error) {
+        console.error('Cron job error:', error);
+    }
+});
+
+// Real-time notification processing every 5 minutes
+cron.schedule('*/5 * * * *', async () => {
+    try {
+        const notificationService = (await import('./services/notificationService.js')).default;
+        await notificationService.processQueue();
+    } catch (error) {
+        console.error('Notification queue processing error:', error);
+    }
+});
 
 // Check and update subscription statuses
 const checkSubscriptionExpiry = async () => {
@@ -164,6 +179,7 @@ app.listen(PORT, '0.0.0.0', async () => {
     // Initialize receipts table
     await initializeReceiptsTable();
     
-    // Start cron jobs (disabled for now)
-    // startCronJobs();
+    // Start cron jobs
+    startCronJobs();
+    startSubscriptionCron();
 });
