@@ -41,6 +41,9 @@ const AdminDashboard = () => {
 
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [details, setDetails] = useState({});
+  const [selectedCard, setSelectedCard] = useState(null); // which card is clicked
+  const [showModal, setShowModal] = useState(false);
   const [userForm, setUserForm] = useState({
     name: '',
     email: '',
@@ -84,44 +87,57 @@ const AdminDashboard = () => {
 
   }, [activeTab, filters]);
 
-  const fetchStats = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/admin/stats`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      // Handle both response formats
-      if (response.data.success !== false) {
-        const statsData = response.data.stats || response.data;
-        setStats(statsData);
-      } else {
-        toast.error('Failed to fetch dashboard stats');
-        setStats({
-          totalUsers: 0,
-          totalRevenue: 0,
-          totalApplications: 0,
-          lowBalanceUsers: 0,
-          activeSessions: 0,
-          suspiciousLogins: 0
-        });
-      }
-    } catch (error) {
-      console.error('Failed to fetch stats:', error);
-      toast.error('Failed to load dashboard data');
-      setStats({
-        totalUsers: 0,
-        totalRevenue: 0,
-        totalApplications: 0,
-        lowBalanceUsers: 0,
-        activeSessions: 0,
-        suspiciousLogins: 0
-      });
-    } finally {
-      setLoading(false);
+  const handleCardClick = (card) => {
+  setSelectedCard(card);
+  setShowModal(true);
+};
+const handleCloseModal = () => {
+  setShowModal(false);
+  setSelectedCard(null);
+};
+
+const Modal = ({ title, children, onClose }) => (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+    <div className="bg-white rounded-lg shadow-lg w-3/4 max-w-2xl">
+      <div className="flex justify-between items-center border-b p-4">
+        <h2 className="text-lg font-bold">{title}</h2>
+        <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✖</button>
+      </div>
+      <div className="p-4 max-h-[400px] overflow-y-auto">
+        {children}
+      </div>
+    </div>
+  </div>
+);
+
+const fetchStats = async () => {
+  try {
+    setLoading(true);
+    const token = localStorage.getItem('token');
+    const response = await axios.get(`${API_BASE_URL}/admin/stats`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.data.success !== false) {
+      const statsData = response.data.stats || {};
+      const detailsData = response.data.details || {};
+
+      setStats(statsData);
+      setDetails(detailsData);
+    } else {
+      toast.error('Failed to fetch dashboard stats');
+      setStats({});
+      setDetails({});
     }
-  };
+  } catch (error) {
+    console.error('Failed to fetch stats:', error);
+    toast.error('Failed to load dashboard data');
+    setStats({});
+    setDetails({});
+  } finally {
+    setLoading(false);
+  }
+};
 
   const fetchUsers = async () => {
     try {
@@ -381,15 +397,19 @@ const handleUpdateEnvKeys = async () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-lg text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-green-100">Total Revenue</p>
-              <p className="text-3xl font-bold">₹{(stats.totalRevenue || 0).toLocaleString()}</p>
-            </div>
-            <DollarSign className="h-12 w-12 text-green-200" />
-          </div>
-        </div>
+        <div 
+  onClick={() => handleCardClick("revenue")}
+  className="cursor-pointer bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-lg text-white"
+>
+  <div className="flex items-center justify-between">
+    <div>
+      <p className="text-green-100">Total Revenue</p>
+      <p className="text-3xl font-bold">₹{(stats.totalRevenue || 0).toLocaleString()}</p>
+    </div>
+    <DollarSign className="h-12 w-12 text-green-200" />
+  </div>
+</div>
+
 
         <div  onClick={()=>setActiveTab("sessions")} className=" cursor-pointer bg-gradient-to-r from-purple-500 to-purple-600 p-6 rounded-lg text-white">
           <div className="flex items-center justify-between">
@@ -401,15 +421,20 @@ const handleUpdateEnvKeys = async () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-red-500 to-red-600 p-6 rounded-lg text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-red-100">Low Balance Users</p>
-              <p className="text-3xl font-bold">{stats.lowBalanceUsers || 0}</p>
-            </div>
-            <AlertTriangle className="h-12 w-12 text-red-200" />
-          </div>
-        </div>
+      <div 
+  onClick={() => handleCardClick("lowBalance")}
+  className="cursor-pointer bg-gradient-to-r from-red-500 to-red-600 p-6 rounded-lg text-white"
+>
+  <div className="flex items-center justify-between">
+    <div>
+      <p className="text-red-100">Low Balance Users</p>
+      <p className="text-3xl font-bold">{stats.lowBalanceUsers || 0}</p>
+    </div>
+    <AlertTriangle className="h-12 w-12 text-red-200" />
+  </div>
+</div>
+
+
 
         <div onClick={()=>setActiveTab("security")} className="cursor-pointer bg-gradient-to-r from-yellow-500 to-yellow-600 p-6 rounded-lg text-white">
           <div className="flex items-center justify-between">
@@ -421,15 +446,20 @@ const handleUpdateEnvKeys = async () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 p-6 rounded-lg text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-indigo-100">Applications</p>
-              <p className="text-3xl font-bold">{stats.totalApplications || 0}</p>
-            </div>
-            <FileText className="h-12 w-12 text-indigo-200" />
-          </div>
-        </div>
+        <div 
+  onClick={() => handleCardClick("applications")}
+  className="cursor-pointer bg-gradient-to-r from-indigo-500 to-indigo-600 p-6 rounded-lg text-white"
+>
+  <div className="flex items-center justify-between">
+    <div>
+      <p className="text-indigo-100">Applications</p>
+      <p className="text-3xl font-bold">{stats.totalApplications || 0}</p>
+    </div>
+    <FileText className="h-12 w-12 text-indigo-200" />
+  </div>
+</div>
+
+
       </div>
         </>
       )}
@@ -903,6 +933,68 @@ const handleUpdateEnvKeys = async () => {
           </div>
         </div>
       )}
+
+      {showModal && (
+  <Modal 
+    title={
+      selectedCard === "lowBalance" ? "Low Balance Users" :
+      selectedCard === "applications" ? "Recent Applications" :
+      "Total Revenue Contributors"
+    }
+    onClose={handleCloseModal}
+  >
+    {selectedCard === "lowBalance" && (
+      <ul className="space-y-2">
+        {details.lowBalanceUserList?.length > 0 ? (
+          details.lowBalanceUserList.map(user => (
+            <li key={user.user_id} className="flex justify-between border-b pb-1">
+              <span>{user.name} ({user.email})</span>
+              <span className="font-semibold text-red-600">₹{user.balance}</span>
+            </li>
+          ))
+        ) : (
+          <p>No users found</p>
+        )}
+      </ul>
+    )}
+
+    {selectedCard === "applications" && (
+      <ul className="space-y-2">
+        {details.applicationList?.length > 0 ? (
+          details.applicationList.map(app => (
+            <li key={app.id} className="border-b pb-1">
+              <span className="font-semibold">{app.name}</span> ({app.email}) applied for Loan.
+              
+            </li>
+          ))
+        ) : (
+          <p>No applications found</p>
+        )}
+      </ul>
+    )}
+
+    {selectedCard === "revenue" && (
+      <ul className="space-y-2">
+        {details.revenueList?.length > 0 ? (
+          details.revenueList.map(tx => (
+            <li key={tx.id} className="flex justify-between border-b pb-1">
+              <span>{tx.name} ({tx.email})</span>
+              <span className="font-semibold text-green-600">+₹{tx.amount}</span>
+            </li>
+          ))
+        ) : (
+          <p>No revenue records found</p>
+        )}
+      </ul>
+    )}
+  </Modal>
+)}
+
+
+
+
+
+
     </div>
   );
 };

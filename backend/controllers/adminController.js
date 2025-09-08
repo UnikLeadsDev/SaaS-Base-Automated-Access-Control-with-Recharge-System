@@ -15,6 +15,9 @@ export const getAdminStats = async (req, res) => {
     let totalUsers = 0, totalRevenue = 0, totalApplications = 0;
     let lowBalanceUsers = 0, activeSessions = 0, suspiciousLogins = 0;
 
+    // Detailed data
+    let lowBalanceUserList = [], applicationList = [], revenueList = [];
+
     try {
       const [users] = await db.query("SELECT COUNT(*) as count FROM users WHERE role != 'admin'");
       totalUsers = users[0]?.count || 0;
@@ -25,26 +28,34 @@ export const getAdminStats = async (req, res) => {
     try {
       const [revenue] = await db.query("SELECT SUM(amount) as total FROM transactions WHERE type = 'credit'");
       totalRevenue = revenue[0]?.total || 0;
-      
-      const [monthly] = await db.query("SELECT SUM(amount) as total FROM transactions WHERE type = 'credit' AND MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())");
-      monthlyRevenue = monthly[0]?.total || 0;
-      
-      const [subRevenue] = await db.query("SELECT SUM(amount) as total FROM transactions WHERE payment_mode = 'subscription'");
-      subscriptionRevenue = subRevenue[0]?.total || 0;
-      
-      const [walletRev] = await db.query("SELECT SUM(amount) as total FROM transactions WHERE payment_mode IN ('razorpay', 'manual') AND type = 'credit'");
-      walletRevenue = walletRev[0]?.total || 0;
-    } catch (e) { console.warn('Revenue calculation issue:', e.message); }
+    } catch (e) { console.warn('Transactions table issue:', e.message); }
 
     try {
       const [apps] = await db.query("SELECT COUNT(*) as count FROM applications");
       totalApplications = apps[0]?.count || 0;
+
+      // actual applications
+      const [appsDetails] = await db.query(
+        "SELECT a.app_id, a.user_id, u.name, u.email, a.form_type, a.submitted_at " +
+        "FROM applications a JOIN users u ON a.user_id = u.user_id " +
+        "ORDER BY a.submitted_at DESC LIMIT 20"
+      );
+      applicationList = appsDetails;
     } catch (e) { console.warn('Applications table issue:', e.message); }
 
     try {
       const lowBalanceThreshold = parseFloat(process.env.LOW_BALANCE_THRESHOLD) || 100;
       const [lowBalance] = await db.query("SELECT COUNT(*) as count FROM wallets WHERE balance < ?", [lowBalanceThreshold]);
       lowBalanceUsers = lowBalance[0]?.count || 0;
+
+      // actual low balance users
+      const [lowBalanceDetails] = await db.query(
+        "SELECT w.user_id, u.name, u.email, w.balance " +
+        "FROM wallets w JOIN users u ON w.user_id = u.user_id " +
+        "WHERE w.balance < ? ORDER BY w.balance ASC LIMIT 20",
+        [lowBalanceThreshold]
+      );
+      lowBalanceUserList = lowBalanceDetails;
     } catch (e) { console.warn('Wallets table issue:', e.message); }
 
     try {
@@ -75,17 +86,14 @@ export const getAdminStats = async (req, res) => {
 
     res.json({
       success: true,
-      stats: { 
-        totalUsers, totalRevenue, monthlyRevenue, subscriptionRevenue, walletRevenue,
-        totalApplications, totalForms, basicForms, realtimeForms,
-        activeSubscriptions, lowBalanceUsers, activeSessions, suspiciousLogins 
-      }
+      stats: { totalUsers, totalRevenue, totalApplications, lowBalanceUsers, activeSessions, suspiciousLogins }
     });
   } catch (error) {
     console.error("Admin Stats Error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 // Get all users with enhanced details
 export const getAllUsers = async (req, res) => {
