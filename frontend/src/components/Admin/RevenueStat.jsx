@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import API_BASE_URL from '../../config/api';
+import { useAuth } from '../../context/AuthContext';
+
 import axios from "axios";
 
 const RevenueStat = () => {
+  const { user } = useAuth();
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
+  const [selectedUser, setSelectedUser] = useState(null);
+const [transactions, setTransactions] = useState([]);
 
    useEffect(() => {
     const fetchRevenue = async () => {
@@ -25,6 +30,18 @@ const RevenueStat = () => {
       u.email.toLowerCase().includes(search.toLowerCase()) ||
       u.mobile.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleUserClick = async (userId) => {
+  setSelectedUser(userId);
+  try {
+    const response = await axios.get(`${API_BASE_URL}/admin/revenue-breakdown/${userId}`);
+    setTransactions(response.data.data || []);
+    
+   
+  } catch (err) {
+    console.error("Error fetching transactions:", err);
+  }
+};
 
   return (
     <div className="p-6 bg-white rounded-xl shadow-lg">
@@ -64,7 +81,7 @@ const RevenueStat = () => {
                 <td className="p-3 text-right font-medium">
                   ₹{user.total_contribution}
                 </td>
-                <td className="p-3 text-center">
+                <td className="p-3 text-center" key={user.user_id} onClick={() => handleUserClick(user.user_id)}>
                   <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm">
                     See Details
                   </button>
@@ -82,6 +99,34 @@ const RevenueStat = () => {
           </tbody>
         </table>
       </div>
+      {selectedUser && (
+  <div className="mt-6">
+    <h3 className="text-lg font-semibold">Transactions for User #{selectedUser}</h3>
+    <table className="min-w-full divide-y divide-gray-200 mt-2 border">
+      <thead className="bg-gray-100">
+        <tr>
+          <th className="px-4 py-2">Transaction ID</th>
+          <th className="px-4 py-2">Amount</th>
+          <th className="px-4 py-2">Payment Method</th>
+          <th className="px-4 py-2">Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {transactions.map((tx) => (
+          <tr key={tx.id} className="hover:bg-gray-50">
+            <td className="px-4 py-2">{tx.txn_ref}</td>
+            <td className="px-4 py-2">₹{tx.amount}</td>
+            <td className="px-4 py-2">{tx.payment_mode}</td>
+            <td className="px-4 py-2">
+              {new Date(tx.created_at).toLocaleString()}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
+
     </div>
   );
 };

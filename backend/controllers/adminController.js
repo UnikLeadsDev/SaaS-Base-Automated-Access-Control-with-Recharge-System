@@ -118,6 +118,33 @@ export const getRevenueBreakdown = async (req, res) => {
   }
 };
 
+export const getUserRevenueTransactions = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Using raw SQL query
+    const transactions = await db.query(
+      `SELECT txn_ref, amount, created_at, payment_mode FROM transactions WHERE user_id = ? ORDER BY created_at DESC`,
+      [userId]
+    );
+
+    // If using Knex raw, the result might be inside rows depending on DB driver
+    const data = transactions[0] || transactions; // adjust if needed
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error("Error fetching user transactions:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching transactions",
+    });
+  }
+};
+
+
 
 
 // Get all users with enhanced details
