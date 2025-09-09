@@ -25,7 +25,11 @@ import {
   createSubscriptionPlan,
   updateSubscriptionPlan,
   getRevenueBreakdown ,
-  getUserRevenueTransactions 
+  getUserRevenueTransactions,
+  getLowBalanceUsers,
+  getApplications,
+  getUserDetails,
+  exportDashboardData
 } from "../controllers/adminController.js";
 
 const router = express.Router();
@@ -47,6 +51,10 @@ router.use((req, res, next) => {
 
 // Dashboard & Stats
 router.get("/stats", getAdminStats);
+router.get("/low-balance-users", getLowBalanceUsers);
+router.get("/applications", getApplications);
+router.get("/users/:userId/details", getUserDetails);
+router.get("/export", exportDashboardData);
 
 // User Management
 router.get("/users", getAllUsers);

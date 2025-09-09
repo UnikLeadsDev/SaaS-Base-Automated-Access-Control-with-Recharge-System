@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import OTPLogin from './OTPLogin';
 
 import toast from 'react-hot-toast';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Smartphone } from 'lucide-react';
 import previewImage from '../../assets/preview.webp';
 import companyLogo from '../../assets/Unik leads png.png';
 import './Login.css';
@@ -14,6 +15,7 @@ const Login = () => {
     password: ''
   });
   const [loading, setLoading] = useState(false);
+  const [showOTPLogin, setShowOTPLogin] = useState(false);
 
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -83,6 +85,20 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  const handleOTPSuccess = (user, token) => {
+    toast.success('OTP Login successful!');
+    navigate('/dashboard');
+  };
+
+  if (showOTPLogin) {
+    return (
+      <OTPLogin 
+        onSuccess={handleOTPSuccess}
+        onBack={() => setShowOTPLogin(false)}
+      />
+    );
+  }
 
 
 
@@ -187,6 +203,19 @@ const Login = () => {
               ) : (
                 'Sign in'
               )}
+            </button>
+            
+            <div className="divider">
+              <span>or</span>
+            </div>
+            
+            <button 
+              type="button"
+              onClick={() => setShowOTPLogin(true)}
+              className="otp-login-button"
+            >
+              <Smartphone size={20} />
+              Login with OTP
             </button>
             
             <div className="divider">
