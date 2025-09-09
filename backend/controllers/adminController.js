@@ -9,7 +9,6 @@ dotenv.config();
 
 const ENV_PATH = ".env";
 
-// Get admin dashboard stats
 export const getAdminStats = async (req, res) => {
   try {
     let totalUsers = 0, totalRevenue = 0, totalApplications = 0;
@@ -93,6 +92,32 @@ export const getAdminStats = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+// controllers/adminController.js
+export const getRevenueBreakdown = async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT 
+          u.user_id,
+          u.name,
+          u.email,
+          u.mobile,
+          COALESCE(SUM(t.amount), 0) AS total_contribution
+       FROM users u
+       LEFT JOIN transactions t 
+         ON u.user_id = t.user_id
+         AND t.type = 'credit'
+       GROUP BY u.user_id, u.name, u.email, u.mobile
+       ORDER BY total_contribution DESC;`
+    );
+
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error("Revenue Breakdown Error:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch revenue breakdown" });
+  }
+};
+
 
 
 // Get all users with enhanced details

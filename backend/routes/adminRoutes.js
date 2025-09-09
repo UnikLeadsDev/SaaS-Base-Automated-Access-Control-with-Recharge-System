@@ -23,7 +23,8 @@ import {
   getAllSubscriptions,
   overrideSubscription,
   createSubscriptionPlan,
-  updateSubscriptionPlan
+  updateSubscriptionPlan,
+  getRevenueBreakdown 
 } from "../controllers/adminController.js";
 
 const router = express.Router();
@@ -75,6 +76,9 @@ router.get("/subscriptions", getAllSubscriptions);
 router.put("/subscriptions/:subscriptionId/override", overrideSubscription);
 router.post("/subscription-plans", createSubscriptionPlan);
 router.put("/subscription-plans/:planId", updateSubscriptionPlan);
+
+// Revenue Breakdown
+router.get("/revenue-breakdown", getRevenueBreakdown);
 
 // API Key Management
 // GET API keys (admin only)

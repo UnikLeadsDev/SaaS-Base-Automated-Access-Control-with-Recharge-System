@@ -40,7 +40,7 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getToken('token');
+      const token = localStorage.getItem('token');
       
       // Fetch both wallet and subscription data
       const [walletResponse, subscriptionResponse] = await Promise.all([

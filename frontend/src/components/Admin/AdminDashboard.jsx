@@ -11,6 +11,7 @@ import {
 import API_BASE_URL from '../../config/api';
 import EmptyBox from '../Common/EmptyBox';
 import SubscriptionManagement from './SubscriptionManagement';
+import RevenueStat from './RevenueStat';
 
 const AdminDashboard = () => {
   const { user, login } = useAuth();
@@ -830,6 +831,7 @@ const handleUpdateEnvKeys = async () => {
             { id: 'security', name: 'Security', icon: Shield },
             { id: 'sessions', name: 'Sessions', icon: Monitor },
             { id: 'subscriptions', name: 'Subscriptions', icon: Calendar },
+            { id: 'revenue', name: 'Revenue', icon: DollarSign },
             { id: 'billing', name: 'Billing', icon: CreditCard },
             { id: 'api-keys', name: 'API Keys', icon: Key }
           ].map((tab) => {
@@ -858,6 +860,7 @@ const handleUpdateEnvKeys = async () => {
       {activeTab === 'security' && renderSecurity()}
       {activeTab === 'sessions' && renderSessions()}
       {activeTab === 'subscriptions' && <SubscriptionManagement />}
+      {activeTab === 'revenue' && <RevenueStat />}
       {activeTab === 'api-keys' && renderEnvKeys()}
 
       {/* User Modal */}
