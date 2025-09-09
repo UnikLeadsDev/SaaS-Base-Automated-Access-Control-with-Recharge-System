@@ -45,6 +45,14 @@ const AdminDashboard = () => {
   const [details, setDetails] = useState({});
   const [selectedCard, setSelectedCard] = useState(null); // which card is clicked
   const [showModal, setShowModal] = useState(false);
+  const [modalData, setModalData] = useState([]);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [userDetailsModal, setUserDetailsModal] = useState(false);
+  const [selectedUserDetails, setSelectedUserDetails] = useState(null);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [userForm, setUserForm] = useState({
     name: '',
     email: '',
@@ -88,13 +96,101 @@ const AdminDashboard = () => {
 
   }, [activeTab, filters]);
 
-  const handleCardClick = (card) => {
+  const handleCardClick = async (card) => {
   setSelectedCard(card);
   setShowModal(true);
+  setModalLoading(true);
+  
+  try {
+    const token = localStorage.getItem('token');
+    let response;
+    
+    if (card === 'lowBalance') {
+      response = await axios.get(`${API_BASE_URL}/admin/low-balance-users`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setModalData(response.data.users || []);
+    } else if (card === 'applications') {
+      response = await axios.get(`${API_BASE_URL}/admin/applications`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setModalData(response.data.applications || []);
+    } else if (card === 'revenue') {
+      response = await axios.get(`${API_BASE_URL}/admin/revenue-breakdown`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setModalData(response.data.data || []);
+    }
+  } catch (error) {
+    console.error('Failed to fetch modal data:', error);
+    toast.error('Failed to load data');
+    setModalData([]);
+  } finally {
+    setModalLoading(false);
+  }
 };
 const handleCloseModal = () => {
   setShowModal(false);
   setSelectedCard(null);
+  setModalData([]);
+};
+
+const handleSearch = () => {
+  setFilters({
+    ...filters,
+    search: searchTerm,
+    role: roleFilter,
+    status: statusFilter,
+    page: 1
+  });
+};
+
+const handleUserDetails = async (userId) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await axios.get(`${API_BASE_URL}/admin/users/${userId}/details`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    setSelectedUserDetails(response.data);
+    setUserDetailsModal(true);
+  } catch (error) {
+    toast.error('Failed to fetch user details');
+  }
+};
+
+const handleExport = async (type) => {
+  try {
+    setExportLoading(true);
+    const token = localStorage.getItem('token');
+    const response = await axios.get(`${API_BASE_URL}/admin/export?type=${type}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    const csvContent = convertToCSV(response.data.data);
+    downloadCSV(csvContent, response.data.filename);
+    toast.success('Export completed successfully');
+  } catch (error) {
+    toast.error('Export failed');
+  } finally {
+    setExportLoading(false);
+  }
+};
+
+const convertToCSV = (data) => {
+  if (!data.length) return '';
+  const headers = Object.keys(data[0]).join(',');
+  const rows = data.map(row => Object.values(row).join(','));
+  return [headers, ...rows].join('\n');
+};
+
+const downloadCSV = (content, filename) => {
+  const blob = new Blob([content], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  window.URL.revokeObjectURL(url);
 };
 
 const Modal = ({ title, children, onClose }) => (
@@ -400,7 +496,7 @@ const handleUpdateEnvKeys = async () => {
 
         <div 
   onClick={() => handleCardClick("revenue")}
-  className="cursor-pointer bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-lg text-white"
+  className="cursor-pointer bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-lg text-white hover:from-green-600 hover:to-green-700 transition-all"
 >
   <div className="flex items-center justify-between">
     <div>
@@ -424,7 +520,7 @@ const handleUpdateEnvKeys = async () => {
 
       <div 
   onClick={() => handleCardClick("lowBalance")}
-  className="cursor-pointer bg-gradient-to-r from-red-500 to-red-600 p-6 rounded-lg text-white"
+  className="cursor-pointer bg-gradient-to-r from-red-500 to-red-600 p-6 rounded-lg text-white hover:from-red-600 hover:to-red-700 transition-all"
 >
   <div className="flex items-center justify-between">
     <div>
@@ -449,7 +545,7 @@ const handleUpdateEnvKeys = async () => {
 
         <div 
   onClick={() => handleCardClick("applications")}
-  className="cursor-pointer bg-gradient-to-r from-indigo-500 to-indigo-600 p-6 rounded-lg text-white"
+  className="cursor-pointer bg-gradient-to-r from-indigo-500 to-indigo-600 p-6 rounded-lg text-white hover:from-indigo-600 hover:to-indigo-700 transition-all"
 >
   <div className="flex items-center justify-between">
     <div>
@@ -485,36 +581,63 @@ const handleUpdateEnvKeys = async () => {
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow flex gap-4">
-        <input
-          type="text"
-          placeholder="Search users..."
-          value={filters.search}
-          onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-          className="flex-1 px-3 py-2 border rounded-md"
-        />
-        <select
-          value={filters.role}
-          onChange={(e) => setFilters({ ...filters, role: e.target.value })}
-          className="px-3 py-2 border rounded-md"
-        >
-          <option value="">All Roles</option>
-          <option value="DSA">DSA</option>
-          <option value="NBFC">NBFC</option>
-          <option value="Co-op">Co-op</option>
-          <option value="admin">Admin</option>
-        </select>
-        <select
-          value={filters.status}
-          onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-          className="px-3 py-2 border rounded-md"
-        >
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="blocked">Blocked</option>
-          <option value="pending">Pending</option>
-        </select>
+      {/* Enhanced Filters */}
+      <div className="bg-white p-4 rounded-lg shadow">
+        <div className="flex gap-4 mb-4">
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-1 px-3 py-2 border rounded-md"
+          />
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="px-3 py-2 border rounded-md"
+          >
+            <option value="">All Roles</option>
+            <option value="DSA">DSA</option>
+            <option value="NBFC">NBFC</option>
+            <option value="Co-op">Co-op</option>
+            <option value="admin">Admin</option>
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 border rounded-md"
+          >
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="blocked">Blocked</option>
+            <option value="pending">Pending</option>
+          </select>
+          <button
+            onClick={handleSearch}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+          >
+            <Search className="h-4 w-4" />
+            Search
+          </button>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleExport('users')}
+            disabled={exportLoading}
+            className="bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 flex items-center gap-2 text-sm"
+          >
+            <Download className="h-4 w-4" />
+            {exportLoading ? 'Exporting...' : 'Export Users'}
+          </button>
+          <button
+            onClick={() => handleExport('stats')}
+            disabled={exportLoading}
+            className="bg-purple-600 text-white px-3 py-2 rounded-md hover:bg-purple-700 flex items-center gap-2 text-sm"
+          >
+            <Download className="h-4 w-4" />
+            Export Stats
+          </button>
+        </div>
       </div>
 
       {/* Users Table */}
@@ -566,6 +689,13 @@ const handleUpdateEnvKeys = async () => {
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleUserDetails(user.user_id)}
+                      className="text-green-600 hover:text-green-900 mr-2"
+                      title="View Details"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
                     <button
                       onClick={() => {
                         setEditingUser(user.user_id);
@@ -942,53 +1072,94 @@ const handleUpdateEnvKeys = async () => {
     title={
       selectedCard === "lowBalance" ? "Low Balance Users" :
       selectedCard === "applications" ? "Recent Applications" :
-      "Total Revenue Contributors"
+      "Revenue Contributors"
     }
     onClose={handleCloseModal}
   >
-    {selectedCard === "lowBalance" && (
-      <ul className="space-y-2">
-        {details.lowBalanceUserList?.length > 0 ? (
-          details.lowBalanceUserList.map(user => (
-            <li key={user.user_id} className="flex justify-between border-b pb-1">
-              <span>{user.name} ({user.email})</span>
-              <span className="font-semibold text-red-600">₹{user.balance}</span>
-            </li>
-          ))
-        ) : (
-          <p>No users found</p>
+    {modalLoading ? (
+      <div className="flex justify-center items-center h-32">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    ) : (
+      <>
+        {selectedCard === "lowBalance" && (
+          <div className="space-y-2">
+            {modalData.length > 0 ? (
+              modalData.map(user => (
+                <div key={user.user_id} className="flex justify-between items-center p-3 bg-red-50 rounded border">
+                  <div>
+                    <div className="font-medium">{user.name}</div>
+                    <div className="text-sm text-gray-600">{user.email}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-semibold text-red-600">₹{user.balance}</div>
+                    <button 
+                      onClick={() => setActiveTab('users')}
+                      className="text-xs text-blue-600 hover:underline"
+                    >
+                      Manage User
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-gray-500 py-4">No low balance users found</p>
+            )}
+          </div>
         )}
-      </ul>
-    )}
 
-    {selectedCard === "applications" && (
-      <ul className="space-y-2">
-        {details.applicationList?.length > 0 ? (
-          details.applicationList.map(app => (
-            <li key={app.id} className="border-b pb-1">
-              <span className="font-semibold">{app.name}</span> ({app.email}) applied for Loan.
-              
-            </li>
-          ))
-        ) : (
-          <p>No applications found</p>
+        {selectedCard === "applications" && (
+          <div className="space-y-2">
+            {modalData.length > 0 ? (
+              modalData.map(app => (
+                <div key={app.app_id} className="p-3 bg-indigo-50 rounded border">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-medium">{app.name}</div>
+                      <div className="text-sm text-gray-600">{app.email}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Form Type: <span className="font-medium">{app.form_type}</span>
+                      </div>
+                    </div>
+                    <div className="text-right text-xs text-gray-500">
+                      {new Date(app.submitted_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-gray-500 py-4">No applications found</p>
+            )}
+          </div>
         )}
-      </ul>
-    )}
 
-    {selectedCard === "revenue" && (
-      <ul className="space-y-2">
-        {details.revenueList?.length > 0 ? (
-          details.revenueList.map(tx => (
-            <li key={tx.id} className="flex justify-between border-b pb-1">
-              <span>{tx.name} ({tx.email})</span>
-              <span className="font-semibold text-green-600">+₹{tx.amount}</span>
-            </li>
-          ))
-        ) : (
-          <p>No revenue records found</p>
+        {selectedCard === "revenue" && (
+          <div className="space-y-2">
+            {modalData.length > 0 ? (
+              modalData.map(user => (
+                <div key={user.user_id} className="flex justify-between items-center p-3 bg-green-50 rounded border">
+                  <div>
+                    <div className="font-medium">{user.name}</div>
+                    <div className="text-sm text-gray-600">{user.email}</div>
+                    <div className="text-xs text-gray-500">{user.mobile}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-semibold text-green-600">₹{user.total_contribution}</div>
+                    <button 
+                      onClick={() => setActiveTab('revenue')}
+                      className="text-xs text-blue-600 hover:underline"
+                    >
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-gray-500 py-4">No revenue data found</p>
+            )}
+          </div>
         )}
-      </ul>
+      </>
     )}
   </Modal>
 )}
@@ -997,6 +1168,94 @@ const handleUpdateEnvKeys = async () => {
 
 
 
+
+      {/* User Details Modal */}
+      {userDetailsModal && selectedUserDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">User Details</h3>
+              <button
+                onClick={() => setUserDetailsModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✖
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Name</label>
+                  <p className="text-gray-900">{selectedUserDetails.user.name}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Email</label>
+                  <p className="text-gray-900">{selectedUserDetails.user.email}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Mobile</label>
+                  <p className="text-gray-900">{selectedUserDetails.user.mobile || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Role</label>
+                  <p className="text-gray-900">{selectedUserDetails.user.role}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Status</label>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    selectedUserDetails.user.status === 'active' ? 'bg-green-100 text-green-800' : 
+                    selectedUserDetails.user.status === 'blocked' ? 'bg-red-100 text-red-800' : 
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {selectedUserDetails.user.status}
+                  </span>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Balance</label>
+                  <p className="text-gray-900">₹{selectedUserDetails.user.balance || 0}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Join Date</label>
+                  <p className="text-gray-900">{new Date(selectedUserDetails.user.created_at).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Applications</label>
+                  <p className="text-gray-900">{selectedUserDetails.user.total_applications || 0}</p>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="text-md font-medium mb-2">Recent Transactions</h4>
+                <div className="max-h-40 overflow-y-auto">
+                  {selectedUserDetails.transactions.length > 0 ? (
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          <th className="px-2 py-1 text-left">Amount</th>
+                          <th className="px-2 py-1 text-left">Type</th>
+                          <th className="px-2 py-1 text-left">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedUserDetails.transactions.map((txn, idx) => (
+                          <tr key={idx} className="border-b">
+                            <td className="px-2 py-1">₹{txn.amount}</td>
+                            <td className="px-2 py-1">{txn.type}</td>
+                            <td className="px-2 py-1">{new Date(txn.created_at).toLocaleDateString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p className="text-gray-500">No transactions found</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

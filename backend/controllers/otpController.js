@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import db from '../config/db.js';
 import otpService from '../services/otpService.js';
-import notificationService from '../services/notificationService.js';
+import crypto from 'crypto';
 
 // Send OTP for login
 export const sendLoginOTP = async (req, res) => {
@@ -15,26 +15,34 @@ export const sendLoginOTP = async (req, res) => {
   }
 
   try {
-    const testOTP = '123456';
-    
-    // Store OTP in database
-    const expiryTime = new Date(Date.now() + 5 * 60 * 1000);
-    await db.query(
-      'DELETE FROM otp_verifications WHERE mobile = ? AND status = "pending"',
+    // Check if user exists with this mobile number
+    const [user] = await db.query(
+      'SELECT user_id, name, email, role, status FROM users WHERE mobile = ? AND status = "active"',
       [mobile]
     );
-    await db.query(
-      'INSERT INTO otp_verifications (mobile, otp, expires_at, attempts, status) VALUES (?, ?, ?, 0, "pending")',
-      [mobile, testOTP, expiryTime]
-    );
+
+    if (user.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No active account found with this mobile number'
+      });
+    }
+
+    // Send OTP using the service
+    const result = await otpService.sendOTP(mobile);
     
-    console.log(`OTP for ${mobile}: ${testOTP}`);
-    
-    res.json({ 
-      success: true, 
-      message: 'OTP sent successfully (Use: 123456)',
-      mobile: mobile.replace(/(\d{6})(\d{4})/, '******$2')
-    });
+    if (result.success) {
+      res.json({ 
+        success: true, 
+        message: 'OTP sent successfully',
+        mobile: mobile.replace(/(\d{6})(\d{4})/, '******$2')
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
   } catch (error) {
     console.error('Send Login OTP Error:', error);
     res.status(500).json({ 
@@ -56,38 +64,88 @@ export const verifyLoginOTP = async (req, res) => {
   }
 
   try {
-    // For testing - accept any OTP
-    if (otp === '123456') {
-      // Generate test JWT token
-      const token = jwt.sign(
-        { 
-          id: 1, 
-          email: 'test@example.com', 
-          role: 'DSA',
-          mobile: mobile 
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: '7d' }
-      );
-
-      res.json({
-        success: true,
-        message: 'Login successful',
-        token,
-        user: {
-          id: 1,
-          name: 'Test User',
-          email: 'test@example.com',
-          mobile: mobile,
-          role: 'DSA'
-        }
-      });
-    } else {
-      res.status(400).json({ 
-        success: false, 
-        message: 'Invalid OTP' 
+    // Verify OTP using the service
+    const otpResult = await otpService.verifyOTP(mobile, otp);
+    
+    if (!otpResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: otpResult.message
       });
     }
+
+    // Get user details
+    const [user] = await db.query(
+      'SELECT user_id, name, email, mobile, role, status FROM users WHERE mobile = ? AND status = "active"',
+      [mobile]
+    );
+
+    if (user.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const userData = user[0];
+
+    // Update last login
+    await db.query('UPDATE users SET last_login = NOW() WHERE user_id = ?', [userData.user_id]);
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        id: userData.user_id, 
+        email: userData.email, 
+        role: userData.role 
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Generate session token
+    const sessionToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    // Log login history and create session
+    try {
+      const userAgent = req.headers['user-agent'] || 'Unknown';
+      const ipAddress = req.ip || req.connection.remoteAddress || 'Unknown';
+
+      await db.query(
+        'INSERT INTO login_history (user_id, ip_address, browser, login_method) VALUES (?, ?, ?, ?)',
+        [userData.user_id, ipAddress, userAgent, 'otp']
+      );
+
+      await db.query(
+        'INSERT INTO user_sessions (user_id, session_token, ip_address, browser, expires_at) VALUES (?, ?, ?, ?, ?)',
+        [userData.user_id, sessionToken, ipAddress, userAgent, expiresAt]
+      );
+    } catch (e) {
+      console.warn('Failed to log session:', e.message);
+    }
+
+    // Get wallet info
+    const [wallet] = await db.query(
+      'SELECT balance, status FROM wallets WHERE user_id = ?',
+      [userData.user_id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token,
+      sessionToken,
+      user: {
+        id: userData.user_id,
+        name: userData.name,
+        email: userData.email,
+        mobile: userData.mobile,
+        role: userData.role,
+        walletBalance: wallet[0]?.balance || 0,
+        walletStatus: wallet[0]?.status || 'active'
+      }
+    });
   } catch (error) {
     console.error('Verify Login OTP Error:', error);
     res.status(500).json({ 
@@ -101,14 +159,27 @@ export const verifyLoginOTP = async (req, res) => {
 export const resendOTP = async (req, res) => {
   const { mobile } = req.body;
 
-  if (!mobile) {
+  if (!mobile || !/^[6-9]\d{9}$/.test(mobile)) {
     return res.status(400).json({ 
       success: false, 
-      message: 'Mobile number required' 
+      message: 'Valid mobile number required' 
     });
   }
 
   try {
+    // Check if user exists
+    const [user] = await db.query(
+      'SELECT user_id FROM users WHERE mobile = ? AND status = "active"',
+      [mobile]
+    );
+
+    if (user.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No active account found with this mobile number'
+      });
+    }
+
     const result = await otpService.resendOTP(mobile);
     
     if (result.success) {

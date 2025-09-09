@@ -14,16 +14,11 @@ export const getAdminStats = async (req, res) => {
     let totalUsers = 0, totalRevenue = 0, totalApplications = 0;
     let lowBalanceUsers = 0, activeSessions = 0, suspiciousLogins = 0;
 
-    // Detailed data
-    let lowBalanceUserList = [], applicationList = [], revenueList = [];
-
     try {
       const [users] = await db.query("SELECT COUNT(*) as count FROM users WHERE role != 'admin'");
       totalUsers = users[0]?.count || 0;
     } catch (e) { console.warn('Users table issue:', e.message); }
 
-    // Enhanced revenue tracking
-    let monthlyRevenue = 0, subscriptionRevenue = 0, walletRevenue = 0;
     try {
       const [revenue] = await db.query("SELECT SUM(amount) as total FROM transactions WHERE type = 'credit'");
       totalRevenue = revenue[0]?.total || 0;
@@ -32,29 +27,12 @@ export const getAdminStats = async (req, res) => {
     try {
       const [apps] = await db.query("SELECT COUNT(*) as count FROM applications");
       totalApplications = apps[0]?.count || 0;
-
-      // actual applications
-      const [appsDetails] = await db.query(
-        "SELECT a.app_id, a.user_id, u.name, u.email, a.form_type, a.submitted_at " +
-        "FROM applications a JOIN users u ON a.user_id = u.user_id " +
-        "ORDER BY a.submitted_at DESC LIMIT 20"
-      );
-      applicationList = appsDetails;
     } catch (e) { console.warn('Applications table issue:', e.message); }
 
     try {
       const lowBalanceThreshold = parseFloat(process.env.LOW_BALANCE_THRESHOLD) || 100;
       const [lowBalance] = await db.query("SELECT COUNT(*) as count FROM wallets WHERE balance < ?", [lowBalanceThreshold]);
       lowBalanceUsers = lowBalance[0]?.count || 0;
-
-      // actual low balance users
-      const [lowBalanceDetails] = await db.query(
-        "SELECT w.user_id, u.name, u.email, w.balance " +
-        "FROM wallets w JOIN users u ON w.user_id = u.user_id " +
-        "WHERE w.balance < ? ORDER BY w.balance ASC LIMIT 20",
-        [lowBalanceThreshold]
-      );
-      lowBalanceUserList = lowBalanceDetails;
     } catch (e) { console.warn('Wallets table issue:', e.message); }
 
     try {
@@ -67,22 +45,6 @@ export const getAdminStats = async (req, res) => {
       suspiciousLogins = suspicious[0]?.count || 0;
     } catch (e) { console.warn('Login history table issue:', e.message); }
 
-    // Usage analytics
-    let totalForms = 0, basicForms = 0, realtimeForms = 0, activeSubscriptions = 0;
-    try {
-      const [forms] = await db.query("SELECT COUNT(*) as count FROM applications");
-      totalForms = forms[0]?.count || 0;
-      
-      const [basic] = await db.query("SELECT COUNT(*) as count FROM applications WHERE form_type = 'basic'");
-      basicForms = basic[0]?.count || 0;
-      
-      const [realtime] = await db.query("SELECT COUNT(*) as count FROM applications WHERE form_type = 'realtime'");
-      realtimeForms = realtime[0]?.count || 0;
-      
-      const [activeSubs] = await db.query("SELECT COUNT(*) as count FROM subscriptions WHERE status = 'active'");
-      activeSubscriptions = activeSubs[0]?.count || 0;
-    } catch (e) { console.warn('Usage analytics issue:', e.message); }
-
     res.json({
       success: true,
       stats: { totalUsers, totalRevenue, totalApplications, lowBalanceUsers, activeSessions, suspiciousLogins }
@@ -91,6 +53,110 @@ export const getAdminStats = async (req, res) => {
     console.error("Admin Stats Error:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
+};
+
+export const getLowBalanceUsers = async (req, res) => {
+  try {
+    const lowBalanceThreshold = parseFloat(process.env.LOW_BALANCE_THRESHOLD) || 100;
+    const [users] = await db.query(
+      "SELECT w.user_id, u.name, u.email, w.balance " +
+      "FROM wallets w JOIN users u ON w.user_id = u.user_id " +
+      "WHERE w.balance < ? ORDER BY w.balance ASC LIMIT 50",
+      [lowBalanceThreshold]
+    );
+    res.json({ success: true, users });
+  } catch (error) {
+    console.error("Get Low Balance Users Error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+export const getApplications = async (req, res) => {
+  try {
+    const [applications] = await db.query(
+      "SELECT a.app_id, a.user_id, u.name, u.email, a.form_type, a.submitted_at " +
+      "FROM applications a JOIN users u ON a.user_id = u.user_id " +
+      "ORDER BY a.submitted_at DESC LIMIT 50"
+    );
+    res.json({ success: true, applications });
+  } catch (error) {
+    console.error("Get Applications Error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+export const getUserDetails = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const [user] = await db.query(
+      "SELECT u.*, w.balance, COUNT(a.app_id) as total_applications " +
+      "FROM users u " +
+      "LEFT JOIN wallets w ON u.user_id = w.user_id " +
+      "LEFT JOIN applications a ON u.user_id = a.user_id " +
+      "WHERE u.user_id = ? GROUP BY u.user_id",
+      [userId]
+    );
+    
+    if (user.length === 0) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    
+    const [transactions] = await db.query(
+      "SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 10",
+      [userId]
+    );
+    
+    res.json({ success: true, user: user[0], transactions });
+  } catch (error) {
+    console.error("Get User Details Error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+export const exportDashboardData = async (req, res) => {
+  try {
+    const { type } = req.query;
+    
+    if (type === 'users') {
+      const [users] = await db.query(
+        "SELECT u.user_id, u.name, u.email, u.mobile, u.role, u.status, " +
+        "DATE(u.created_at) as join_date, COALESCE(w.balance, 0) as balance " +
+        "FROM users u LEFT JOIN wallets w ON u.user_id = w.user_id"
+      );
+      res.json({ success: true, data: users, filename: 'users_export.csv' });
+    } else if (type === 'stats') {
+      const stats = await getStatsForExport();
+      res.json({ success: true, data: stats, filename: 'dashboard_stats.csv' });
+    }
+  } catch (error) {
+    console.error("Export Error:", error);
+    res.status(500).json({ success: false, message: "Export failed" });
+  }
+};
+
+const getStatsForExport = async () => {
+  const [users] = await db.query("SELECT COUNT(*) as totalUsers FROM users WHERE role != 'admin'");
+  const [revenue] = await db.query("SELECT SUM(amount) as totalRevenue FROM transactions WHERE type = 'credit'");
+  const [apps] = await db.query("SELECT COUNT(*) as totalApplications FROM applications");
+  const [lowBalance] = await db.query("SELECT COUNT(*) as lowBalanceUsers FROM wallets WHERE balance < 100");
+  
+  return [{
+    metric: 'Total Users',
+    value: users[0]?.totalUsers || 0,
+    exported_at: new Date().toISOString()
+  }, {
+    metric: 'Total Revenue',
+    value: revenue[0]?.totalRevenue || 0,
+    exported_at: new Date().toISOString()
+  }, {
+    metric: 'Total Applications',
+    value: apps[0]?.totalApplications || 0,
+    exported_at: new Date().toISOString()
+  }, {
+    metric: 'Low Balance Users',
+    value: lowBalance[0]?.lowBalanceUsers || 0,
+    exported_at: new Date().toISOString()
+  }];
 };
 
 // controllers/adminController.js
@@ -121,25 +187,49 @@ export const getRevenueBreakdown = async (req, res) => {
 export const getUserRevenueTransactions = async (req, res) => {
   try {
     const { userId } = req.params;
+    console.log('Fetching transactions for userId:', userId);
 
-    // Using raw SQL query
-    const transactions = await db.query(
-      `SELECT txn_ref, amount, created_at, payment_mode FROM transactions WHERE user_id = ? ORDER BY created_at DESC`,
-      [userId]
-    );
-
-    // If using Knex raw, the result might be inside rows depending on DB driver
-    const data = transactions[0] || transactions; // adjust if needed
-
-    return res.status(200).json({
-      success: true,
-      data,
-    });
+    // Check if transactions table exists and has the required columns
+    try {
+      const [transactions] = await db.query(
+        `SELECT txn_ref, amount, created_at, payment_mode FROM transactions WHERE user_id = ? AND type = 'credit' ORDER BY created_at DESC LIMIT 20`,
+        [userId]
+      );
+      
+      console.log('Found transactions:', transactions.length);
+      
+      return res.status(200).json({
+        success: true,
+        data: transactions || [],
+      });
+    } catch (dbError) {
+      console.error('Database query error:', dbError);
+      
+      // Fallback query with basic columns
+      try {
+        const [basicTransactions] = await db.query(
+          `SELECT amount, created_at, type FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 20`,
+          [userId]
+        );
+        
+        return res.status(200).json({
+          success: true,
+          data: basicTransactions || [],
+        });
+      } catch (fallbackError) {
+        console.error('Fallback query also failed:', fallbackError);
+        return res.status(200).json({
+          success: true,
+          data: [],
+        });
+      }
+    }
   } catch (error) {
     console.error("Error fetching user transactions:", error);
     return res.status(500).json({
       success: false,
       message: "Server error while fetching transactions",
+      error: error.message
     });
   }
 };

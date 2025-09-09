@@ -15,26 +15,46 @@ class OTPService {
       // Generate 6-digit OTP if not provided
       const generatedOTP = otp || Math.floor(100000 + Math.random() * 900000).toString();
       
+      // Clear any existing pending OTPs for this mobile
+      await db.query(
+        'DELETE FROM otp_verifications WHERE mobile = ? AND status = "pending"',
+        [mobile]
+      );
+      
       // Store OTP in database with expiry
       const expiryTime = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-      await db.query(`
-        INSERT INTO otp_verifications (mobile, otp, expires_at, attempts, status) 
-        VALUES (?, ?, ?, 0, 'pending')
-        ON DUPLICATE KEY UPDATE 
-        otp = VALUES(otp), 
-        expires_at = VALUES(expires_at), 
-        attempts = 0, 
-        status = 'pending'
-      `, [mobile, generatedOTP, expiryTime]);
+      await db.query(
+        'INSERT INTO otp_verifications (mobile, otp, expires_at, attempts, status) VALUES (?, ?, ?, 0, "pending")',
+        [mobile, generatedOTP, expiryTime]
+      );
 
-      // Send OTP via MSG91
+      // Development mode - use fixed OTP
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔐 Development OTP for ${mobile}: ${generatedOTP}`);
+        return { 
+          success: true, 
+          message: `OTP sent successfully (Dev: ${generatedOTP})`,
+          otp: generatedOTP // Only in dev mode
+        };
+      }
+
+      // Production - Send OTP via MSG91
+      if (!this.msg91AuthKey || !this.otpTemplateId) {
+        console.warn('MSG91 credentials not configured, using development mode');
+        return { 
+          success: true, 
+          message: `OTP sent successfully (Dev: ${generatedOTP})`,
+          otp: generatedOTP
+        };
+      }
+
       const url = `${this.msg91BaseUrl}/v5/otp`;
       const payload = {
         template_id: this.otpTemplateId,
         mobile: mobile,
         authkey: this.msg91AuthKey,
         otp: generatedOTP,
-        otp_expiry: 5 // minutes
+        otp_expiry: 5
       };
 
       const response = await axios.post(url, payload, {
