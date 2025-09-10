@@ -126,12 +126,15 @@ if (user?.role === 'admin') {
       {/* Top bar */}
       <div className="relative z-10 flex-shrink-0 flex h-16 bg-white shadow-sm border-b border-gray-200">
         {/* Sidebar toggle button on mobile */}
-        <button
-          className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 md:hidden"
-          onClick={() => setSidebarOpen(true)}
-        >
-          <Menu className="h-6 w-6" />
-        </button>
+        {user?.role !== 'admin' && (
+  <button
+    className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 md:hidden"
+    onClick={() => setSidebarOpen(true)}
+  >
+    <Menu className="h-6 w-6" />
+  </button>
+)}
+       
 
         {/* Main top bar content */}
         <div className="flex-1 px-2 sm:px-4 flex justify-between items-center">

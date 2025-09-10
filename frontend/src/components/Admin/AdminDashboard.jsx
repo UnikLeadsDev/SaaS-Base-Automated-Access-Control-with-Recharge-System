@@ -6,7 +6,7 @@ import {
   Users, DollarSign, FileText, AlertTriangle, TrendingUp, Activity, 
   CreditCard, UserCheck, Shield, Key, Clock, MapPin, Monitor,
   Search, Filter, Plus, Edit, Trash2, Ban, UserPlus, RefreshCw,
-  Eye, EyeOff, Download, Calendar, Globe, LogIn
+  Eye, EyeOff, Download, Calendar, Globe, LogIn, Copy
 } from 'lucide-react';
 import API_BASE_URL from '../../config/api';
 import EmptyBox from '../Common/EmptyBox';
@@ -17,6 +17,7 @@ const AdminDashboard = () => {
   const { user, login } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [newKeys, setNewKeys] = useState({});
+  const [visibleKeys, setVisibleKeys] = useState({});
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalRevenue: 0,
@@ -884,62 +885,100 @@ const handleUpdateEnvKeys = async () => {
   );
 
 
-    const renderEnvKeys = () => (
-  <div className="p-6 max-w-5xl mx-auto bg-white shadow rounded">
-    <h2 className="text-xl font-bold mb-6">Manage Environment API Keys</h2>
+const renderEnvKeys = () => {
+  
 
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* --- Current Keys Section --- */}
-      <div className="bg-gray-50 p-4 rounded shadow-inner">
-        <h3 className="text-lg font-semibold mb-3">Current Keys</h3>
-        {[
-          { label: "Razorpay Key ID", field: "RAZORPAY_KEY_ID" },
-          { label: "Razorpay Key Secret", field: "RAZORPAY_KEY_SECRET" },
-          { label: "MSG91 Auth Key", field: "MSG91_AUTH_KEY" },
-          { label: "MSG91 OTP Template ID", field: "MSG91_OTP_TEMPLATE_ID" }
-        ].map(({ label, field }) => (
-          <div key={field} className="mb-2">
-            <p className="text-sm font-medium">{label}</p>
-            <p className="text-gray-700 bg-white border px-3 py-2 rounded">
-              {keys[field] || "Not set"}
-            </p>
-          </div>
-        ))}
-      </div>
+  const toggleVisibility = (field) => {
+    setVisibleKeys((prev) => ({ ...prev, [field]: !prev[field] }));
+  };
 
-      {/* --- Update Keys Section --- */}
-      <div>
-        <h3 className="text-lg font-semibold mb-3">Update Keys</h3>
-        {[
-          { label: "Razorpay Key ID", field: "razorpayKeyId" },
-          { label: "Razorpay Key Secret", field: "razorpayKeySecret" },
-          { label: "MSG91 Auth Key", field: "msg91AuthKey" },
-          { label: "MSG91 OTP Template ID", field: "msg91OtpTemplateId" }
-        ].map(({ label, field }) => (
-          <div key={field} className="mb-3">
-            <label className="block font-medium mb-1">{label}</label>
-            <input
-              type="text"
-              value={newKeys[field] || ""}   // use newKeys here
-              onChange={(e) =>
-                setNewKeys({ ...newKeys, [field]: e.target.value })
-              }
-              placeholder="Enter new value"
-              className="w-full border px-3 py-2 rounded"
-            />
-          </div>
-        ))}
+  const copyToClipboard = (value) => {
+    if (!value) return;
+    navigator.clipboard.writeText(value);
+    alert("Copied to clipboard!");
+  };
 
-        <button
-          onClick={handleUpdateEnvKeys}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Update Keys
-        </button>
+  return (
+    <div className="p-6 max-w-5xl mx-auto bg-white shadow rounded">
+      <h2 className="text-xl font-bold mb-6">Manage Environment API Keys</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* --- Current Keys Section --- */}
+        <div className="bg-gray-50 p-4 rounded shadow-inner">
+          <h3 className="text-lg font-semibold mb-3">Current Keys</h3>
+          {[
+            { label: "Razorpay Key ID", field: "RAZORPAY_KEY_ID" },
+            { label: "Razorpay Key Secret", field: "RAZORPAY_KEY_SECRET" },
+            { label: "MSG91 Auth Key", field: "MSG91_AUTH_KEY" },
+            { label: "MSG91 OTP Template ID", field: "MSG91_OTP_TEMPLATE_ID" }
+          ].map(({ label, field }) => (
+            <div key={field} className="mb-2">
+              <p className="text-sm font-medium">{label}</p>
+              <div className="flex items-center border px-3 py-2 rounded bg-white">
+                <p className="flex-1 text-gray-700 truncate">
+                  {visibleKeys[field]
+                    ? keys[field] || "Not set"
+                    : keys[field]
+                    ? "•".repeat(10)
+                    : "Not set"}
+                </p>
+                {keys[field] && (
+                  <div className="flex items-center gap-2 ml-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleVisibility(field)}
+                      className="text-gray-600 hover:text-gray-900"
+                    >
+                      {visibleKeys[field] ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(keys[field])}
+                      className="text-gray-600 hover:text-gray-900"
+                    >
+                      <Copy size={18} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* --- Update Keys Section --- */}
+        <div>
+          <h3 className="text-lg font-semibold mb-3">Update Keys</h3>
+          {[
+            { label: "Razorpay Key ID", field: "razorpayKeyId" },
+            { label: "Razorpay Key Secret", field: "razorpayKeySecret" },
+            { label: "MSG91 Auth Key", field: "msg91AuthKey" },
+            { label: "MSG91 OTP Template ID", field: "msg91OtpTemplateId" }
+          ].map(({ label, field }) => (
+            <div key={field} className="mb-3">
+              <label className="block font-medium mb-1">{label}</label>
+              <input
+                type="text"
+                value={newKeys[field] || ""}
+                onChange={(e) =>
+                  setNewKeys({ ...newKeys, [field]: e.target.value })
+                }
+                placeholder="Enter new value"
+                className="w-full border px-3 py-2 rounded"
+              />
+            </div>
+          ))}
+
+          <button
+            onClick={handleUpdateEnvKeys}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Update Keys
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-)
+  );
+};
 
 
   return (
