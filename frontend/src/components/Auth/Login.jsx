@@ -10,6 +10,7 @@ import companyLogo from '../../assets/Unik leads png.png';
 import './Login.css';
 
 const Login = () => {
+  const{user}=useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -71,20 +72,28 @@ const Login = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
 
-    try {
-      await login(formData.email, formData.password);
-      toast.success('Login successful!');
-      navigate('/dashboard');
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed');
-    } finally {
-      setLoading(false);
+  try {
+    const { user } = await login(formData.email, formData.password);
+    // login returns { success, token, user }
+
+    toast.success('Login successful!');
+
+    if (user?.role === 'admin') {
+      navigate('/admin'); // admin redirect
+    } else {
+      navigate('/dashboard'); // end-user redirect
     }
-  };
+  } catch (error) {
+    toast.error(error.response?.data?.message || 'Login failed');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleOTPSuccess = (user, token) => {
     toast.success('OTP Login successful!');

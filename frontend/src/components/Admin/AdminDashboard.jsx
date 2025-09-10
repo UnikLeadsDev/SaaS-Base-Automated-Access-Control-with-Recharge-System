@@ -89,7 +89,7 @@ const AdminDashboard = () => {
     if (activeTab === 'users') fetchUsers();
     if (activeTab === 'security') fetchLoginHistory();
     if (activeTab === 'sessions') fetchActiveSessions();
-    if (activeTab === 'billing') fetchBillingHistory();
+    // if (activeTab === 'billing') fetchBillingHistory();
   //  if (activeTab === 'api-keys') fetchApiKeys();
    if (activeTab === "api-keys") fetchEnvKeys();
    
@@ -293,23 +293,23 @@ const fetchStats = async () => {
     }
   };
 
-  const fetchBillingHistory = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/admin/billing-history`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+  // const fetchBillingHistory = async () => {
+  //   try {
+  //     const token = localStorage.getItem('token');
+  //     const response = await axios.get(`${API_BASE_URL}/admin/billing-history`, {
+  //       headers: { Authorization: `Bearer ${token}` }
+  //     });
       
-      if (response.data.success !== false) {
-        setBillingHistory(response.data.transactions || []);
-      } else {
-        setBillingHistory([]);
-      }
-    } catch (error) {
-      console.error('Failed to fetch billing history:', error);
-      setBillingHistory([]);
-    }
-  };
+  //     if (response.data.success !== false) {
+  //       setBillingHistory(response.data.transactions || []);
+  //     } else {
+  //       setBillingHistory([]);
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to fetch billing history:', error);
+  //     setBillingHistory([]);
+  //   }
+  // };
 
   const fetchEnvKeys = async () => {
   try {
@@ -962,7 +962,7 @@ const handleUpdateEnvKeys = async () => {
             { id: 'sessions', name: 'Sessions', icon: Monitor },
             { id: 'subscriptions', name: 'Subscriptions', icon: Calendar },
             { id: 'revenue', name: 'Revenue', icon: DollarSign },
-            { id: 'billing', name: 'Billing', icon: CreditCard },
+            // { id: 'billing', name: 'Billing', icon: CreditCard },
             { id: 'api-keys', name: 'API Keys', icon: Key }
           ].map((tab) => {
             const Icon = tab.icon;

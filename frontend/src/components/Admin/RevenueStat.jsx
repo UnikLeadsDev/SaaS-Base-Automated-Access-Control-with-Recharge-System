@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import API_BASE_URL from '../../config/api';
+import * as XLSX from "xlsx";
 import { useAuth } from '../../context/AuthContext';
 
 import axios from "axios";
@@ -43,8 +44,61 @@ const [transactions, setTransactions] = useState([]);
   }
 };
 
+ const exportUsersData = () => {
+    const worksheet = XLSX.utils.json_to_sheet(
+      users.map((u) => ({
+        Name: u.name,
+        Email: u.email,
+        Mobile: u.mobile,
+        "Total Contribution (₹)": u.total_contribution,
+      }))
+    );
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Users Contribution");
+    XLSX.writeFile(workbook, "users_contribution.xlsx");
+  };
+
+
+   const exportTransactionsData = () => {
+    if (!transactions.length) {
+      alert("No transactions available for this user!");
+      return;
+    }
+    const worksheet = XLSX.utils.json_to_sheet(
+      transactions.map((tx) => ({
+        "Transaction ID": tx.txn_ref,
+        Amount: tx.amount,
+        "Payment Method": tx.payment_mode,
+        Date: new Date(tx.created_at).toLocaleString(),
+      }))
+    );
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "User Transactions");
+    XLSX.writeFile(workbook, `user_${selectedUser}_transactions.xlsx`);
+  };
+
+
   return (
     <div className="p-6 bg-white rounded-xl shadow-lg">
+        {/* Header with Export Buttons */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold text-gray-700">Revenue Stats</h2>
+        <div className="flex gap-2">
+          <button
+            onClick={exportUsersData}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+          >
+            Export Users Data
+          </button>
+          <button
+            onClick={exportTransactionsData}
+            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm"
+            disabled={!selectedUser} // only enabled if a user is selected
+          >
+            Export Transactions
+          </button>
+        </div>
+      </div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-gray-700">Revenue Stats</h2>
         <div className="flex items-center gap-2">

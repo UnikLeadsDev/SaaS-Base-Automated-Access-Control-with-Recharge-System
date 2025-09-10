@@ -43,7 +43,16 @@ const Layout = ({ children }) => {
     return () => clearInterval(interval);
   }, []);
 
-  const navigation = [
+ let navigation = [];
+
+if (user?.role === 'admin') {
+  navigation = [
+    { name: 'Admin Panel', href: '/admin', icon: Settings },
+    // { name: 'Profile Settings', href: '/profile', icon: User },
+    // { name: 'Support', href: '/support', icon: HelpCircle },
+  ];
+} else {
+  navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { 
       name: 'Products', 
@@ -60,10 +69,8 @@ const Layout = ({ children }) => {
     { name: 'Profile Settings', href: '/profile', icon: User },
     { name: 'Support', href: '/support', icon: HelpCircle },
   ];
+}
 
-  if (user?.role === 'admin') {
-    navigation.push({ name: 'Admin Panel', href: '/admin', icon: Settings });
-  }
 
   const handleLogout = () => {
     logout();
