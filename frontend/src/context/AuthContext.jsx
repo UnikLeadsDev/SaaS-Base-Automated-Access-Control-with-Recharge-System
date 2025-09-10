@@ -26,15 +26,16 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     if (token) {
       if (isMockToken()) {
-        // Use stored user data for demo mode
+        // Restore from localStorage in demo mode
         const userName = localStorage.getItem('userName');
         const userEmail = localStorage.getItem('userEmail');
-        if (userName && userEmail) {
+        const userRole = localStorage.getItem('userRole');
+        if (userName && userEmail && userRole) {
           setUser({
             id: 1,
             name: userName,
             email: userEmail,
-            role: 'DSA'
+            role: userRole
           });
         }
         setLoading(false);
@@ -56,25 +57,23 @@ export const AuthProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('Profile response:', response);
+
       setUser(response.data);
+      localStorage.setItem('userRole', response.data.role);
     } catch (error) {
       console.log('Profile fetch error:', error.response?.status, error.message);
-      
-      // Use stored user data if available
+
       const userName = localStorage.getItem('userName');
       const userEmail = localStorage.getItem('userEmail');
-      if (userName && userEmail) {
+      const userRole = localStorage.getItem('userRole');
+      if (userName && userEmail && userRole) {
         console.log('Using stored user data for demo mode');
-        const isAdmin = userEmail.toLowerCase().includes('admin');
-        console.log('Is admin user:', isAdmin, 'Email:', userEmail);
-        const userData = {
+        setUser({
           id: 1,
           name: userName,
           email: userEmail,
-          role: isAdmin ? 'admin' : 'DSA'
-        };
-        console.log('Setting user data:', userData);
-        setUser(userData);
+          role: userRole
+        });
       } else {
         console.log('No stored user data, clearing token');
         localStorage.removeItem('token');
@@ -90,6 +89,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', mockToken);
     localStorage.setItem('userName', userData.name);
     localStorage.setItem('userEmail', userData.email);
+    localStorage.setItem('userRole', userData.role);
     axios.defaults.headers.common['Authorization'] = `Bearer ${mockToken}`;
     setUser(userData);
     return { success: true, token: mockToken, user: userData };
@@ -104,13 +104,20 @@ export const AuthProvider = ({ children }) => {
       
       const { token, user } = response.data;
       localStorage.setItem('token', token);
+      localStorage.setItem('userName', user.name);
+      localStorage.setItem('userEmail', user.email);
+      localStorage.setItem('userRole', user.role);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(user);
       
       return response.data;
     } catch (error) {
-      // Mock login when backend is unavailable or returns any error
-      if (error.code === 'ERR_NETWORK' || error.response?.status === 400 || error.response?.status === 404 || error.response?.status === 401 || error.response?.status === 429 || error.response?.status === 500 || !error.response) {
+      // Mock login
+      if (
+        error.code === 'ERR_NETWORK' ||
+        [400, 401, 404, 429, 500].includes(error.response?.status) ||
+        !error.response
+      ) {
         const isAdmin = email.toLowerCase().includes('admin');
         const mockUser = {
           id: 1,
@@ -123,6 +130,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('token', mockToken);
         localStorage.setItem('userName', mockUser.name);
         localStorage.setItem('userEmail', mockUser.email);
+        localStorage.setItem('userRole', mockUser.role);
         axios.defaults.headers.common['Authorization'] = `Bearer ${mockToken}`;
         console.log('Mock login - User created:', mockUser);
         setUser(mockUser);
@@ -145,13 +153,14 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', token);
       localStorage.setItem('userName', user.name);
       localStorage.setItem('userEmail', user.email);
+      localStorage.setItem('userRole', user.role);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(user);
       
       return response.data;
     } catch (error) {
-      // Mock login when backend is unavailable
-      if (error.code === 'ERR_NETWORK' || error.response?.status === 404 || error.response?.status === 500) {
+      // Mock login
+      if (error.code === 'ERR_NETWORK' || [404, 500].includes(error.response?.status)) {
         const mockUser = {
           id: 1,
           name: googleUser.name,
@@ -163,6 +172,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('token', mockToken);
         localStorage.setItem('userName', mockUser.name);
         localStorage.setItem('userEmail', mockUser.email);
+        localStorage.setItem('userRole', mockUser.role);
         axios.defaults.headers.common['Authorization'] = `Bearer ${mockToken}`;
         setUser(mockUser);
         
@@ -177,7 +187,6 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.post(`${API_BASE_URL}/auth/register`, userData);
       return response.data;
     } catch (error) {
-      // Mock registration when backend is unavailable
       if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {
         return {
           success: true,
@@ -193,6 +202,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('userName');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('userRole');
     delete axios.defaults.headers.common['Authorization'];
     setUser(null);
   };
