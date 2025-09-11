@@ -134,61 +134,71 @@ const SubscriptionManagement = () => {
   if (loading) return <div>Loading subscriptions...</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Subscription Management</h2>
-      </div>
+   <div className="space-y-6">
+  {/* Header */}
+  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+    <h2 className="text-xl sm:text-2xl font-bold">Subscription Management</h2>
+  </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">End Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {subscriptions.map((sub) => (
-              <tr key={sub.sub_id}>
-                <td className="px-6 py-4">
-                  <div>
-                    <div className="font-medium">{sub.name}</div>
-                    <div className="text-sm text-gray-500">{sub.email}</div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm">{sub.plan_name}</td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    sub.status === 'active' ? 'bg-green-100 text-green-800' :
-                    sub.status === 'expired' ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {sub.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm">{sub.end_date}</td>
-                <td className="px-6 py-4">
-                  <button
-                    onClick={() => {
-                      setSelectedSub(sub);
-                      setShowOverride(true);
-                    }}
-                    className="text-blue-600 hover:text-blue-800 text-sm"
-                  >
-                    Override
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+  {/* Table */}
+  <div className="bg-white rounded-lg shadow overflow-x-auto">
+    <table className="min-w-full text-xs sm:text-sm">
+      <thead className="bg-gray-50">
+        <tr>
+          <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-medium text-gray-500 uppercase">User</th>
+          <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-medium text-gray-500 uppercase">Plan</th>
+          <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-medium text-gray-500 uppercase">Status</th>
+          <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-medium text-gray-500 uppercase">End Date</th>
+          <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-medium text-gray-500 uppercase">Actions</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-200">
+        {subscriptions.map((sub) => (
+          <tr key={sub.sub_id} className="hover:bg-gray-50">
+            <td className="px-3 sm:px-6 py-2 sm:py-4">
+              <div className="max-w-[160px] sm:max-w-none">
+                <div className="font-medium truncate">{sub.name}</div>
+                <div className="text-gray-500 text-[11px] sm:text-xs truncate">{sub.email}</div>
+              </div>
+            </td>
+            <td className="px-3 sm:px-6 py-2 sm:py-4">{sub.plan_name}</td>
+            <td className="px-3 sm:px-6 py-2 sm:py-4">
+              <span
+                className={`px-2 py-1 text-[11px] sm:text-xs rounded-full ${
+                  sub.status === "active"
+                    ? "bg-green-100 text-green-800"
+                    : sub.status === "expired"
+                    ? "bg-red-100 text-red-800"
+                    : "bg-yellow-100 text-yellow-800"
+                }`}
+              >
+                {sub.status}
+              </span>
+            </td>
+            <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
+              {sub.end_date}
+            </td>
+            <td className="px-3 sm:px-6 py-2 sm:py-4">
+              <button
+                onClick={() => {
+                  setSelectedSub(sub);
+                  setShowOverride(true);
+                }}
+                className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm"
+              >
+                Override
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
 
-      {showOverride && <OverrideModal />}
-    </div>
+  {/* Modal */}
+  {showOverride && <OverrideModal />}
+</div>
+
   );
 };
 

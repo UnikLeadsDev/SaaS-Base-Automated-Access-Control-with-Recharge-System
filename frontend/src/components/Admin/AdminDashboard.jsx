@@ -566,322 +566,465 @@ const handleUpdateEnvKeys = async () => {
 
   const renderUsers = () => (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">User Management</h2>
-        <button
-          onClick={() => {
-            setEditingUser(null);
-            setUserForm({ name: '', email: '', mobile: '', role: 'DSA', status: 'active', password: '' });
-            setShowUserModal(true);
-          }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700"
-        >
-          <UserPlus className="h-4 w-4" />
-          Add User
-        </button>
-      </div>
+  {/* Header */}
+  <div className="flex flex-col sm:flex-row justify-between gap-3 sm:items-center">
+    <h2 className="text-xl sm:text-2xl font-bold">User Management</h2>
+    <button
+      onClick={() => {
+        setEditingUser(null);
+        setUserForm({
+          name: "",
+          email: "",
+          mobile: "",
+          role: "DSA",
+          status: "active",
+          password: "",
+        });
+        setShowUserModal(true);
+      }}
+      className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 text-sm sm:text-base"
+    >
+      <UserPlus className="h-4 w-4" />
+      Add User
+    </button>
+  </div>
 
-      {/* Enhanced Filters */}
-      <div className="bg-white p-4 rounded-lg shadow">
-        <div className="flex gap-4 mb-4">
-          <input
-            type="text"
-            placeholder="Search by name or email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-3 py-2 border rounded-md"
-          />
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="px-3 py-2 border rounded-md"
-          >
-            <option value="">All Roles</option>
-            <option value="DSA">DSA</option>
-            <option value="NBFC">NBFC</option>
-            <option value="Co-op">Co-op</option>
-            <option value="admin">Admin</option>
-          </select>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border rounded-md"
-          >
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="blocked">Blocked</option>
-            <option value="pending">Pending</option>
-          </select>
-          <button
-            onClick={handleSearch}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
-          >
-            <Search className="h-4 w-4" />
-            Search
-          </button>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleExport('users')}
-            disabled={exportLoading}
-            className="bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 flex items-center gap-2 text-sm"
-          >
-            <Download className="h-4 w-4" />
-            {exportLoading ? 'Exporting...' : 'Export Users'}
-          </button>
-          <button
-            onClick={() => handleExport('stats')}
-            disabled={exportLoading}
-            className="bg-purple-600 text-white px-3 py-2 rounded-md hover:bg-purple-700 flex items-center gap-2 text-sm"
-          >
-            <Download className="h-4 w-4" />
-            Export Stats
-          </button>
-        </div>
-      </div>
-
-      {/* Users Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Balance</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Login</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {users.map((user) => (
-              <tr key={user.user_id} className="hover:bg-gray-50">
-                <td className="px-6 py-4">
-                  <div className="flex items-center">
-                    <div className="h-10 w-10 bg-indigo-500 rounded-full flex items-center justify-center text-white font-medium">
-                      {user.name.charAt(0)}
-                    </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                      <div className="text-sm text-gray-500">{user.email}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                    {user.role}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    user.status === 'active' ? 'bg-green-100 text-green-800' : 
-                    user.status === 'blocked' ? 'bg-red-100 text-red-800' : 
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {user.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900">
-                  {user.role === 'admin' ? 'N/A' : `₹${user.balance?.toLocaleString() || 0}`}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  {user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleUserDetails(user.user_id)}
-                      className="text-green-600 hover:text-green-900 mr-2"
-                      title="View Details"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditingUser(user.user_id);
-                        setUserForm({
-                          name: user.name,
-                          email: user.email,
-                          mobile: user.mobile || '',
-                          role: user.role,
-                          status: user.status,
-                          password: ''
-                        });
-                        setShowUserModal(true);
-                      }}
-                      className="text-blue-600 hover:text-blue-900"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleToggleUserStatus(user.user_id, user.status)}
-                      className={user.status === 'active' ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}
-                    >
-                      <Ban className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteUser(user.user_id, user.name)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {users.length === 0 && (
-          <div className="p-8">
-            <EmptyBox message="No users found" size={100} />
-          </div>
-        )}
-      </div>
+  {/* Filters */}
+  <div className="bg-white p-4 rounded-lg shadow">
+    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4">
+      <input
+        type="text"
+        placeholder="Search by name or email..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="flex-1 px-3 py-2 border rounded-md text-sm sm:text-base"
+      />
+      <select
+        value={roleFilter}
+        onChange={(e) => setRoleFilter(e.target.value)}
+        className="px-3 py-2 border rounded-md text-sm sm:text-base"
+      >
+        <option value="">All Roles</option>
+        <option value="DSA">DSA</option>
+        <option value="NBFC">NBFC</option>
+        <option value="Co-op">Co-op</option>
+        <option value="admin">Admin</option>
+      </select>
+      <select
+        value={statusFilter}
+        onChange={(e) => setStatusFilter(e.target.value)}
+        className="px-3 py-2 border rounded-md text-sm sm:text-base"
+      >
+        <option value="">All Status</option>
+        <option value="active">Active</option>
+        <option value="blocked">Blocked</option>
+        <option value="pending">Pending</option>
+      </select>
+      <button
+        onClick={handleSearch}
+        className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2 text-sm sm:text-base"
+      >
+        <Search className="h-4 w-4" />
+        Search
+      </button>
     </div>
+
+    <div className="flex flex-wrap gap-2">
+      <button
+        onClick={() => handleExport("users")}
+        disabled={exportLoading}
+        className="bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 flex items-center gap-2 text-sm"
+      >
+        <Download className="h-4 w-4" />
+        {exportLoading ? "Exporting..." : "Export Users"}
+      </button>
+      <button
+        onClick={() => handleExport("stats")}
+        disabled={exportLoading}
+        className="bg-purple-600 text-white px-3 py-2 rounded-md hover:bg-purple-700 flex items-center gap-2 text-sm"
+      >
+        <Download className="h-4 w-4" />
+        Export Stats
+      </button>
+    </div>
+  </div>
+
+  {/* Users Table (Desktop) */}
+  <div className="hidden sm:block bg-white rounded-lg shadow overflow-hidden">
+    <table className="min-w-full">
+      <thead className="bg-gray-50">
+        <tr>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+            User
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+            Role
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+            Status
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+            Balance
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+            Last Login
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+            Actions
+          </th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-200">
+        {users.map((user) => (
+          <tr key={user.user_id} className="hover:bg-gray-50">
+            <td className="px-6 py-4">
+              <div className="flex items-center">
+                <div className="h-10 w-10 bg-indigo-500 rounded-full flex items-center justify-center text-white font-medium">
+                  {user.name.charAt(0)}
+                </div>
+                <div className="ml-4">
+                  <div className="text-sm font-medium text-gray-900">
+                    {user.name}
+                  </div>
+                  <div className="text-sm text-gray-500">{user.email}</div>
+                </div>
+              </div>
+            </td>
+            <td className="px-6 py-4">
+              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                {user.role}
+              </span>
+            </td>
+            <td className="px-6 py-4">
+              <span
+                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                  user.status === "active"
+                    ? "bg-green-100 text-green-800"
+                    : user.status === "blocked"
+                    ? "bg-red-100 text-red-800"
+                    : "bg-yellow-100 text-yellow-800"
+                }`}
+              >
+                {user.status}
+              </span>
+            </td>
+            <td className="px-6 py-4 text-sm text-gray-900">
+              {user.role === "admin"
+                ? "N/A"
+                : `₹${user.balance?.toLocaleString() || 0}`}
+            </td>
+            <td className="px-6 py-4 text-sm text-gray-500">
+              {user.last_login
+                ? new Date(user.last_login).toLocaleDateString()
+                : "Never"}
+            </td>
+            <td className="px-6 py-4">
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handleUserDetails(user.user_id)}
+                  className="text-green-600 hover:text-green-900"
+                  title="View Details"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingUser(user.user_id);
+                    setUserForm({
+                      name: user.name,
+                      email: user.email,
+                      mobile: user.mobile || "",
+                      role: user.role,
+                      status: user.status,
+                      password: "",
+                    });
+                    setShowUserModal(true);
+                  }}
+                  className="text-blue-600 hover:text-blue-900"
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() =>
+                    handleToggleUserStatus(user.user_id, user.status)
+                  }
+                  className={
+                    user.status === "active"
+                      ? "text-red-600 hover:text-red-900"
+                      : "text-green-600 hover:text-green-900"
+                  }
+                >
+                  <Ban className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => handleDeleteUser(user.user_id, user.name)}
+                  className="text-red-600 hover:text-red-900"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    {users.length === 0 && (
+      <div className="p-8">
+        <EmptyBox message="No users found" size={100} />
+      </div>
+    )}
+  </div>
+
+  {/* Mobile Cards */}
+  <div className="sm:hidden space-y-4">
+    {users.map((user) => (
+      <div
+        key={user.user_id}
+        className="bg-white shadow rounded-lg p-4 flex flex-col gap-2"
+      >
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 bg-indigo-500 rounded-full flex items-center justify-center text-white font-medium">
+            {user.name.charAt(0)}
+          </div>
+          <div>
+            <p className="font-medium text-gray-900">{user.name}</p>
+            <p className="text-sm text-gray-500">{user.email}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <p>
+            <span className="font-medium">Role:</span> {user.role}
+          </p>
+          <p>
+            <span className="font-medium">Status:</span>{" "}
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                user.status === "active"
+                  ? "bg-green-100 text-green-800"
+                  : user.status === "blocked"
+                  ? "bg-red-100 text-red-800"
+                  : "bg-yellow-100 text-yellow-800"
+              }`}
+            >
+              {user.status}
+            </span>
+          </p>
+          <p>
+            <span className="font-medium">Balance:</span>{" "}
+            {user.role === "admin"
+              ? "N/A"
+              : `₹${user.balance?.toLocaleString() || 0}`}
+          </p>
+          <p>
+            <span className="font-medium">Last Login:</span>{" "}
+            {user.last_login
+              ? new Date(user.last_login).toLocaleDateString()
+              : "Never"}
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 mt-2">
+          <button
+            onClick={() => handleUserDetails(user.user_id)}
+            className="text-green-600"
+          >
+            <Eye className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => {
+              setEditingUser(user.user_id);
+              setUserForm({
+                name: user.name,
+                email: user.email,
+                mobile: user.mobile || "",
+                role: user.role,
+                status: user.status,
+                password: "",
+              });
+              setShowUserModal(true);
+            }}
+            className="text-blue-600"
+          >
+            <Edit className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => handleToggleUserStatus(user.user_id, user.status)}
+            className={
+              user.status === "active" ? "text-red-600" : "text-green-600"
+            }
+          >
+            <Ban className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => handleDeleteUser(user.user_id, user.name)}
+            className="text-red-600"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+
   );
 
   const renderSecurity = () => (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Security & Login Tracking</h2>
-      
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Login Time</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP Address</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Browser</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Method</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+  <h2 className="text-xl sm:text-2xl font-bold">Security & Login Tracking</h2>
+
+  <div className="bg-white rounded-lg shadow overflow-x-auto">
+    <table className="min-w-full text-xs sm:text-sm">
+      <thead className="bg-gray-50">
+        <tr>
+          <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-medium text-gray-500 uppercase">User</th>
+          <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-medium text-gray-500 uppercase">Login Time</th>
+          <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-medium text-gray-500 uppercase">IP Address</th>
+          <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-medium text-gray-500 uppercase">Browser</th>
+          <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-medium text-gray-500 uppercase">Method</th>
+          <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-medium text-gray-500 uppercase">Status</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-200">
+        {loginHistory.length > 0 ? (
+          loginHistory.map((login) => (
+            <tr key={login.id} className="hover:bg-gray-50">
+              <td className="px-3 sm:px-6 py-2 sm:py-4">
+                <div className="font-medium text-gray-900 truncate">{login.name}</div>
+                <div className="text-gray-500 truncate">{login.email}</div>
+              </td>
+              <td className="px-3 sm:px-6 py-2 sm:py-4 text-gray-900 whitespace-nowrap">
+                {new Date(login.login_time).toLocaleString()}
+              </td>
+              <td className="px-3 sm:px-6 py-2 sm:py-4 text-gray-900">{login.ip_address}</td>
+              <td className="px-3 sm:px-6 py-2 sm:py-4 text-gray-900">{login.browser || 'Unknown'}</td>
+              <td className="px-3 sm:px-6 py-2 sm:py-4 text-gray-900">{login.login_method || 'Email'}</td>
+              <td className="px-3 sm:px-6 py-2 sm:py-4">
+                <span
+                  className={`inline-flex px-2 py-1 text-[10px] sm:text-xs font-semibold rounded-full ${
+                    login.is_suspicious
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-green-100 text-green-800'
+                  }`}
+                >
+                  {login.is_suspicious ? 'Suspicious' : 'Normal'}
+                </span>
+              </td>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {loginHistory.length > 0 ? loginHistory.map((login) => (
-              <tr key={login.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4">
-                  <div className="text-sm font-medium text-gray-900">{login.name}</div>
-                  <div className="text-sm text-gray-500">{login.email}</div>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900">
-                  {new Date(login.login_time).toLocaleString()}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900">{login.ip_address}</td>
-                <td className="px-6 py-4 text-sm text-gray-900">{login.browser || 'Unknown'}</td>
-                <td className="px-6 py-4 text-sm text-gray-900">{login.login_method || 'Email'}</td>
-                <td className="px-6 py-4">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    login.is_suspicious ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                  }`}>
-                    {login.is_suspicious ? 'Suspicious' : 'Normal'}
-                  </span>
-                </td>
-              </tr>
-            )) : (
-              <tr>
-                <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
-                  <EmptyBox message="No login history found" size={80} />
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          ))
+        ) : (
+          <tr>
+            <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+              <EmptyBox message="No login history found" size={60} />
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>
+
   );
 
   const renderSessions = () => (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Active Sessions</h2>
-        <button
-          onClick={fetchActiveSessions}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </button>
+   <div className="space-y-6">
+  {/* Header with Refresh */}
+  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+    <h2 className="text-xl sm:text-2xl font-bold">Active Sessions</h2>
+    <button
+      onClick={fetchActiveSessions}
+      className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 text-sm sm:text-base"
+    >
+      <RefreshCw className="h-4 w-4" />
+      Refresh
+    </button>
+  </div>
+
+  {/* Setup Required Warning */}
+  {activeSessions.length === 0 && (
+    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4">
+      <div className="flex items-center gap-2 text-yellow-800">
+        <AlertTriangle className="h-5 w-5" />
+        <span className="font-medium text-sm sm:text-base">Setup Required</span>
       </div>
-      
-      {activeSessions.length === 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-yellow-800">
-            <AlertTriangle className="h-5 w-5" />
-            <span className="font-medium">Setup Required</span>
-          </div>
-          <p className="text-yellow-700 mt-1">
-            Run the setup_sessions.sql script in your database to enable session tracking.
-          </p>
-        </div>
-      )}
-      
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP Address</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Browser</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Started</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {activeSessions.length > 0 ? activeSessions.map((session) => (
-              <tr key={session.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4">
-                  <div className="flex items-center">
-                    <div className="h-8 w-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                      {session.name?.charAt(0) || 'U'}
-                    </div>
-                    <div className="ml-3">
-                      <div className="text-sm font-medium text-gray-900">{session.name || 'Unknown User'}</div>
-                      <div className="text-sm text-gray-500">{session.email || 'No email'}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900">{session.ip_address || 'Unknown'}</td>
-                <td className="px-6 py-4 text-sm text-gray-900">
-                  <div className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4 text-gray-400" />
-                    {session.location || 'Unknown'}
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900">
-                  <div className="flex items-center gap-1">
-                    <Monitor className="h-4 w-4 text-gray-400" />
-                    {session.browser || 'Unknown'}
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4 text-gray-400" />
-                    {new Date(session.created_at).toLocaleString()}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <button
-                    onClick={() => handleTerminateSession(session.id)}
-                    className="text-red-600 hover:text-red-900 text-sm font-medium flex items-center gap-1"
-                  >
-                    <Ban className="h-4 w-4" />
-                    Terminate
-                  </button>
-                </td>
-              </tr>
-            )) : (
-              <tr>
-                <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
-                  <EmptyBox message="No active sessions found" size={80} />
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <p className="text-yellow-700 mt-1 text-xs sm:text-sm">
+        Run the <code>setup_sessions.sql</code> script in your database to enable session tracking.
+      </p>
     </div>
+  )}
+
+  {/* Table */}
+  <div className="bg-white rounded-lg shadow overflow-x-auto">
+    <table className="min-w-full text-xs sm:text-sm">
+      <thead className="bg-gray-50">
+        <tr>
+          <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-medium text-gray-500 uppercase">User</th>
+          <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-medium text-gray-500 uppercase">IP</th>
+          <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-medium text-gray-500 uppercase">Location</th>
+          <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-medium text-gray-500 uppercase">Browser</th>
+          <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-medium text-gray-500 uppercase">Started</th>
+          <th className="px-3 sm:px-6 py-2 sm:py-3 text-left font-medium text-gray-500 uppercase">Actions</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-200">
+        {activeSessions.length > 0 ? (
+          activeSessions.map((session) => (
+            <tr key={session.id} className="hover:bg-gray-50">
+              <td className="px-3 sm:px-6 py-2 sm:py-4">
+                <div className="flex items-center">
+                  <div className="h-7 w-7 sm:h-8 sm:w-8 bg-green-500 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-medium">
+                    {session.name?.charAt(0) || 'U'}
+                  </div>
+                  <div className="ml-2 sm:ml-3">
+                    <div className="font-medium text-gray-900 truncate">{session.name || 'Unknown User'}</div>
+                    <div className="text-gray-500 text-[11px] sm:text-xs truncate">{session.email || 'No email'}</div>
+                  </div>
+                </div>
+              </td>
+              <td className="px-3 sm:px-6 py-2 sm:py-4">{session.ip_address || 'Unknown'}</td>
+              <td className="px-3 sm:px-6 py-2 sm:py-4">
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
+                  {session.location || 'Unknown'}
+                </div>
+              </td>
+              <td className="px-3 sm:px-6 py-2 sm:py-4">
+                <div className="flex items-center gap-1">
+                  <Monitor className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
+                  {session.browser || 'Unknown'}
+                </div>
+              </td>
+              <td className="px-3 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
+                  {new Date(session.created_at).toLocaleString()}
+                </div>
+              </td>
+              <td className="px-3 sm:px-6 py-2 sm:py-4">
+                <button
+                  onClick={() => handleTerminateSession(session.id)}
+                  className="text-red-600 hover:text-red-900 font-medium flex items-center gap-1 text-xs sm:text-sm"
+                >
+                  <Ban className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  Terminate
+                </button>
+              </td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+              <EmptyBox message="No active sessions found" size={60} />
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>
+
   );
 
 
@@ -982,321 +1125,174 @@ const renderEnvKeys = () => {
 
 
   return (
-    <div className="space-y-6">
-      {/* User Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-center gap-2 text-blue-800">
-          <Shield className="h-5 w-5" />
-          <span className="font-medium">Admin Dashboard - Logged in as: {user.email} ({user.role})</span>
-        </div>
-      </div>
-      
-      {/* Navigation Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {[
-            { id: 'dashboard', name: 'Dashboard', icon: Activity },
-            { id: 'users', name: 'Users', icon: Users },
-            { id: 'security', name: 'Security', icon: Shield },
-            { id: 'sessions', name: 'Sessions', icon: Monitor },
-            { id: 'subscriptions', name: 'Subscriptions', icon: Calendar },
-            { id: 'revenue', name: 'Revenue', icon: DollarSign },
-            // { id: 'billing', name: 'Billing', icon: CreditCard },
-            { id: 'api-keys', name: 'API Keys', icon: Key }
-          ].map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`${
-                  activeTab === tab.id
-                    ? 'border-indigo-500 text-indigo-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
-              >
-                <Icon className="h-4 w-4" />
-                {tab.name}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Tab Content */}
-      {activeTab === 'dashboard' && renderDashboard()}
-      {activeTab === 'users' && renderUsers()}
-      {activeTab === 'security' && renderSecurity()}
-      {activeTab === 'sessions' && renderSessions()}
-      {activeTab === 'subscriptions' && <SubscriptionManagement />}
-      {activeTab === 'revenue' && <RevenueStat />}
-      {activeTab === 'api-keys' && renderEnvKeys()}
-
-      {/* User Modal */}
-      {showUserModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-medium mb-4">
-              {editingUser ? 'Edit User' : 'Create User'}
-            </h3>
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Name"
-                value={userForm.name}
-                onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md"
-              />
-              <input
-                type="email"
-                placeholder="Email"
-                value={userForm.email}
-                onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md"
-              />
-              <input
-                type="tel"
-                placeholder="Mobile"
-                value={userForm.mobile}
-                onChange={(e) => setUserForm({ ...userForm, mobile: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md"
-              />
-              <input
-                type="password"
-                placeholder="Password"
-                value={userForm.password}
-                onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md"
-              />
-              <select
-                value={userForm.role}
-                onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md"
-              >
-                <option value="DSA">DSA</option>
-                <option value="NBFC">NBFC</option>
-                <option value="Co-op">Co-op</option>
-                <option value="admin">Admin</option>
-              </select>
-              <select
-                value={userForm.status}
-                onChange={(e) => setUserForm({ ...userForm, status: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md"
-              >
-                <option value="active">Active</option>
-                <option value="blocked">Blocked</option>
-                <option value="pending">Pending</option>
-              </select>
-            </div>
-            <div className="flex justify-end space-x-3 mt-6">
-              <button
-                onClick={() => setShowUserModal(false)}
-                className="px-4 py-2 text-gray-600 border rounded-md hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={editingUser ? handleUpdateUser : handleCreateUser}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                {editingUser ? 'Update' : 'Create'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showModal && (
-  <Modal 
-    title={
-      selectedCard === "lowBalance" ? "Low Balance Users" :
-      selectedCard === "applications" ? "Recent Applications" :
-      "Revenue Contributors"
-    }
-    onClose={handleCloseModal}
-  >
-    {modalLoading ? (
-      <div className="flex justify-center items-center h-32">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    ) : (
-      <>
-        {selectedCard === "lowBalance" && (
-          <div className="space-y-2">
-            {modalData.length > 0 ? (
-              modalData.map(user => (
-                <div key={user.user_id} className="flex justify-between items-center p-3 bg-red-50 rounded border">
-                  <div>
-                    <div className="font-medium">{user.name}</div>
-                    <div className="text-sm text-gray-600">{user.email}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-semibold text-red-600">₹{user.balance}</div>
-                    <button 
-                      onClick={() => setActiveTab('users')}
-                      className="text-xs text-blue-600 hover:underline"
-                    >
-                      Manage User
-                    </button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-center text-gray-500 py-4">No low balance users found</p>
-            )}
-          </div>
-        )}
-
-        {selectedCard === "applications" && (
-          <div className="space-y-2">
-            {modalData.length > 0 ? (
-              modalData.map(app => (
-                <div key={app.app_id} className="p-3 bg-indigo-50 rounded border">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-medium">{app.name}</div>
-                      <div className="text-sm text-gray-600">{app.email}</div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        Form Type: <span className="font-medium">{app.form_type}</span>
-                      </div>
-                    </div>
-                    <div className="text-right text-xs text-gray-500">
-                      {new Date(app.submitted_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-center text-gray-500 py-4">No applications found</p>
-            )}
-          </div>
-        )}
-
-        {selectedCard === "revenue" && (
-          <div className="space-y-2">
-            {modalData.length > 0 ? (
-              modalData.map(user => (
-                <div key={user.user_id} className="flex justify-between items-center p-3 bg-green-50 rounded border">
-                  <div>
-                    <div className="font-medium">{user.name}</div>
-                    <div className="text-sm text-gray-600">{user.email}</div>
-                    <div className="text-xs text-gray-500">{user.mobile}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-semibold text-green-600">₹{user.total_contribution}</div>
-                    <button 
-                      onClick={() => setActiveTab('revenue')}
-                      className="text-xs text-blue-600 hover:underline"
-                    >
-                      View Details
-                    </button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-center text-gray-500 py-4">No revenue data found</p>
-            )}
-          </div>
-        )}
-      </>
-    )}
-  </Modal>
-)}
-
-
-
-
-
-
-      {/* User Details Modal */}
-      {userDetailsModal && selectedUserDetails && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">User Details</h3>
-              <button
-                onClick={() => setUserDetailsModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✖
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Name</label>
-                  <p className="text-gray-900">{selectedUserDetails.user.name}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <p className="text-gray-900">{selectedUserDetails.user.email}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Mobile</label>
-                  <p className="text-gray-900">{selectedUserDetails.user.mobile || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Role</label>
-                  <p className="text-gray-900">{selectedUserDetails.user.role}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Status</label>
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    selectedUserDetails.user.status === 'active' ? 'bg-green-100 text-green-800' : 
-                    selectedUserDetails.user.status === 'blocked' ? 'bg-red-100 text-red-800' : 
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {selectedUserDetails.user.status}
-                  </span>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Balance</label>
-                  <p className="text-gray-900">₹{selectedUserDetails.user.balance || 0}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Join Date</label>
-                  <p className="text-gray-900">{new Date(selectedUserDetails.user.created_at).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Applications</label>
-                  <p className="text-gray-900">{selectedUserDetails.user.total_applications || 0}</p>
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="text-md font-medium mb-2">Recent Transactions</h4>
-                <div className="max-h-40 overflow-y-auto">
-                  {selectedUserDetails.transactions.length > 0 ? (
-                    <table className="min-w-full text-sm">
-                      <thead>
-                        <tr className="bg-gray-50">
-                          <th className="px-2 py-1 text-left">Amount</th>
-                          <th className="px-2 py-1 text-left">Type</th>
-                          <th className="px-2 py-1 text-left">Date</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {selectedUserDetails.transactions.map((txn, idx) => (
-                          <tr key={idx} className="border-b">
-                            <td className="px-2 py-1">₹{txn.amount}</td>
-                            <td className="px-2 py-1">{txn.type}</td>
-                            <td className="px-2 py-1">{new Date(txn.created_at).toLocaleDateString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  ) : (
-                    <p className="text-gray-500">No transactions found</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
+   <div className="space-y-6">
+  {/* User Info */}
+  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-blue-800 text-sm sm:text-base">
+      <Shield className="h-5 w-5 flex-shrink-0" />
+      <span className="font-medium">
+        Admin Dashboard - Logged in as: {user.email} ({user.role})
+      </span>
     </div>
+  </div>
+
+  {/* Navigation Tabs */}
+  <div className="border-b border-gray-200 overflow-x-auto">
+    <nav className="-mb-px flex space-x-4 sm:space-x-8 min-w-max px-2">
+      {[
+        { id: 'dashboard', name: 'Dashboard', icon: Activity },
+        { id: 'users', name: 'Users', icon: Users },
+        { id: 'security', name: 'Security', icon: Shield },
+        { id: 'sessions', name: 'Sessions', icon: Monitor },
+        { id: 'subscriptions', name: 'Subscriptions', icon: Calendar },
+        { id: 'revenue', name: 'Revenue', icon: DollarSign },
+        { id: 'api-keys', name: 'API Keys', icon: Key }
+      ].map((tab) => {
+        const Icon = tab.icon;
+        return (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`${
+              activeTab === tab.id
+                ? 'border-indigo-500 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            } whitespace-nowrap py-2 px-2 sm:px-3 border-b-2 font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2`}
+          >
+            <Icon className="h-4 w-4 flex-shrink-0" />
+            {tab.name}
+          </button>
+        );
+      })}
+    </nav>
+  </div>
+
+  {/* Tab Content */}
+  <div className="px-1 sm:px-0">
+    {activeTab === 'dashboard' && renderDashboard()}
+    {activeTab === 'users' && renderUsers()}
+    {activeTab === 'security' && renderSecurity()}
+    {activeTab === 'sessions' && renderSessions()}
+    {activeTab === 'subscriptions' && <SubscriptionManagement />}
+    {activeTab === 'revenue' && <RevenueStat />}
+    {activeTab === 'api-keys' && renderEnvKeys()}
+  </div>
+
+  {/* User Modal */}
+  {showUserModal && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-2">
+      <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md">
+        <h3 className="text-base sm:text-lg font-medium mb-4">
+          {editingUser ? 'Edit User' : 'Create User'}
+        </h3>
+        <div className="space-y-3 sm:space-y-4">
+          <input type="text" placeholder="Name" value={userForm.name}
+            onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+            className="w-full px-3 py-2 border rounded-md text-sm" />
+          <input type="email" placeholder="Email" value={userForm.email}
+            onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+            className="w-full px-3 py-2 border rounded-md text-sm" />
+          <input type="tel" placeholder="Mobile" value={userForm.mobile}
+            onChange={(e) => setUserForm({ ...userForm, mobile: e.target.value })}
+            className="w-full px-3 py-2 border rounded-md text-sm" />
+          <input type="password" placeholder="Password" value={userForm.password}
+            onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+            className="w-full px-3 py-2 border rounded-md text-sm" />
+          <select value={userForm.role}
+            onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
+            className="w-full px-3 py-2 border rounded-md text-sm">
+            <option value="DSA">DSA</option>
+            <option value="NBFC">NBFC</option>
+            <option value="Co-op">Co-op</option>
+            <option value="admin">Admin</option>
+          </select>
+          <select value={userForm.status}
+            onChange={(e) => setUserForm({ ...userForm, status: e.target.value })}
+            className="w-full px-3 py-2 border rounded-md text-sm">
+            <option value="active">Active</option>
+            <option value="blocked">Blocked</option>
+            <option value="pending">Pending</option>
+          </select>
+        </div>
+        <div className="flex justify-end space-x-2 sm:space-x-3 mt-4 sm:mt-6">
+          <button onClick={() => setShowUserModal(false)}
+            className="px-3 py-2 text-gray-600 border rounded-md hover:bg-gray-50 text-sm">Cancel</button>
+          <button onClick={editingUser ? handleUpdateUser : handleCreateUser}
+            className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">
+            {editingUser ? 'Update' : 'Create'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* User Details Modal */}
+  {userDetailsModal && selectedUserDetails && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-2">
+      <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto text-sm sm:text-base">
+        <div className="flex justify-between items-center mb-3 sm:mb-4">
+          <h3 className="text-base sm:text-lg font-medium">User Details</h3>
+          <button onClick={() => setUserDetailsModal(false)} className="text-gray-500 hover:text-gray-700">✖</button>
+        </div>
+        
+        {/* Grid responsive */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <div><label className="block text-xs sm:text-sm font-medium text-gray-700">Name</label>
+            <p className="text-gray-900">{selectedUserDetails.user.name}</p></div>
+          <div><label className="block text-xs sm:text-sm font-medium text-gray-700">Email</label>
+            <p className="text-gray-900">{selectedUserDetails.user.email}</p></div>
+          <div><label className="block text-xs sm:text-sm font-medium text-gray-700">Mobile</label>
+            <p className="text-gray-900">{selectedUserDetails.user.mobile || 'N/A'}</p></div>
+          <div><label className="block text-xs sm:text-sm font-medium text-gray-700">Role</label>
+            <p className="text-gray-900">{selectedUserDetails.user.role}</p></div>
+          <div><label className="block text-xs sm:text-sm font-medium text-gray-700">Status</label>
+            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+              selectedUserDetails.user.status === 'active' ? 'bg-green-100 text-green-800' : 
+              selectedUserDetails.user.status === 'blocked' ? 'bg-red-100 text-red-800' : 
+              'bg-yellow-100 text-yellow-800'}`}>{selectedUserDetails.user.status}</span></div>
+          <div><label className="block text-xs sm:text-sm font-medium text-gray-700">Balance</label>
+            <p className="text-gray-900">₹{selectedUserDetails.user.balance || 0}</p></div>
+          <div><label className="block text-xs sm:text-sm font-medium text-gray-700">Join Date</label>
+            <p className="text-gray-900">{new Date(selectedUserDetails.user.created_at).toLocaleDateString()}</p></div>
+          <div><label className="block text-xs sm:text-sm font-medium text-gray-700">Applications</label>
+            <p className="text-gray-900">{selectedUserDetails.user.total_applications || 0}</p></div>
+        </div>
+
+        {/* Transactions */}
+        <div className="mt-4">
+          <h4 className="text-sm sm:text-md font-medium mb-2">Recent Transactions</h4>
+          <div className="max-h-40 overflow-y-auto">
+            {selectedUserDetails.transactions.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-xs sm:text-sm">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="px-2 py-1 text-left">Amount</th>
+                      <th className="px-2 py-1 text-left">Type</th>
+                      <th className="px-2 py-1 text-left">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedUserDetails.transactions.map((txn, idx) => (
+                      <tr key={idx} className="border-b">
+                        <td className="px-2 py-1">₹{txn.amount}</td>
+                        <td className="px-2 py-1">{txn.type}</td>
+                        <td className="px-2 py-1">{new Date(txn.created_at).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-gray-500">No transactions found</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
+</div>
+
   );
 };
 
