@@ -17,6 +17,7 @@ import BillingDashboard from './components/Billing/BillingDashboard';
 import Layout from './components/Layout/Layout';
 import EmptyBoxDemo from './components/Demo/EmptyBoxDemo';
 import Profile from './components/Profile/Profile';
+import AdminLayout from './components/Admin/AdminLayout';
 import './App.css';
 
 // Suppress console errors
@@ -104,7 +105,7 @@ function App() {
             
             <Route path="/admin" element={
               <ProtectedRoute adminOnly>
-                <Layout><AdminDashboard /></Layout>
+                <AdminDashboard />
               </ProtectedRoute>
             } />
             

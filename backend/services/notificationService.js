@@ -15,20 +15,32 @@ class NotificationService {
    * Queue notification for reliable delivery
    * userId can be null if not applicable
    */
-  async queueNotification(userId, channel, messageType, recipient, message, templateId = null) {
-    try {
-      await db.query(`
-        INSERT INTO notification_queue 
-        (user_id, channel, message_type, recipient, message, template_id, status) 
-        VALUES (?, ?, ?, ?, ?, ?, 'pending')
-      `, [userId || null, channel, messageType, recipient, message, templateId]);
-
-      // Trigger queue processing asynchronously
-      this.processQueue();
-    } catch (error) {
-      console.error('Queue notification error:', error);
+async queueNotification(userId, channel, messageType, recipient, message, templateId = null) {
+  try {
+    // Only check userId if it’s provided
+    if (userId) {
+      const [rows] = await db.query('SELECT user_id FROM users WHERE user_id = ?', [userId]);
+      if (rows.length === 0) {
+        console.warn(`User ${userId} not found. Notification skipped.`);
+        return; // Skip inserting to avoid foreign key error
+      }
     }
+
+    // Insert into notification_queue
+    await db.query(`
+      INSERT INTO notification_queue 
+      (user_id, channel, message_type, recipient, message, template_id, status) 
+      VALUES (?, ?, ?, ?, ?, ?, 'pending')
+    `, [userId || null, channel, messageType, recipient, message, templateId]);
+
+    // Trigger queue processing asynchronously
+    this.processQueue();
+
+  } catch (error) {
+    console.error('Queue notification error:', error);
   }
+}
+
 
   /**
    * Process pending notifications

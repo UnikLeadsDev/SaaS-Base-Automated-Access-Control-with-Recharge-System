@@ -15,7 +15,11 @@ const [transactions, setTransactions] = useState([]);
    useEffect(() => {
     const fetchRevenue = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/admin/revenue-breakdown`);
+        const response = await axios.get(`${API_BASE_URL}/admin/revenue-breakdown`,{
+           headers: {
+          Authorization: `Bearer ${user.token}`
+        }
+        })
         setUsers(response.data.data || []);
       } catch (error) {
         console.error("Error fetching revenue breakdown:", error);
@@ -35,7 +39,11 @@ const [transactions, setTransactions] = useState([]);
   const handleUserClick = async (userId) => {
   setSelectedUser(userId);
   try {
-    const response = await axios.get(`${API_BASE_URL}/admin/revenue-breakdown/${userId}`);
+    const response = await axios.get(`${API_BASE_URL}/admin/revenue-breakdown/${userId}`,{
+      headers: {
+        Authorization: `Bearer ${user.token}`
+      }
+    });
     setTransactions(response.data.data || []);
     
    

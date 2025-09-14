@@ -30,6 +30,7 @@ const Layout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { balance } = useWallet();
+ 
 
  
 
@@ -46,11 +47,12 @@ const Layout = ({ children }) => {
  let navigation = [];
 
 if (user?.role === 'admin') {
-  navigation = [
-    { name: 'Admin Panel', href: '/admin', icon: Settings },
-    // { name: 'Profile Settings', href: '/profile', icon: User },
-    // { name: 'Support', href: '/support', icon: HelpCircle },
-  ];
+  // navigation = [
+  //   { name: 'Admin Panel', href: '/admin', icon: Settings },
+  //   {name : 'Dashboard', href: '/dashboard', icon: Home },
+  //   //{ name: 'Profile Settings', href: '/profile', icon: User },
+  //   // { name: 'Support', href: '/support', icon: HelpCircle },
+  // ];
 } else {
   navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
