@@ -73,7 +73,7 @@ const TaxCalculator = () => {
         {/* Input Section */}
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Amount (₹)</label>
+            <label className="block text-sm font-medium mb-2">Amount ($)</label>
             <input
               type="number"
               value={amount}
@@ -137,24 +137,24 @@ const TaxCalculator = () => {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span>Base Amount:</span>
-                  <span className="font-medium">₹{result.amount}</span>
+                  <span className="font-medium">${result.amount}</span>
                 </div>
                 
                 <div className="border-t pt-2">
                   {isInterState ? (
                     <div className="flex justify-between">
                       <span>IGST ({result.gst_rate}%):</span>
-                      <span className="font-medium">₹{result.igst.toFixed(2)}</span>
+                      <span className="font-medium">${result.igst.toFixed(2)}</span>
                     </div>
                   ) : (
                     <>
                       <div className="flex justify-between">
                         <span>CGST ({(result.gst_rate / 2)}%):</span>
-                        <span className="font-medium">₹{result.cgst.toFixed(2)}</span>
+                        <span className="font-medium">${result.cgst.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>SGST ({(result.gst_rate / 2)}%):</span>
-                        <span className="font-medium">₹{result.sgst.toFixed(2)}</span>
+                        <span className="font-medium">${result.sgst.toFixed(2)}</span>
                       </div>
                     </>
                   )}
@@ -163,14 +163,14 @@ const TaxCalculator = () => {
                 <div className="border-t pt-2">
                   <div className="flex justify-between">
                     <span>Total GST:</span>
-                    <span className="font-medium">₹{result.total_gst.toFixed(2)}</span>
+                    <span className="font-medium">${result.total_gst.toFixed(2)}</span>
                   </div>
                 </div>
                 
                 <div className="border-t pt-2 bg-blue-50 -m-2 p-2 rounded">
                   <div className="flex justify-between text-lg">
                     <span className="font-semibold">Total Amount:</span>
-                    <span className="font-bold text-blue-600">₹{result.total_with_gst.toFixed(2)}</span>
+                    <span className="font-bold text-blue-600">${result.total_with_gst.toFixed(2)}</span>
                   </div>
                 </div>
               </div>

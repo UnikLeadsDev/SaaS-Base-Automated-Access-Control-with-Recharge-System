@@ -61,7 +61,7 @@ const BillingReports = () => {
       });
 
       if (response.data.success) {
-        toast.success(`GST Calculation: CGST: ₹${response.data.cgst}, SGST: ₹${response.data.sgst}`);
+        toast.success(`GST Calculation: CGST: $${response.data.cgst}, SGST: $${response.data.sgst}`);
       }
     } catch (error) {
       // Silently handle GST calculation failure
@@ -165,7 +165,7 @@ const BillingReports = () => {
                 <TrendingUp className="text-blue-600 mr-2" size={20} />
                 <div>
                   <p className="text-sm text-gray-600">Total Invoiced</p>
-                  <p className="text-xl font-semibold">₹{report.summary?.totalInvoiced || 0}</p>
+                  <p className="text-xl font-semibold">${report.summary?.totalInvoiced || 0}</p>
                 </div>
               </div>
             </div>
@@ -175,7 +175,7 @@ const BillingReports = () => {
                 <FileText className="text-green-600 mr-2" size={20} />
                 <div>
                   <p className="text-sm text-gray-600">Total GST</p>
-                  <p className="text-xl font-semibold">₹{report.summary?.totalGST || 0}</p>
+                  <p className="text-xl font-semibold">${report.summary?.totalGST || 0}</p>
                 </div>
               </div>
             </div>
@@ -184,7 +184,7 @@ const BillingReports = () => {
               <div className="bg-purple-50 p-4 rounded">
                 <div>
                   <p className="text-sm text-gray-600">Credits</p>
-                  <p className="text-xl font-semibold">₹{report.summary.totalCredits}</p>
+                  <p className="text-xl font-semibold">${report.summary.totalCredits}</p>
                 </div>
               </div>
             )}
@@ -193,7 +193,7 @@ const BillingReports = () => {
               <div className="bg-red-50 p-4 rounded">
                 <div>
                   <p className="text-sm text-gray-600">Debits</p>
-                  <p className="text-xl font-semibold">₹{report.summary.totalDebits}</p>
+                  <p className="text-xl font-semibold">${report.summary.totalDebits}</p>
                 </div>
               </div>
             )}
@@ -218,7 +218,7 @@ const BillingReports = () => {
                       <tr key={invoice.invoice_id} className="border-b">
                         <td className="px-4 py-2">{invoice.invoice_number}</td>
                         <td className="px-4 py-2">{new Date(invoice.invoice_date).toLocaleDateString()}</td>
-                        <td className="px-4 py-2">₹{invoice.total_amount}</td>
+                        <td className="px-4 py-2">${invoice.total_amount}</td>
                         <td className="px-4 py-2">
                           <span className={`px-2 py-1 rounded text-xs ${
                             invoice.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
@@ -260,7 +260,7 @@ const BillingReports = () => {
                           </span>
                         </td>
                         <td className="px-4 py-2">{transaction.description}</td>
-                        <td className="px-4 py-2">₹{transaction.amount}</td>
+                        <td className="px-4 py-2">${transaction.amount}</td>
                       </tr>
                     ))}
                   </tbody>

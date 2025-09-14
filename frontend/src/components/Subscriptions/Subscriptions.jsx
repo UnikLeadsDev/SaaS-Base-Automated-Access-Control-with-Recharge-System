@@ -250,7 +250,7 @@ const Subscriptions = () => {
                       <h3 className="font-semibold">{plan.plan_name}</h3>
                       {isCurrentPlan && <span className="text-xs text-green-600 font-medium">Current Plan</span>}
                     </div>
-                    <span className="text-indigo-600 font-bold">₹{plan.amount}</span>
+                    <span className="text-indigo-600 font-bold">${plan.amount}</span>
                   </div>
                   <div className="mb-4">
                     <ul className="space-y-1">
@@ -300,7 +300,7 @@ const Subscriptions = () => {
                 {subscriptions?.map(sub => (
                   <tr key={sub.sub_id}>
                     <td className="px-6 py-4 text-sm font-medium">{sub.plan_name}</td>
-                    <td className="px-6 py-4 text-sm">₹{sub.amount}</td>
+                    <td className="px-6 py-4 text-sm">${sub.amount}</td>
                     <td className="px-6 py-4 text-sm">{new Date(sub.start_date).toLocaleDateString()}</td>
                     <td className="px-6 py-4 text-sm">{new Date(sub.end_date).toLocaleDateString()}</td>
                     <td className="px-6 py-4 text-sm">

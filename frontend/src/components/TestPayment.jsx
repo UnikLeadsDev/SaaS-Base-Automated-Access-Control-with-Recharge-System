@@ -14,7 +14,7 @@ const TestPayment = () => {
       // Create order
       const response = await axios.post(
         `${API_BASE_URL}/payment/create-order`,
-        { amount: 100 }, // ₹100 test
+        { amount: 100 }, // $100 test
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -40,7 +40,7 @@ const TestPayment = () => {
               { headers: { Authorization: `Bearer ${token}` } }
             );
 
-            toast.success(`Payment successful! ₹${verifyResponse.data.amount} added to wallet`);
+            toast.success(`Payment successful! $${verifyResponse.data.amount} added to wallet`);
           } catch (error) {
             toast.error('Payment verification failed');
           }
@@ -73,7 +73,7 @@ const TestPayment = () => {
         disabled={loading}
         className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
       >
-        {loading ? 'Processing...' : 'Test Payment ₹100'}
+        {loading ? 'Processing...' : 'Test Payment $100'}
       </button>
     </div>
   );

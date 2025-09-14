@@ -162,7 +162,7 @@ if (user?.role === 'admin') {
               className="flex items-center space-x-1 sm:space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium shadow-sm transition"
             >
               <Wallet className="h-4 w-4" />
-              <span>₹ {balance?.toFixed(2) || "0.00"}</span>
+              <span>$ {balance?.toFixed(2) || "0.00"}</span>
             </button>
 
             {/* Notification */}

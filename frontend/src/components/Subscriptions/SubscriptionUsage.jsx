@@ -74,7 +74,7 @@ const SubscriptionUsage = () => {
         <div className="bg-purple-50 p-4 rounded-lg">
           <div className="flex items-center justify-between">
             <TrendingUp className="h-8 w-8 text-purple-600" />
-            <span className="text-2xl font-bold text-purple-600">₹{usage.totalSpent}</span>
+            <span className="text-2xl font-bold text-purple-600">${usage.totalSpent}</span>
           </div>
           <p className="text-sm text-gray-600 mt-2">Total Spent</p>
         </div>

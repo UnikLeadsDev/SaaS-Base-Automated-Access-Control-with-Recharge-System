@@ -122,7 +122,7 @@ const SubscriptionPreferences = () => {
                 <option value="">Select a plan</option>
                 {plans.map(plan => (
                   <option key={plan.plan_id} value={plan.plan_id}>
-                    {plan.plan_name} - ₹{plan.amount}
+                    {plan.plan_name} - ${plan.amount}
                   </option>
                 ))}
               </select>

@@ -21,8 +21,8 @@ const Support = () => {
 
   const faqs = [
     { question: 'How do I recharge my wallet?', answer: 'Go to the Wallet section and click "Recharge Wallet". You can pay securely using Razorpay.' },
-    { question: 'What are the form processing rates?', answer: 'Basic forms cost ₹5 each, and realtime validation forms cost ₹50 each.' },
-    { question: 'How do I get low balance alerts?', answer: 'Alerts are sent automatically via SMS and email when your balance falls below ₹100.' },
+    { question: 'What are the form processing rates?', answer: 'Basic forms cost $5 each, and realtime validation forms cost $50 each.' },
+    { question: 'How do I get low balance alerts?', answer: 'Alerts are sent automatically via SMS and email when your balance falls below $100.' },
     { question: 'Can I update my subscription plan?', answer: 'Yes, go to the Subscription section in your dashboard to upgrade or change your plan.' },
   ];
 

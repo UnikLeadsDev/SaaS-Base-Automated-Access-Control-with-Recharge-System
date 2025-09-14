@@ -55,8 +55,8 @@ function Receipt() {
     doc.text("Recharge Wallet Receipt", 105, 25, { align: "center" });
 
     const amountDisplay = receipt.payment_mode === 'usd' 
-      ? `$${(receipt.amount / 83).toFixed(2)} (₹${receipt.amount})` 
-      : `₹${receipt.amount}`;
+      ? `$${(receipt.amount / 83).toFixed(2)} ($${receipt.amount})` 
+      : `$${receipt.amount}`;
       
 
     autoTable(doc, {
@@ -96,8 +96,8 @@ function Receipt() {
     doc.text("Recharge Wallet Receipt", 105, 25, { align: "center" });
 
     const amountDisplay = receipt.payment_mode === 'usd' 
-      ? `$${(receipt.amount / 83).toFixed(2)} (₹${receipt.amount})` 
-      : `₹${receipt.amount}`;
+      ? `$${(receipt.amount / 83).toFixed(2)} ($${receipt.amount})` 
+      : `$${receipt.amount}`;
 
     autoTable(doc, {
       startY: 40,
@@ -188,7 +188,7 @@ return (
             {new Date(receipt.receipt_date).toLocaleDateString("en-IN")}
           </td>
           <td className="px-4 py-2 border">
-            {receipt.payment_mode === 'usd' ? `$${(receipt.amount / 83).toFixed(2)} (₹${receipt.amount})` : `₹${receipt.amount}`}
+            {receipt.payment_mode === 'usd' ? `$${(receipt.amount / 83).toFixed(2)} ($${receipt.amount})` : `$${receipt.amount}`}
           </td>
           <td className="px-4 py-2 border break-all">
             {receipt.transaction_id || receipt.txn_ref || receipt.receipt_id}

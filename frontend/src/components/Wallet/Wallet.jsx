@@ -199,7 +199,7 @@ const Wallet = () => {
               <WalletIcon className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" />
               <div>
                 <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-600">
-                  ₹ {balance?.toFixed(2) || "0.00"}
+                  $ {balance?.toFixed(2) || "0.00"}
                 </div>
                 <div className="text-xs sm:text-sm text-green-600 flex items-center">
                   Status: active
@@ -317,7 +317,7 @@ const Wallet = () => {
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="font-medium">Amount:</span> ₹{txn.amount}
+                <span className="font-medium">Amount:</span> ${txn.amount}
               </div>
               <div className="flex justify-between text-sm">
                 <span className="font-medium">Status:</span>
@@ -359,7 +359,7 @@ const Wallet = () => {
                       {txn.type}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm">₹{txn.amount}</td>
+                  <td className="px-6 py-4 text-sm">${txn.amount}</td>
                   <td className="px-6 py-4 text-sm">
                     <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
                       Completed
@@ -419,7 +419,7 @@ const Wallet = () => {
                   Payment Success!
                 </h3>
                 <p className="text-center text-2xl font-bold text-gray-900 mt-2">
-                  ₹{paymentDialog.amount}
+                  ${paymentDialog.amount}
                 </p>
 
                 <hr className="my-4" />
@@ -443,11 +443,11 @@ const Wallet = () => {
                   </div>
                   <div className="flex justify-between">
                     <span>Amount</span>
-                    <span className="font-medium">₹{paymentDialog.amount}</span>
+                    <span className="font-medium">${paymentDialog.amount}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Convenience Charges</span>
-                    <span className="font-medium">₹{paymentDialog.adminFee || "0.00"}</span>
+                    <span className="font-medium">${paymentDialog.adminFee || "0.00"}</span>
                   </div>
                 </div>
 

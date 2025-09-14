@@ -504,7 +504,7 @@
     <div className="flex items-center justify-between">
       <div>
         <p className="text-green-100">Total Revenue</p>
-        <p className="text-3xl font-bold">₹{(stats.totalRevenue || 0).toLocaleString()}</p>
+        <p className="text-3xl font-bold">${(stats.totalRevenue || 0).toLocaleString()}</p>
       </div>
       <DollarSign className="h-12 w-12 text-green-200" />
     </div>
@@ -713,7 +713,7 @@
               <td className="px-6 py-4 text-sm text-gray-900">
                 {user.role === "admin"
                   ? "N/A"
-                  : `₹${user.balance?.toLocaleString() || 0}`}
+                  : `$${user.balance?.toLocaleString() || 0}`}
               </td>
               <td className="px-6 py-4 text-sm text-gray-500">
                 {user.last_login
@@ -816,7 +816,7 @@
               <span className="font-medium">Balance:</span>{" "}
               {user.role === "admin"
                 ? "N/A"
-                : `₹${user.balance?.toLocaleString() || 0}`}
+                : `$${user.balance?.toLocaleString() || 0}`}
             </p>
             <p>
               <span className="font-medium">Last Login:</span>{" "}
@@ -1204,7 +1204,7 @@
               >
                 <span>{item.name || item.applicationId || `Item ${idx + 1}`}</span>
                 {item.email && <span className="text-gray-500">{item.email}</span>}
-                {item.amount && <span className="font-medium">₹{item.amount}</span>}
+                {item.amount && <span className="font-medium">${item.amount}</span>}
               </li>
             ))}
           </ul>
@@ -1249,7 +1249,7 @@
                 selectedUserDetails.user.status === 'blocked' ? 'bg-red-100 text-red-800' : 
                 'bg-yellow-100 text-yellow-800'}`}>{selectedUserDetails.user.status}</span></div>
             <div><label className="block text-xs sm:text-sm font-medium text-gray-700">Balance</label>
-              <p className="text-gray-900">₹{selectedUserDetails.user.balance || 0}</p></div>
+              <p className="text-gray-900">${selectedUserDetails.user.balance || 0}</p></div>
             <div><label className="block text-xs sm:text-sm font-medium text-gray-700">Join Date</label>
               <p className="text-gray-900">{new Date(selectedUserDetails.user.created_at).toLocaleDateString()}</p></div>
             <div><label className="block text-xs sm:text-sm font-medium text-gray-700">Applications</label>
@@ -1273,7 +1273,7 @@
                     <tbody>
                       {selectedUserDetails.transactions.map((txn, idx) => (
                         <tr key={idx} className="border-b">
-                          <td className="px-2 py-1">₹{txn.amount}</td>
+                          <td className="px-2 py-1">${txn.amount}</td>
                           <td className="px-2 py-1">{txn.type}</td>
                           <td className="px-2 py-1">{new Date(txn.created_at).toLocaleDateString()}</td>
                         </tr>

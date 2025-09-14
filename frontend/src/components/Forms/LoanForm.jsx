@@ -75,7 +75,7 @@ const LoanForm = () => {
     return;
   }
 
-  toast.success(`Form submitted successfully! ₹${rate} deducted. New balance: ₹${balance - rate}`);
+  toast.success(`Form submitted successfully! $${rate} deducted. New balance: $${balance - rate}`);
 
   // Reset form
   setFormData({
@@ -148,7 +148,7 @@ const LoanForm = () => {
                     <div>
                       <h3 className="font-medium">Basic Form</h3>
                       <p className="text-sm text-gray-600">Standard loan processing</p>
-                      <p className="text-lg font-bold text-green-600">₹{eligibility?.rates?.basic || 5}</p>
+                      <p className="text-lg font-bold text-green-600">${eligibility?.rates?.basic || 5}</p>
                     </div>
                     {!canSelectFormType('basic') && <Lock className="h-5 w-5 text-red-500" />}
                   </div>
@@ -166,7 +166,7 @@ const LoanForm = () => {
                     <div>
                       <h3 className="font-medium">Realtime Validation</h3>
                       <p className="text-sm text-gray-600">Aadhaar, PAN, Bank verification</p>
-                      <p className="text-lg font-bold text-blue-600">₹{eligibility?.rates?.realtime || 50}</p>
+                      <p className="text-lg font-bold text-blue-600">${eligibility?.rates?.realtime || 50}</p>
                     </div>
                     {!canSelectFormType('realtime') && <Lock className="h-5 w-5 text-red-500" />}
                   </div>
