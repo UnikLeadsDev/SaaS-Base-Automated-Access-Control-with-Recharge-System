@@ -96,7 +96,7 @@ const fetchBillingSummary = async () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs sm:text-sm text-gray-600">Total Paid</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">${summary.total_paid}</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">₹{summary.total_paid}</p>
               </div>
               <TrendingUp className="text-blue-600" size={20} />
             </div>
@@ -106,7 +106,7 @@ const fetchBillingSummary = async () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs sm:text-sm text-gray-600">Outstanding</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600">${summary.total_outstanding}</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600">₹{summary.total_outstanding}</p>
               </div>
               <Download className="text-red-600" size={20} />
             </div>

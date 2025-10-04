@@ -27,12 +27,13 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       if (isMockToken()) {
         // Restore from localStorage in demo mode
+        const userId = localStorage.getItem('userId');
         const userName = localStorage.getItem('userName');
         const userEmail = localStorage.getItem('userEmail');
         const userRole = localStorage.getItem('userRole');
-        if (userName && userEmail && userRole) {
+        if (userId && userName && userEmail && userRole) {
           setUser({
-            id: 1,
+            id: parseInt(userId),
             name: userName,
             email: userEmail,
             role: userRole
@@ -59,17 +60,19 @@ export const AuthProvider = ({ children }) => {
       console.log('Profile response:', response);
 
       setUser(response.data);
+      localStorage.setItem('userId', response.data.user_id || response.data.id);
       localStorage.setItem('userRole', response.data.role);
     } catch (error) {
       console.log('Profile fetch error:', error.response?.status, error.message);
 
+      const userId = localStorage.getItem('userId');
       const userName = localStorage.getItem('userName');
       const userEmail = localStorage.getItem('userEmail');
       const userRole = localStorage.getItem('userRole');
-      if (userName && userEmail && userRole) {
+      if (userId && userName && userEmail && userRole) {
         console.log('Using stored user data for demo mode');
         setUser({
-          id: 1,
+          id: parseInt(userId),
           name: userName,
           email: userEmail,
           role: userRole
@@ -87,6 +90,7 @@ export const AuthProvider = ({ children }) => {
   const simpleLogin = async (userData) => {
     const mockToken = 'mock_jwt_token_' + Date.now();
     localStorage.setItem('token', mockToken);
+    localStorage.setItem('userId', userData.id);
     localStorage.setItem('userName', userData.name);
     localStorage.setItem('userEmail', userData.email);
     localStorage.setItem('userRole', userData.role);
@@ -104,6 +108,7 @@ export const AuthProvider = ({ children }) => {
       
       const { token, user } = response.data;
       localStorage.setItem('token', token);
+      localStorage.setItem('userId', user.id);
       localStorage.setItem('userName', user.name);
       localStorage.setItem('userEmail', user.email);
       localStorage.setItem('userRole', user.role);
@@ -128,6 +133,7 @@ export const AuthProvider = ({ children }) => {
         const mockToken = 'mock_jwt_token_' + Date.now();
         
         localStorage.setItem('token', mockToken);
+        localStorage.setItem('userId', mockUser.id);
         localStorage.setItem('userName', mockUser.name);
         localStorage.setItem('userEmail', mockUser.email);
         localStorage.setItem('userRole', mockUser.role);
@@ -151,6 +157,7 @@ export const AuthProvider = ({ children }) => {
       
       const { token, user } = response.data;
       localStorage.setItem('token', token);
+      localStorage.setItem('userId', user.id);
       localStorage.setItem('userName', user.name);
       localStorage.setItem('userEmail', user.email);
       localStorage.setItem('userRole', user.role);
@@ -170,6 +177,7 @@ export const AuthProvider = ({ children }) => {
         const mockToken = 'mock_jwt_token_' + Date.now();
         
         localStorage.setItem('token', mockToken);
+        localStorage.setItem('userId', mockUser.id); 
         localStorage.setItem('userName', mockUser.name);
         localStorage.setItem('userEmail', mockUser.email);
         localStorage.setItem('userRole', mockUser.role);
@@ -200,6 +208,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('userId');
     localStorage.removeItem('userName');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('userRole');

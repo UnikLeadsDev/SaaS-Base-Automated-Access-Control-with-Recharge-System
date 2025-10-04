@@ -56,7 +56,7 @@ const downloadPDF = async (invoiceId, invoiceNumber) => {
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `invoice-${invoiceNumber}.pdf`);
+    link.setAttribute("download", `Tax_Invoice-${invoiceNumber}.pdf`);
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -125,7 +125,7 @@ const downloadPDF = async (invoiceId, invoiceNumber) => {
                     <td className="px-4 py-3 font-medium">{invoice.invoice_number}</td>
                     <td className="px-4 py-3">{new Date(invoice.invoice_date).toLocaleDateString()}</td>
                     <td className="px-4 py-3">{new Date(invoice.due_date).toLocaleDateString()}</td>
-                    <td className="px-4 py-3">${invoice.total_amount}</td>
+                    <td className="px-4 py-3">₹{invoice.total_amount}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(invoice.status)}`}>
                         {invoice.status.toUpperCase()}
