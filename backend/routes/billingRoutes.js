@@ -1,7 +1,7 @@
 import express from 'express';
 import { verifyToken, checkRole } from '../middleware/auth.js';
 import {
-  generateInvoice,
+
   getInvoice,
   getUserInvoices,
   getBillingReport,
@@ -9,7 +9,8 @@ import {
   markInvoicePaid,
   getBillingSummary,
   downloadInvoicePDF,
-  getMonthlyStatement
+  getMonthlyStatement,
+  createInvoiceDirect
 } from '../controllers/billingController.js';
 
 const router = express.Router();
@@ -18,7 +19,7 @@ const router = express.Router();
 router.use(verifyToken);
 
 // Generate invoice
-router.post('/invoice', generateInvoice);
+router.post('/invoice', createInvoiceDirect);
 
 // Get specific invoice
 router.get('/invoice/:invoiceId', getInvoice);

@@ -32,7 +32,7 @@ export const useSubscriptionAccess = () => {
     if (access.hasAccess) {
       return access.reason === 'subscription' 
         ? 'Included in your subscription'
-        : `$${formType === 'basic' ? 5 : 50} will be deducted from wallet`;
+        : `₹${formType === 'basic' ? 5 : 50} will be deducted from wallet`;
     }
     
     return `Insufficient balance. Need $${access.requiredAmount} (Current: $${access.currentBalance})`;
