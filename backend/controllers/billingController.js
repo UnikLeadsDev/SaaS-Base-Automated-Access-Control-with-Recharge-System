@@ -146,7 +146,7 @@ export const getUserInvoices = async (req, res) => {
   try {
     const userId = req.user.role === 'admin' ? req.query.userId : req.user.id;
     const { page = 1, limit = 10, status } = req.query;
-    
+
     let query = `
       SELECT invoice_id, invoice_number, invoice_date, due_date, 
              total_amount, status, created_at
@@ -320,14 +320,15 @@ export const downloadInvoicePDF = async (req, res) => {
 
     const invoice = await billingService.getInvoice(invoiceId, userId);
     const pdfPath = path.join(process.cwd(), 'temp', `invoice-${invoiceId}.pdf`);
-    
+
     // Ensure temp directory exists
     const tempDir = path.dirname(pdfPath);
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
     }
+const stampPath = path.join(process.cwd(), 'NexargeStamp.png');
 
-    await pdfGenerator.generateInvoicePDF(invoice, pdfPath);
+    await pdfGenerator.generateInvoicePDF(invoice, pdfPath, stampPath);
 
     // res.download(pdfPath, `Invoice-${invoice.invoice_number}.pdf`, (err) => {
     //   if (err) {
@@ -337,12 +338,12 @@ export const downloadInvoicePDF = async (req, res) => {
     //   fs.unlink(pdfPath, () => {});
     // });
     res.download(pdfPath, `${invoice.invoice_number}.pdf`, (err) => {
-  if (err) {
-    console.error('PDF Download Error:', err);
-  }
-  // Clean up temp file
-  fs.unlink(pdfPath, () => {});
-});
+      if (err) {
+        console.error('PDF Download Error:', err);
+      }
+      // Clean up temp file
+      fs.unlink(pdfPath, () => { });
+    });
 
   } catch (error) {
     console.error('Download Invoice PDF Error:', error);
