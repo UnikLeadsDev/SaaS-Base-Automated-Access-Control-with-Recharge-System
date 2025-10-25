@@ -5,45 +5,110 @@ import path from 'path';
 import fs from 'fs';
 
 // Generate invoice for user
-export const generateInvoice = async (req, res) => {
+// routes/billing.js
+export const createInvoiceDirect = async (req, res) => {
   try {
-    const { items, notes, paymentTerms } = req.body;
-    const userId = req.user.id;
+    const {
+      userId,
+      userName,
+      userEmail,
+      // invoiceNumber,
+      invoiceDate,
+      dueDate,
+      subtotal,
+      gstRate,
+      gstAmount,
+      totalAmount,
+      status,
+      paymentTerms,
+      notes
+    } = req.body;
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invoice items are required' 
+    if (
+      !userId ||
+      !userName ||
+      !userEmail ||
+      // !invoiceNumber ||
+      !invoiceDate ||
+      !subtotal ||
+      !gstRate ||
+      !gstAmount ||
+      !totalAmount
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required invoice fields"
       });
     }
 
-    // Validate items
-    for (const item of items) {
-      if (!item.description || !item.unit_price || item.unit_price <= 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Each item must have description and valid unit_price'
-        });
-      }
-      item.quantity = item.quantity || 1;
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    const [lastInvoice] = await connection.query(
+      `SELECT invoice_number FROM invoices ORDER BY id DESC LIMIT 1`
+    );
+    let newInvoiceNumber;
+    if (lastInvoice.length > 0) {
+      // Extract the numeric part from the last invoice number (e.g., "IN000001" -> 1)
+      const lastNumber = parseInt(lastInvoice[0].invoice_number.replace('IN', ''));
+      // Increment and pad with zeros
+      newInvoiceNumber = `IN${String(lastNumber + 1).padStart(6, '0')}`;
+    } else {
+      // First invoice
+      newInvoiceNumber = 'IN000001';
     }
 
-    const invoice = await billingService.generateInvoice(userId, items, {
-      notes,
-      paymentTerms
-    });
+    const [invoiceResult] = await connection.query(
+      `
+      INSERT INTO invoices 
+      (user_id, invoice_number, invoice_date, due_date, subtotal, gst_rate, gst_amount, total_amount, status, payment_terms, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+      [
+        userId,
+        newInvoiceNumber,
+        new Date(invoiceDate),
+        new Date(dueDate),
+        subtotal,
+        gstRate,
+        gstAmount,
+        totalAmount,
+        status || "draft",
+        paymentTerms || "Net 30",
+        notes || null
+      ]
+    );
+
+    const invoiceId = invoiceResult.insertId;
+
+    await connection.commit();
 
     res.json({
       success: true,
-      message: 'Invoice generated successfully',
-      invoice
+      message: "Invoice created successfully",
+      invoice: {
+        invoiceId,
+        userId,
+        userName,
+        userEmail,
+        invoiceNumber: newInvoiceNumber,
+        invoiceDate,
+        dueDate,
+        subtotal,
+        gstRate,
+        gstAmount,
+        totalAmount,
+        status,
+        paymentTerms,
+        notes
+      }
     });
-
   } catch (error) {
-    console.error('Generate Invoice Error:', error);
+    console.error("Direct Invoice Error:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to generate invoice'
+      message: "Failed to create invoice",
+      error: error.message
     });
   }
 };
@@ -81,7 +146,7 @@ export const getUserInvoices = async (req, res) => {
   try {
     const userId = req.user.role === 'admin' ? req.query.userId : req.user.id;
     const { page = 1, limit = 10, status } = req.query;
-    
+
     let query = `
       SELECT invoice_id, invoice_number, invoice_date, due_date, 
              total_amount, status, created_at
@@ -255,21 +320,29 @@ export const downloadInvoicePDF = async (req, res) => {
 
     const invoice = await billingService.getInvoice(invoiceId, userId);
     const pdfPath = path.join(process.cwd(), 'temp', `invoice-${invoiceId}.pdf`);
-    
+
     // Ensure temp directory exists
     const tempDir = path.dirname(pdfPath);
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
     }
+const stampPath = path.join(process.cwd(), 'NexargeStamp.png');
 
-    await pdfGenerator.generateInvoicePDF(invoice, pdfPath);
+    await pdfGenerator.generateInvoicePDF(invoice, pdfPath, stampPath);
 
-    res.download(pdfPath, `invoice-${invoice.invoice_number}.pdf`, (err) => {
+    // res.download(pdfPath, `Invoice-${invoice.invoice_number}.pdf`, (err) => {
+    //   if (err) {
+    //     console.error('PDF Download Error:', err);
+    //   }
+    //   // Clean up temp file
+    //   fs.unlink(pdfPath, () => {});
+    // });
+    res.download(pdfPath, `${invoice.invoice_number}.pdf`, (err) => {
       if (err) {
         console.error('PDF Download Error:', err);
       }
       // Clean up temp file
-      fs.unlink(pdfPath, () => {});
+      fs.unlink(pdfPath, () => { });
     });
 
   } catch (error) {

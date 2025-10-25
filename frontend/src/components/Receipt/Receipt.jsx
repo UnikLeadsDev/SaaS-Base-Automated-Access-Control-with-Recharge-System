@@ -19,25 +19,28 @@ function Receipt() {
   useEffect(() => {
     const fetchReceipts = async () => {
       try {
-        if (!token || isMockToken) {
-          setReceipts([]);
-          return;
-        }
-        const res = await fetch(`${API_BASE_URL}/receipts/receipts`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) {
-          setReceipts([]);
-          return;
-        }
-        const data = await res.json();
-        setReceipts(Array.isArray(data) ? data : []);
-      } catch (err) {
-        // Silently handle API failure
-        setReceipts([]);
-      } finally {
-        setLoading(false);
-      }
+       if (!token || isMockToken) {
+         setReceipts([]);
+         setLoading(false);
+         return;
+       }
+
+       const res = await fetch(`${API_BASE_URL}/receipts/my-receipts`, {
+         headers: { Authorization: `Bearer ${token}` },
+       });
+
+       const data = await res.json();
+       if (data.success) {
+         setReceipts(data.receipts);
+       } else {
+         setReceipts([]);
+       }
+     } catch (err) {
+       console.error("Error fetching receipts", err);
+       setReceipts([]);
+     } finally {
+       setLoading(false);
+     }
     };
 
     fetchReceipts();
@@ -47,6 +50,9 @@ function Receipt() {
   const generatePDF = (receipt) => {
     const doc = new jsPDF();
 
+    doc.addFont('https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf', 'DejaVuSans', 'normal');
+    doc.setFont('DejaVuSans');
+
     doc.setFontSize(18);
     doc.setTextColor(40, 40, 160);
     doc.text("Unik Leads", 105, 15, { align: "center" });
@@ -55,9 +61,16 @@ function Receipt() {
     doc.setTextColor(100);
     doc.text("Recharge Wallet Receipt", 105, 25, { align: "center" });
 
+<<<<<<< HEAD
     const amountDisplay = receipt.payment_mode === 'usd'
   ? `₹${receipt.amount} (USD $${(receipt.amount / 83).toFixed(2)})`
   : `₹${receipt.amount}`;
+=======
+    const amountDisplay = receipt.payment_mode === 'usd' 
+      ? `Rs. ${(receipt.amount / 83).toFixed(2)} (Rs. ${receipt.amount})` 
+      : `Rs. ${receipt.amount}`;
+      
+>>>>>>> a21518b650b1ec36577379fe80f0be02bcd95ba0
 
     autoTable(doc, {
       startY: 40,
@@ -96,8 +109,8 @@ function Receipt() {
     doc.text("Recharge Wallet Receipt", 105, 25, { align: "center" });
 
     const amountDisplay = receipt.payment_mode === 'usd' 
-      ? `$${(receipt.amount / 83).toFixed(2)} ($${receipt.amount})` 
-      : `$${receipt.amount}`;
+      ? `₹${(receipt.amount / 83).toFixed(2)} (₹${receipt.amount})` 
+      : `₹${receipt.amount}`;
 
     autoTable(doc, {
       startY: 40,
@@ -122,34 +135,34 @@ function Receipt() {
 
     const pdfBase64 = doc.output("datauristring");
 
-    try {
-      if (!token || isMockToken) {
-        alert("Email sending is unavailable in demo mode.");
-        return;
-      }
-      const res = await fetch(`${API_BASE_URL}/receipts/send-receipt`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          email: user?.email,
-          pdfBase64,
-          txnId: receipt.txn_id,
-        }),
-      });
+    // try {
+    //   if (!token || isMockToken) {
+    //     alert("Email sending is unavailable in demo mode.");
+    //     return;
+    //   }
+    //   const res = await fetch(`${API_BASE_URL}/receipts/send-receipt`, {
+    //     method: "POST",
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //       Authorization: `Bearer ${token}`,
+    //     },
+    //     body: JSON.stringify({
+    //       email: user?.email,
+    //       pdfBase64,
+    //       txnId: receipt.txn_id,
+    //     }),
+    //   });
 
-      const data = await res.json();
-      if (data.success) {
-        alert("Receipt sent to your email!");
-      } else {
-        alert("Failed to send email.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error sending email.");
-    }
+    //   const data = await res.json();
+    //   if (data.success) {
+    //     alert("Receipt sent to your email!");
+    //   } else {
+    //     alert("Failed to send email.");
+    //   }
+    // } catch (err) {
+    //   console.error(err);
+    //   alert("Error sending email.");
+    // }
   };
 
   if (loading) {
@@ -195,7 +208,11 @@ return (
             </div>
           </td>
           <td className="px-4 py-2 border">
+<<<<<<< HEAD
             {receipt.payment_mode === 'usd' ? `{(receipt.amount / 83).toFixed(2)} (${receipt.amount})` : `₹${receipt.amount}`}
+=======
+            {receipt.payment_mode === 'usd' ? `₹${(receipt.amount / 83).toFixed(2)} (₹${receipt.amount})` : `₹${receipt.amount}`}
+>>>>>>> a21518b650b1ec36577379fe80f0be02bcd95ba0
           </td>
           <td className="px-4 py-2 border break-all">
             {receipt.transaction_id || receipt.txn_ref || receipt.receipt_id}

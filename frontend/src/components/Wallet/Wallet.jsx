@@ -129,29 +129,74 @@ const Wallet = () => {
               toast.success("Payment successful! Wallet will be updated shortly.");
             }
 
-            // Try to create receipt (optional)
+            // try {
+            //   await axios.post(
+            //     `${API_BASE_URL}/billing/invoice`,
+            //     {
+            //       txnId: response.razorpay_payment_id,
+            //       amount: parseFloat(amount) / 100,
+            //       paymentMode: "razorpay",
+            //       userName: user?.name,
+            //       userEmail: user?.email,
+            //     },
+            //     { headers: { Authorization: `Bearer ${token}` } }
+            //   );
+            // } catch (receiptError) {
+            //   console.warn('Receipt creation failed:', receiptError);
+            //   // Don't show error to user as payment was successful
+            // }
+            const userId = localStorage.getItem('userId');
+            const userName = localStorage.getItem('userName');
+            const userEmail = localStorage.getItem('userEmail');
+            const userRole = localStorage.getItem('userRole');
+            const requestBody = {
+                  userId: parseInt(userId),
+                  userName: userName || "N/A",
+                  userEmail: userEmail || "N/A",
+                  invoiceNumber: "INV-" + Date.now(),
+                  invoiceDate: new Date().toISOString().slice(0, 10),
+                  dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+                  subtotal: parseFloat(amount) / 100,
+                  gstRate: 18.0,
+                  gstAmount: ((parseFloat(amount) / 100) * 18 / 100).toFixed(2),
+                  totalAmount: ((parseFloat(amount) / 100) * 1.18).toFixed(2),
+                  status: "paid",
+                  paymentTerms: "Net 30",
+                  notes: "Wallet Recharge via Razorpay",
+                }
+                console.log("Request Body :: ", requestBody);
             try {
               await axios.post(
-                `${API_BASE_URL}/receipts/receipt`,
-                {
-                  txnId: response.razorpay_payment_id,
-                  amount: parseFloat(amount) / 100,
-                  paymentMode: "razorpay",
-                  userName: user?.name,
-                  userEmail: user?.email,
-                },
+                `${API_BASE_URL}/billing/invoice`,
+                // {
+                //   userId: userId,
+                //   userName: userName || "N/A",
+                //   userEmail: userEmail || "N/A",
+                //   invoiceNumber: "INV-" + Date.now(),
+                //   invoiceDate: new Date().toISOString().slice(0, 10),
+                //   dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+                //   subtotal: parseFloat(amount) / 100,
+                //   gstRate: 18.0,
+                //   gstAmount: ((parseFloat(amount) / 100) * 18 / 100).toFixed(2),
+                //   totalAmount: ((parseFloat(amount) / 100) * 1.18).toFixed(2),
+                //   status: "paid",
+                //   paymentTerms: "Net 30",
+                //   notes: "Wallet Recharge via Razorpay",
+                // }
+                requestBody
+                ,
                 { headers: { Authorization: `Bearer ${token}` } }
               );
             } catch (receiptError) {
-              console.warn('Receipt creation failed:', receiptError);
-              // Don't show error to user as payment was successful
+              console.warn("Receipt creation failed:", receiptError);
             }
+
 
             setRechargeAmount("");
             setShowRecharge(false);
           } catch (error) {
             console.error('Payment processing error:', error);
-            
+
             // If it's a network error or 500, payment might have succeeded
             if (error.code === 'ERR_NETWORK' || error.response?.status >= 500) {
               setPaymentDialog({
@@ -192,7 +237,7 @@ const Wallet = () => {
         <div className="p-4 sm:p-6">
           {/* Heading */}
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Your wallet current balance</h2>
-          
+
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
             {/* Left: Logo, Amount, Status */}
             <div className="flex items-center space-x-3 sm:space-x-4">
@@ -218,11 +263,10 @@ const Wallet = () => {
             <div className="flex flex-col items-start sm:items-end">
               <button
                 onClick={() => setShowRecharge(true)}
-                className={`px-3 sm:px-4 py-2 rounded-md shadow flex items-center text-sm sm:text-base ${
-                  isDemoMode
-                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    : "bg-indigo-600 text-white hover:bg-indigo-700"
-                }`}
+                className={`px-3 sm:px-4 py-2 rounded-md shadow flex items-center text-sm sm:text-base ${isDemoMode
+                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                  : "bg-indigo-600 text-white hover:bg-indigo-700"
+                  }`}
                 disabled={isDemoMode}
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -238,6 +282,7 @@ const Wallet = () => {
         </div>
       </div>
 
+<<<<<<< HEAD
      {/* Recharge Modal */}
 {showRecharge && (
   <div 
@@ -289,6 +334,57 @@ const Wallet = () => {
   </div>
 )}
 
+=======
+      {/* Recharge Modal */}
+      {showRecharge && (
+        <div
+          className="fixed bg-black bg-opacity-50 flex justify-center items-start pt-20"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            zIndex: 99999,
+            margin: 0,
+            padding: 0
+          }}
+        >
+          <div className="bg-white rounded-md shadow-lg p-6 w-11/12 sm:w-96">
+            <h3 className="text-lg font-medium mb-4">Recharge Wallet</h3>
+            <input
+              type="number"
+              value={rechargeAmount}
+              onChange={(e) => setRechargeAmount(e.target.value)}
+              className="w-full px-3 py-2 border rounded-md mb-4"
+              placeholder="Enter amount"
+              min="1"
+            />
+            <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+              <button
+                onClick={handleRecharge}
+                disabled={loading || isDemoMode}
+                className={`flex-1 px-4 py-2 rounded-md disabled:opacity-50 flex items-center justify-center ${isDemoMode
+                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                  : "bg-indigo-600 text-white hover:bg-indigo-700"
+                  }`}
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                {loading ? "Processing..." : isDemoMode ? "Demo Mode" : "Pay Now"}
+              </button>
+              <button
+                onClick={() => setShowRecharge(false)}
+                className="px-4 py-2 border rounded-md bg-white"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+>>>>>>> a21518b650b1ec36577379fe80f0be02bcd95ba0
 
       {/* Transaction History */}
       <div className="bg-white shadow rounded-lg p-4 sm:p-6">
@@ -308,17 +404,16 @@ const Wallet = () => {
               <div className="flex justify-between text-sm">
                 <span className="font-medium">Type:</span>
                 <span
-                  className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                    txn.type === "credit"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
+                  className={`px-2 py-1 rounded-full text-xs font-semibold ${txn.type === "credit"
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                    }`}
                 >
                   {txn.type}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="font-medium">Amount:</span> ${txn.amount}
+                <span className="font-medium">Amount:</span> ₹{txn.amount}
               </div>
               <div className="flex justify-between text-sm">
                 <span className="font-medium">Status:</span>
@@ -351,16 +446,15 @@ const Wallet = () => {
                   <td className="px-6 py-4 text-sm">{new Date(txn.created_at || txn.date).toLocaleDateString()}</td>
                   <td className="px-6 py-4 text-sm">
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        txn.type === "credit"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
+                      className={`px-2 py-1 rounded-full text-xs font-semibold ${txn.type === "credit"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                        }`}
                     >
                       {txn.type}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm">${txn.amount}</td>
+                  <td className="px-6 py-4 text-sm">₹{txn.amount}</td>
                   <td className="px-6 py-4 text-sm">
                     <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
                       Completed
@@ -368,6 +462,7 @@ const Wallet = () => {
                   </td>
                   <td className="px-6 py-4 text-sm">{txn.txn_ref || "-"}</td>
                 </tr>
+
               ))}
             </tbody>
           </table>
@@ -380,7 +475,7 @@ const Wallet = () => {
 
       {/* Payment Result Dialog */}
       {paymentDialog.open && (
-        <div 
+        <div
           className="fixed bg-black bg-opacity-50 flex justify-center items-center"
           style={{
             position: 'fixed',
@@ -420,7 +515,7 @@ const Wallet = () => {
                   Payment Success!
                 </h3>
                 <p className="text-center text-2xl font-bold text-gray-900 mt-2">
-                  ${paymentDialog.amount}
+                  ₹{paymentDialog.amount}
                 </p>
 
                 <hr className="my-4" />
@@ -444,11 +539,11 @@ const Wallet = () => {
                   </div>
                   <div className="flex justify-between">
                     <span>Amount</span>
-                    <span className="font-medium">${paymentDialog.amount}</span>
+                    <span className="font-medium">₹{paymentDialog.amount}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Convenience Charges</span>
-                    <span className="font-medium">${paymentDialog.adminFee || "0.00"}</span>
+                    <span className="font-medium">₹{paymentDialog.adminFee || "0.00"}</span>
                   </div>
                 </div>
 
@@ -456,7 +551,7 @@ const Wallet = () => {
                   <button
                     onClick={() => {
                       setPaymentDialog({ ...paymentDialog, open: false });
-                      navigate("/receipt", {
+                      navigate("/billing", {
                         state: {
                           txnId: paymentDialog.txnId,
                           amount: paymentDialog.amount,

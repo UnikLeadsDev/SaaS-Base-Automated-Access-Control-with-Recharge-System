@@ -89,7 +89,7 @@ const checkEligibility = async () => {
           {eligibility.accessType === 'subscription' ? (
             'Unlimited access via subscription'
           ) : (
-            `Current balance: $${eligibility.balance} | Cost: $${eligibility.rates?.[formType] || 0}`
+            `Current balance: ₹${eligibility.balance} | Cost: ₹${eligibility.rates?.[formType] || 0}`
           )}
         </div>
         {eligibility.demoMode && (

@@ -1,65 +1,127 @@
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
-import path from 'path';
 
 class PDFGenerator {
-  generateInvoicePDF(invoice, outputPath) {
-    return new Promise((resolve, reject) => {
-      try {
-        const doc = new PDFDocument({ margin: 50 });
-        const stream = fs.createWriteStream(outputPath);
-        doc.pipe(stream);
+generateInvoicePDF(invoice, outputPath, stampPath) {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ margin: 50, size: 'A4' });
+      const stream = fs.createWriteStream(outputPath);
+      doc.pipe(stream);
 
-        // Header
-        doc.fontSize(20).text('INVOICE', 50, 50);
-        doc.fontSize(12).text(invoice.company_name, 50, 80);
-        doc.text(invoice.address, 50, 95);
-        doc.text(`${invoice.city}, ${invoice.state} - ${invoice.pincode}`, 50, 110);
-        doc.text(`GSTIN: ${invoice.gstin}`, 50, 125);
+      // ----- Header -----
+      doc.fontSize(24).font('Helvetica-Bold').text('TAX INVOICE', 50, 50);
 
-        // Invoice details
-        doc.text(`Invoice #: ${invoice.invoice_number}`, 400, 80);
-        doc.text(`Date: ${new Date(invoice.invoice_date).toLocaleDateString()}`, 400, 95);
-        doc.text(`Due Date: ${new Date(invoice.due_date).toLocaleDateString()}`, 400, 110);
+      // Company Info (Left side)
+      doc.fontSize(11).font('Helvetica')
+        .text(invoice.company_name, 50, 100)
+        .text(invoice.address, 50, 115, { width: 250 })
+        .text(`${invoice.city}, ${invoice.state} - ${invoice.pincode}`, 50, 145);
 
-        // Bill to
-        doc.text('Bill To:', 50, 160);
-        doc.text(invoice.user_name, 50, 175);
-        doc.text(invoice.email, 50, 190);
-        doc.text(invoice.mobile, 50, 205);
+      // Invoice Info (Right side)
+      const rightX = 400;
+      const invoiceDate = new Date(invoice.invoice_date);
+      const createdAt = new Date(invoice.created_at);
 
-        // Items table
-        const tableTop = 250;
-        doc.text('Description', 50, tableTop);
-        doc.text('Qty', 300, tableTop);
-        doc.text('Rate', 350, tableTop);
-        doc.text('Amount', 450, tableTop);
-        
-        let y = tableTop + 20;
-        invoice.items.forEach(item => {
-          doc.text(item.description, 50, y);
-          doc.text(item.quantity.toString(), 300, y);
-          doc.text(`₹${item.unit_price}`, 350, y);
-          doc.text(`₹${item.line_total}`, 450, y);
-          y += 20;
-        });
+      doc.fontSize(11)
+        .text(`Invoice No.: ${invoice.invoice_number}`, rightX, 100)
+        .text(`Date: ${invoiceDate.toLocaleDateString('en-GB')}`, rightX, 115)
+        .text(`Time: ${createdAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`, rightX, 130);
+      
+      doc.fontSize(11).font('Helvetica-Bold')
+        .text('Bill To:', 50, 205);
 
-        // Totals
-        y += 20;
-        doc.text(`Subtotal: ₹${invoice.subtotal}`, 350, y);
-        y += 15;
-        doc.text(`GST (${invoice.gst_rate}%): ₹${invoice.gst_amount}`, 350, y);
-        y += 15;
-        doc.fontSize(14).text(`Total: ₹${invoice.total_amount}`, 350, y);
+      doc.font('Helvetica')
+        .text(invoice.user_name, 50, 220)
+        .text(invoice.email, 50, 235)
+        .text(invoice.mobile, 50, 250);
 
-        doc.end();
-        stream.on('finish', () => resolve(outputPath));
-        stream.on('error', reject);
-      } catch (error) {
-        reject(error);
+      const tableTop = 290;
+      const colX = {
+        srNo: 50,
+        srNoWidth: 40,
+        description: 100,
+        descWidth: 220,
+        qty: 330,
+        qtyWidth: 30,
+        amount: 365,
+        amountWidth: 70,
+        gst: 440,
+        gstWidth: 45,
+        total: 490,
+        totalWidth: 60
+      };
+
+      // Table headers - centered
+      doc.fontSize(12).font('Helvetica-Bold')
+        .text('Sr. No.', colX.srNo, tableTop, { width: colX.srNoWidth, align: 'center' })
+        .text('Description', colX.description, tableTop, { width: colX.descWidth, align: 'center' })
+        .text('Qty', colX.qty, tableTop, { width: colX.qtyWidth, align: 'center' })
+        .text('Amount', colX.amount, tableTop, { width: colX.amountWidth, align: 'center' })
+        .text('GST', colX.gst, tableTop, { width: colX.gstWidth, align: 'center' })
+        .text('Total', colX.total, tableTop, { width: colX.totalWidth, align: 'center' });
+
+      // Horizontal line under headers
+      doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
+
+      let y = tableTop + 25;
+
+      // Hardcoded item values
+      const subtotal = Number(invoice.subtotal) || 0;
+      const gstAmount = Number(invoice.gst_amount) || 0;
+      const total = Number(invoice.total_amount) || 0;
+
+      // Single hardcoded item - centered
+      doc.font('Helvetica').fontSize(10)
+        .text('1', colX.srNo, y, { width: colX.srNoWidth, align: 'center' })
+        .text('Wallet Recharge Payment for SAAS Services', colX.description, y, { width: colX.descWidth, align: 'center' })
+        .text('1', colX.qty, y, { width: colX.qtyWidth, align: 'center' })
+        .text(`Rs. ${subtotal.toFixed(2)}`, colX.amount, y, { width: colX.amountWidth, align: 'center' })
+        .text('18%', colX.gst, y, { width: colX.gstWidth, align: 'center' })
+        .text(`Rs. ${total.toFixed(2)}`, colX.total, y, { width: colX.totalWidth, align: 'center' });
+
+      y += 40;
+
+      // ----- Totals Section -----
+      y += 20;
+
+      // Horizontal line above totals
+      doc.moveTo(340, y).lineTo(550, y).stroke();
+      y += 10;
+
+      const gstRate = Number(invoice.gst_rate) || 0;
+
+      // Subtotal
+      doc.fontSize(11).font('Helvetica')
+        .text('Subtotal:', 340, y)
+        .text(`Rs. ${subtotal.toFixed(2)}`, 480, y, { align: 'right' });
+
+      // GST
+      y += 20;
+      doc.text(`GST (${gstRate.toFixed(2)}%):`, 340, y)
+        .text(`Rs. ${gstAmount.toFixed(2)}`, 480, y, { align: 'right' });
+
+      // Total
+      y += 25;
+      doc.fontSize(12).font('Helvetica-Bold')
+        .text('Total:', 340, y)
+        .text(`Rs. ${total.toFixed(2)}`, 480, y, { align: 'right' });
+
+      // ✅ Add Stamp (bottom left, below totals)
+      if (stampPath && fs.existsSync(stampPath)) {
+        doc.image(stampPath, 160, y - 60, { width: 100, height: 100 });
       }
-    });
-  }
+
+      doc.end();
+
+      stream.on('finish', () => resolve(outputPath));
+      stream.on('error', reject);
+
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
 }
 
 export default new PDFGenerator();

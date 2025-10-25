@@ -74,8 +74,20 @@ const LoanForm = () => {
     toast.error("Failed to deduct wallet balance. Form submission canceled.");
     return;
   }
+  try {
+    await apiWrapper.post(`${API_BASE_URL}/receipts/add`, {
+      txnRef: txnId,
+      amount: rate,
+      paymentMode: "wallet", // since it's deducted from wallet
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  } catch (err) {
+    console.error("Failed to save receipt", err);
+  }
 
-  toast.success(`Form submitted successfully! $${rate} deducted. New balance: $${balance - rate}`);
+
+  toast.success(`Form submitted successfully! ₹${rate} deducted. New balance: ₹${balance - rate}`);
 
   // Reset form
   setFormData({

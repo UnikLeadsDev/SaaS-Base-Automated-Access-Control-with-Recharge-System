@@ -105,8 +105,8 @@ class BillingService {
              c.company_name, c.address, c.city, c.state, c.pincode, 
              c.gstin, c.pan, c.email as company_email, c.phone as company_phone
       FROM invoices i
-      JOIN users u ON i.user_id = u.user_id
-      CROSS JOIN company_details c
+      LEFT JOIN users u ON i.user_id = u.user_id
+      LEFT JOIN company_details c ON 1=1
       WHERE i.invoice_id = ?
     `;
     

@@ -15,7 +15,6 @@ const Register = () => {
     mobile: '',
     role: 'DSA',
     password: '',
-    confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -39,6 +38,7 @@ const Register = () => {
       toast.success('Registration successful! Please login.');
       navigate('/login');
     } catch (error) {
+      console.error("Register error:", error.response?.data);
       toast.error(error.response?.data?.message || 'Registration failed');
     } finally {
       setLoading(false);
