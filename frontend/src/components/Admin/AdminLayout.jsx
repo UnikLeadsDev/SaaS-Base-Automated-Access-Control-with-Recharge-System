@@ -158,7 +158,7 @@ const AdminLayout = ({ activeTab, setActiveTab, children }) => {
           <div className="flex items-center space-x-3">
             {/* Wallet (hidden on mobile) */}
             <div className="hidden sm:block bg-indigo-50 text-indigo-700 font-semibold px-3 py-1 rounded-lg text-sm">
-              $ 0.00
+              ₹ 0.00
             </div>
 
             {/* Notification */}

@@ -817,34 +817,107 @@ export const overrideSubscription = async (req, res) => {
 // Manage subscription plans
 export const createSubscriptionPlan = async (req, res) => {
   try {
-    const { planName, amount, durationDays, gracePeriodDays, features } = req.body;
-    
+    const {
+      plan_name,
+      amount,
+      duration_days,
+      grace_period_days = 7,
+      basic_form_limit = 0,
+      realtime_form_limit = 0,
+      api_access = 0,
+      priority_support = 0,
+      status = "active",
+    } = req.body;
+
     const [result] = await db.query(
-      "INSERT INTO subscription_plans (plan_name, amount, duration_days, grace_period_days, features) VALUES (?, ?, ?, ?, ?)",
-      [planName, amount, durationDays, gracePeriodDays, JSON.stringify(features)]
+      `INSERT INTO subscription_plans 
+        (plan_name, amount, duration_days, grace_period_days, basic_form_limit, realtime_form_limit, api_access, priority_support, status) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        plan_name,
+        amount,
+        duration_days,
+        grace_period_days,
+        basic_form_limit,
+        realtime_form_limit,
+        api_access,
+        priority_support,
+        status,
+      ]
     );
-    
-    res.json({ message: "Plan created successfully", planId: result.insertId });
+
+    res.status(201).json({
+      message: "Subscription plan created successfully",
+      planId: result.insertId,
+    });
   } catch (error) {
     console.error("Create Plan Error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
 export const updateSubscriptionPlan = async (req, res) => {
   try {
     const { planId } = req.params;
-    const { planName, amount, durationDays, gracePeriodDays, features, status } = req.body;
-    
+    const {
+      plan_name,
+      amount,
+      duration_days,
+      grace_period_days,
+      basic_form_limit,
+      realtime_form_limit,
+      api_access,
+      priority_support,
+      status,
+    } = req.body;
+
     await db.query(
-      "UPDATE subscription_plans SET plan_name = ?, amount = ?, duration_days = ?, grace_period_days = ?, features = ?, status = ? WHERE plan_id = ?",
-      [planName, amount, durationDays, gracePeriodDays, JSON.stringify(features), status, planId]
+      `UPDATE subscription_plans 
+       SET plan_name = ?, amount = ?, duration_days = ?, grace_period_days = ?, 
+           basic_form_limit = ?, realtime_form_limit = ?, api_access = ?, 
+           priority_support = ?, status = ? 
+       WHERE plan_id = ?`,
+      [
+        plan_name,
+        amount,
+        duration_days,
+        grace_period_days,
+        basic_form_limit,
+        realtime_form_limit,
+        api_access,
+        priority_support,
+        status,
+        planId,
+      ]
     );
-    
+
     res.json({ message: "Plan updated successfully" });
   } catch (error) {
     console.error("Update Plan Error:", error);
     res.status(500).json({ message: "Server error" });
+  }
+};
+export const deleteSubscriptionPlan = async (req, res) => {
+ try {
+    const { planId } = req.params;
+
+    // Step 1: Delete related subscriptions
+    await db.query("DELETE FROM subscriptions WHERE plan_id = ?", [planId]);
+
+    // Step 2: Delete plan itself
+    const [result] = await db.query(
+      "DELETE FROM subscription_plans WHERE plan_id = ?",
+      [planId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Plan not found ❌" });
+    }
+
+    res.status(200).json({ message: "Plan deleted successfully ✅" });
+  } catch (error) {
+    console.error("Error deleting plan:", error);
+    res.status(500).json({ message: "Server error while deleting plan ❌" });
   }
 };
 

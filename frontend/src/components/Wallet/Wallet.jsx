@@ -199,7 +199,7 @@ const Wallet = () => {
               <WalletIcon className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" />
               <div>
                 <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-600">
-                  $ {balance?.toFixed(2) || "0.00"}
+                  ₹ {balance?.toFixed(2) || "0.00"}
                 </div>
                 <div className="text-xs sm:text-sm text-green-600 flex items-center">
                   Status: active
@@ -238,56 +238,57 @@ const Wallet = () => {
         </div>
       </div>
 
-      {/* Recharge Modal */}
-      {showRecharge && (
-        <div 
-          className="fixed bg-black bg-opacity-50 flex justify-center items-start pt-20"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            width: '100vw',
-            height: '100vh',
-            zIndex: 99999,
-            margin: 0,
-            padding: 0
-          }}
+     {/* Recharge Modal */}
+{showRecharge && (
+  <div 
+    className="fixed bg-black bg-opacity-50 flex justify-center items-center"
+    style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      width: '100vw',
+      height: '100vh',
+      zIndex: 99999,
+      margin: 0,
+      padding: 0
+    }}
+  >
+    <div className="bg-white rounded-md shadow-lg p-6 w-11/12 sm:w-96">
+      <h3 className="text-lg font-medium mb-4">Recharge Wallet</h3>
+      <input
+        type="number"
+        value={rechargeAmount}
+        onChange={(e) => setRechargeAmount(e.target.value)}
+        className="w-full px-3 py-2 border rounded-md mb-4"
+        placeholder="Enter amount"
+        min="1"
+      />
+      <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+        <button
+          onClick={handleRecharge}
+          disabled={loading || isDemoMode}
+          className={`flex-1 px-4 py-2 rounded-md disabled:opacity-50 flex items-center justify-center ${
+            isDemoMode
+              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+              : "bg-indigo-600 text-white hover:bg-indigo-700"
+          }`}
         >
-          <div className="bg-white rounded-md shadow-lg p-6 w-11/12 sm:w-96">
-            <h3 className="text-lg font-medium mb-4">Recharge Wallet</h3>
-            <input
-              type="number"
-              value={rechargeAmount}
-              onChange={(e) => setRechargeAmount(e.target.value)}
-              className="w-full px-3 py-2 border rounded-md mb-4"
-              placeholder="Enter amount"
-              min="1"
-            />
-            <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
-              <button
-                onClick={handleRecharge}
-                disabled={loading || isDemoMode}
-                className={`flex-1 px-4 py-2 rounded-md disabled:opacity-50 flex items-center justify-center ${
-                  isDemoMode
-                    ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                    : "bg-indigo-600 text-white hover:bg-indigo-700"
-                }`}
-              >
-                <CreditCard className="h-4 w-4 mr-2" />
-                {loading ? "Processing..." : isDemoMode ? "Demo Mode" : "Pay Now"}
-              </button>
-              <button
-                onClick={() => setShowRecharge(false)}
-                className="px-4 py-2 border rounded-md bg-white"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          <CreditCard className="h-4 w-4 mr-2" />
+          {loading ? "Processing..." : isDemoMode ? "Demo Mode" : "Pay Now"}
+        </button>
+        <button
+          onClick={() => setShowRecharge(false)}
+          className="px-4 py-2 border rounded-md bg-white"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
 
       {/* Transaction History */}
       <div className="bg-white shadow rounded-lg p-4 sm:p-6">

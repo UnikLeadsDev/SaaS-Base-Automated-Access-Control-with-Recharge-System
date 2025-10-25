@@ -118,9 +118,9 @@ const checkEligibility = async () => {
           
           {guidance.required && (
             <div className="text-sm text-red-600">
-              <strong>Required:</strong> ${guidance.required} | 
-              <strong> Current:</strong> ${eligibility.balance} | 
-              <strong> Shortfall:</strong> ${guidance.shortfall}
+              <strong>Required:</strong> ₹{guidance.required} | 
+              <strong> Current:</strong> ₹{eligibility.balance} | 
+              <strong> Shortfall:</strong>₹{guidance.shortfall}
             </div>
           )}
           

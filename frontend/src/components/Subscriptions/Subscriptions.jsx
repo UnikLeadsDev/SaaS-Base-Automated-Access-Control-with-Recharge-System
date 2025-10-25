@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
+import { useWallet } from '../../context/WalletContext.jsx';
 import { CreditCard, Calendar, CheckCircle, Settings, X, AlertCircle, BarChart3, ArrowUpDown } from 'lucide-react';
 import API_BASE_URL from '../../config/api.js';
 import EmptyBox from '../Common/EmptyBox';
@@ -18,6 +19,7 @@ const Subscriptions = () => {
   const [showPlanChange, setShowPlanChange] = useState(false);
   const [loading, setLoading] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const { balance, deductAmount, fetchWalletData } = useWallet();
 
   useEffect(() => {
     fetchPlans();
@@ -95,66 +97,95 @@ const Subscriptions = () => {
     }
   };
 
-  const subscribeToPlan = async (plan) => {
-    if (!token || isMockToken) {
-      toast.error('Real payment required.');
-      return;
+const subscribeToPlan = async (plan) => {
+  if (!token || isMockToken) {
+    toast.error('Real payment required.');
+    return;
+  }
+
+  setPaymentLoading(true);
+
+  try {
+    // 1️⃣ Check wallet balance first
+    if (balance >= plan.amount) {
+  try {
+    const { data } = await axios.put(
+      `${API_BASE_URL}/wallet/deduct`,
+      { amount: plan.amount, description: `Subscription: ${plan.plan_name}` },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (data.success) {
+      toast.success('Subscription activated via wallet!');
+      fetchWalletData();      // Update wallet balance in WalletContext
+      fetchSubscriptions();   // Refresh subscriptions
+    } else {
+      toast.error(data.message || 'Failed to deduct wallet amount');
     }
-    setPaymentLoading(true);
+  } catch (err) {
+    toast.error('Failed to deduct wallet amount');
+    console.error(err);
+  } finally {
+    setPaymentLoading(false);
+  }
+  return; // Skip Razorpay
+}
 
-    try {
-      const { data } = await axios.post(
-        `${API_BASE_URL}/subscription/create`,
-        { planId: plan.plan_id },
-        { 
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'X-Requested-With': 'XMLHttpRequest'
-          } 
+
+    // 2️⃣ Wallet balance insufficient → use Razorpay
+    const { data } = await axios.post(
+      `${API_BASE_URL}/subscription/create`,
+      { planId: plan.plan_id },
+      { 
+        headers: { Authorization: `Bearer ${token}`, 'X-Requested-With': 'XMLHttpRequest' } 
+      }
+    );
+
+    const { orderId, amount, currency, key } = data;
+
+    const options = {
+      key,
+      amount,
+      currency,
+      name: 'SaaS Base',
+      description: `Subscription to ${plan.plan_name}`,
+      order_id: orderId,
+      handler: async (res) => {
+        try {
+          const verify = await axios.post(
+            `${API_BASE_URL}/subscription/verify-payment`,
+            {
+              razorpay_order_id: res.razorpay_order_id,
+              razorpay_payment_id: res.razorpay_payment_id,
+              razorpay_signature: res.razorpay_signature,
+              planId: plan.plan_id
+            },
+            { headers: { Authorization: `Bearer ${token}`, 'X-Requested-With': 'XMLHttpRequest' } }
+          );
+
+          if (verify.data.success) {
+            toast.success('Subscription activated via Razorpay!');
+            fetchSubscriptions();
+          } else toast.error('Payment verification failed');
+        } catch {
+          toast.error('Payment verification failed');
+        } finally {
+          setPaymentLoading(false);
         }
-      );
+      },
+      prefill: { name: localStorage.getItem('userName'), email: localStorage.getItem('userEmail') },
+      theme: { color: '#4F46E5' },
+      modal: { ondismiss: () => setPaymentLoading(false) }
+    };
 
-      const { orderId, amount, currency, key } = data;
+    new window.Razorpay(options).open();
+  } catch (err) {
+    console.error(err);
+    toast.error('Failed to initiate payment');
+    setPaymentLoading(false);
+  }
+};
 
-      const options = {
-        key,
-        amount,
-        currency,
-        name: 'SaaS Base',
-        description: `Subscription to ${plan.plan_name}`,
-        order_id: orderId,
-        handler: async (res) => {
-          try {
-            const verify = await axios.post(
-              `${API_BASE_URL}/subscription/verify-payment`,
-              {
-                razorpay_order_id: res.razorpay_order_id,
-                razorpay_payment_id: res.razorpay_payment_id,
-                razorpay_signature: res.razorpay_signature,
-                planId: plan.plan_id
-              },
-              { 
-                headers: { 
-                  Authorization: `Bearer ${token}`,
-                  'X-Requested-With': 'XMLHttpRequest'
-                } 
-              }
-            );
-            if (verify.data.success) {
-              toast.success('Subscription activated!');
-              fetchSubscriptions();
-            } else toast.error('Payment verification failed');
-          } catch { toast.error('Payment verification failed'); }
-          finally { setPaymentLoading(false); }
-        },
-        prefill: { name: localStorage.getItem('userName'), email: localStorage.getItem('userEmail') },
-        theme: { color: '#4F46E5' },
-        modal: { ondismiss: () => setPaymentLoading(false) }
-      };
-
-      new window.Razorpay(options).open();
-    } catch (err) { toast.error('Failed to initiate payment'); setPaymentLoading(false); }
-  };
 
   const handlePlanChanged = () => {
     fetchSubscriptions();

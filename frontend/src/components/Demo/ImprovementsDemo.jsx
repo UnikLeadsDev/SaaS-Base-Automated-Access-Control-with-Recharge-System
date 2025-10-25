@@ -61,7 +61,7 @@ const ImprovementsDemo = () => {
                       : 'bg-gray-200 text-gray-700'
                   }`}
                 >
-                  Basic ($5)
+                  Basic (₹5)
                 </button>
                 <button
                   onClick={() => setSelectedFormType('realtime')}
@@ -71,7 +71,7 @@ const ImprovementsDemo = () => {
                       : 'bg-gray-200 text-gray-700'
                   }`}
                 >
-                  Realtime ($50)
+                  Realtime (₹50)
                 </button>
               </div>
             </div>

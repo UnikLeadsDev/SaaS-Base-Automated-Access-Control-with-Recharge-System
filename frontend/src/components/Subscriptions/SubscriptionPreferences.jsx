@@ -78,140 +78,161 @@ const SubscriptionPreferences = () => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-800">Subscription Preferences</h3>
-        <Settings className="h-5 w-5 text-indigo-600" />
-      </div>
+<div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+  {/* Header */}
+  <div className="flex items-center justify-between mb-4 sm:mb-6 flex-wrap gap-2">
+    <h3 className="text-base sm:text-lg font-semibold text-gray-800">
+      Subscription Preferences
+    </h3>
+    <Settings className="h-5 w-5 text-indigo-600" />
+  </div>
 
-      <div className="space-y-6">
-        {/* Auto-renewal Settings */}
-        <div className="border-b pb-4">
-          <h4 className="text-md font-medium text-gray-700 mb-3 flex items-center">
-            <CreditCard className="h-4 w-4 mr-2" />
-            Auto-Renewal Settings
-          </h4>
-          
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <label className="text-sm font-medium text-gray-700">Enable Auto-Renewal</label>
-                <p className="text-xs text-gray-500">Automatically renew subscription before expiry</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={preferences.auto_renewal}
-                  onChange={(e) => handleChange('auto_renewal', e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
+  <div className="space-y-6">
+    {/* Auto-renewal Settings */}
+    <div className="border-b pb-4">
+      <h4 className="text-sm sm:text-md font-medium text-gray-700 mb-3 flex items-center">
+        <CreditCard className="h-4 w-4 mr-2" />
+        Auto-Renewal Settings
+      </h4>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Preferred Plan for Auto-Renewal
-              </label>
-              <select
-                value={preferences.preferred_plan_id || ''}
-                onChange={(e) => handleChange('preferred_plan_id', e.target.value || null)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={!preferences.auto_renewal}
-              >
-                <option value="">Select a plan</option>
-                {plans.map(plan => (
-                  <option key={plan.plan_id} value={plan.plan_id}>
-                    {plan.plan_name} - ${plan.amount}
-                  </option>
-                ))}
-              </select>
-            </div>
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <label className="text-sm font-medium text-gray-700">
+              Enable Auto-Renewal
+            </label>
+            <p className="text-xs text-gray-500">
+              Automatically renew subscription before expiry
+            </p>
           </div>
+          <label className="relative inline-flex items-center cursor-pointer self-start sm:self-center">
+            <input
+              type="checkbox"
+              checked={preferences.auto_renewal}
+              onChange={(e) => handleChange("auto_renewal", e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-200 rounded-full peer-focus:ring-4 peer-focus:ring-blue-300 peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
         </div>
 
-        {/* Notification Settings */}
-        <div className="border-b pb-4">
-          <h4 className="text-md font-medium text-gray-700 mb-3 flex items-center">
-            <Bell className="h-4 w-4 mr-2" />
-            Notification Preferences
-          </h4>
-          
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notify me {preferences.notification_days_before} days before expiry
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="30"
-                value={preferences.notification_days_before}
-                onChange={(e) => handleChange('notification_days_before', parseInt(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>1 day</span>
-                <span>30 days</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <span className="text-sm font-medium">Email</span>
-                  <p className="text-xs text-gray-500">Email notifications</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={preferences.email_notifications}
-                  onChange={(e) => handleChange('email_notifications', e.target.checked)}
-                  className="rounded text-blue-600 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <span className="text-sm font-medium">SMS</span>
-                  <p className="text-xs text-gray-500">Text messages</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={preferences.sms_notifications}
-                  onChange={(e) => handleChange('sms_notifications', e.target.checked)}
-                  className="rounded text-blue-600 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <span className="text-sm font-medium">WhatsApp</span>
-                  <p className="text-xs text-gray-500">WhatsApp messages</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={preferences.whatsapp_notifications}
-                  onChange={(e) => handleChange('whatsapp_notifications', e.target.checked)}
-                  className="rounded text-blue-600 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Save Button */}
-        <div className="flex justify-end">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Preferred Plan for Auto-Renewal
+          </label>
+          <select
+            value={preferences.preferred_plan_id || ""}
+            onChange={(e) =>
+              handleChange("preferred_plan_id", e.target.value || null)
+            }
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={!preferences.auto_renewal}
           >
-            <Save className="h-4 w-4 mr-2" />
-            {saving ? 'Saving...' : 'Save Preferences'}
-          </button>
+            <option value="">Select a plan</option>
+            {plans.map((plan) => (
+              <option key={plan.plan_id} value={plan.plan_id}>
+                {plan.plan_name} - ${plan.amount}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
     </div>
+
+    {/* Notification Settings */}
+    <div className="border-b pb-4">
+      <h4 className="text-sm sm:text-md font-medium text-gray-700 mb-3 flex items-center">
+        <Bell className="h-4 w-4 mr-2" />
+        Notification Preferences
+      </h4>
+
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Notify me {preferences.notification_days_before} days before expiry
+          </label>
+          <input
+            type="range"
+            min="1"
+            max="30"
+            value={preferences.notification_days_before}
+            onChange={(e) =>
+              handleChange("notification_days_before", parseInt(e.target.value))
+            }
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+          />
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <span>1 day</span>
+            <span>30 days</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {/* Email */}
+          <div className="flex items-center justify-between p-3 border rounded-lg">
+            <div>
+              <span className="text-sm font-medium">Email</span>
+              <p className="text-xs text-gray-500">Email notifications</p>
+            </div>
+            <input
+              type="checkbox"
+              checked={preferences.email_notifications}
+              onChange={(e) =>
+                handleChange("email_notifications", e.target.checked)
+              }
+              className="rounded text-blue-600 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* SMS */}
+          <div className="flex items-center justify-between p-3 border rounded-lg">
+            <div>
+              <span className="text-sm font-medium">SMS</span>
+              <p className="text-xs text-gray-500">Text messages</p>
+            </div>
+            <input
+              type="checkbox"
+              checked={preferences.sms_notifications}
+              onChange={(e) =>
+                handleChange("sms_notifications", e.target.checked)
+              }
+              className="rounded text-blue-600 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* WhatsApp */}
+          <div className="flex items-center justify-between p-3 border rounded-lg">
+            <div>
+              <span className="text-sm font-medium">WhatsApp</span>
+              <p className="text-xs text-gray-500">WhatsApp messages</p>
+            </div>
+            <input
+              type="checkbox"
+              checked={preferences.whatsapp_notifications}
+              onChange={(e) =>
+                handleChange("whatsapp_notifications", e.target.checked)
+              }
+              className="rounded text-blue-600 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Save Button */}
+    <div className="flex justify-end">
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 text-sm sm:text-base"
+      >
+        <Save className="h-4 w-4 mr-2" />
+        {saving ? "Saving..." : "Save Preferences"}
+      </button>
+    </div>
+  </div>
+</div>
+
   );
 };
 

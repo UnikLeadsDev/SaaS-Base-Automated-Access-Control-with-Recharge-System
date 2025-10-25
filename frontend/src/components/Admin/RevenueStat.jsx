@@ -17,7 +17,7 @@ const [transactions, setTransactions] = useState([]);
       try {
         const response = await axios.get(`${API_BASE_URL}/admin/revenue-breakdown`,{
            headers: {
-          Authorization: `Bearer ${user.token}`
+          Authorization: `Bearer ${localStorage.getItem('token')}`
         }
         })
         setUsers(response.data.data || []);
@@ -35,15 +35,18 @@ const [transactions, setTransactions] = useState([]);
       u.email.toLowerCase().includes(search.toLowerCase()) ||
       u.mobile.toLowerCase().includes(search.toLowerCase())
   );
+  
 
   const handleUserClick = async (userId) => {
   setSelectedUser(userId);
+  console.log("usertoekn is ",localStorage.getItem('token'));
   try {
     const response = await axios.get(`${API_BASE_URL}/admin/revenue-breakdown/${userId}`,{
       headers: {
-        Authorization: `Bearer ${user.token}`
+        Authorization: `Bearer ${localStorage.getItem('token')}`
       }
     });
+    
     setTransactions(response.data.data || []);
     
    
@@ -58,7 +61,7 @@ const [transactions, setTransactions] = useState([]);
         Name: u.name,
         Email: u.email,
         Mobile: u.mobile,
-        "Total Contribution ($)": u.total_contribution,
+        "Total Contribution (₹)": u.total_contribution,
       }))
     );
     const workbook = XLSX.utils.book_new();
@@ -130,7 +133,7 @@ const [transactions, setTransactions] = useState([]);
               <th className="p-3 text-left">User Name</th>
               <th className="p-3 text-left">Email</th>
               <th className="p-3 text-left">Mobile</th>
-              <th className="p-3 text-right">Total Contribution ($)</th>
+              <th className="p-3 text-right">Total Contribution (₹)</th>
               <th className="p-3 text-center">Details</th>
             </tr>
           </thead>
@@ -141,7 +144,7 @@ const [transactions, setTransactions] = useState([]);
                 <td className="p-3">{user.email}</td>
                 <td className="p-3">{user.mobile}</td>
                 <td className="p-3 text-right font-medium">
-                  ${user.total_contribution}
+                  ₹{user.total_contribution}
                 </td>
                 <td className="p-3 text-center" key={user.user_id} onClick={() => handleUserClick(user.user_id)}>
                   <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm">
@@ -177,7 +180,7 @@ const [transactions, setTransactions] = useState([]);
         {transactions.map((tx) => (
           <tr key={tx.id} className="hover:bg-gray-50">
             <td className="px-4 py-2">{tx.txn_ref}</td>
-            <td className="px-4 py-2">${tx.amount}</td>
+            <td className="px-4 py-2">₹{tx.amount}</td>
             <td className="px-4 py-2">{tx.payment_mode}</td>
             <td className="px-4 py-2">
               {new Date(tx.created_at).toLocaleString()}

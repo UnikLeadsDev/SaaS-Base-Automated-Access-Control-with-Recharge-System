@@ -153,7 +153,7 @@ const PlanChangeFlow = ({ currentSubscription, onPlanChanged }) => {
 
       <div className="mb-6 p-4 bg-blue-50 rounded-lg">
         <h4 className="font-medium text-blue-900 mb-2">Current Plan</h4>
-        <p className="text-blue-800">{currentSubscription.plan_name} - ${currentSubscription.amount}</p>
+        <p className="text-blue-800">{currentSubscription.plan_name} - ₹{currentSubscription.amount}</p>
         <p className="text-sm text-blue-600">
           Valid until: {new Date(currentSubscription.end_date).toLocaleDateString()}
         </p>
@@ -175,7 +175,7 @@ const PlanChangeFlow = ({ currentSubscription, onPlanChanged }) => {
               <div className="flex items-center">
                 {isUpgrade(plan) && <ArrowUpCircle className="h-4 w-4 text-green-500 mr-1" />}
                 {isDowngrade(plan) && <ArrowDownCircle className="h-4 w-4 text-orange-500 mr-1" />}
-                <span className="font-bold text-indigo-600">${plan.amount}</span>
+                <span className="font-bold text-indigo-600">₹{plan.amount}</span>
               </div>
             </div>
             <p className="text-sm text-gray-600 mb-2">{plan.duration_days} days validity</p>
@@ -203,16 +203,16 @@ const PlanChangeFlow = ({ currentSubscription, onPlanChanged }) => {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span>Current plan remaining value:</span>
-                  <span>${prorationDetails.remainingValue}</span>
+                  <span>₹{prorationDetails.remainingValue}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>New plan cost:</span>
-                  <span>${prorationDetails.newPlanCost}</span>
+                  <span>₹{prorationDetails.newPlanCost}</span>
                 </div>
                 <div className="flex justify-between font-medium border-t pt-2">
                   <span>{prorationDetails.amountToPay > 0 ? 'Amount to pay:' : 'Refund amount:'}</span>
                   <span className={prorationDetails.amountToPay > 0 ? 'text-red-600' : 'text-green-600'}>
-                    ${Math.abs(prorationDetails.amountToPay)}
+                    ₹{Math.abs(prorationDetails.amountToPay)}
                   </span>
                 </div>
               </div>

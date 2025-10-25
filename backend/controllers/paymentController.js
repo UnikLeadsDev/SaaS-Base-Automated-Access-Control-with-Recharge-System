@@ -60,7 +60,7 @@ export const verifyPayment = async (req, res) => {
     // Get payment details
     const payment = await razorpay.payments.fetch(razorpay_payment_id);
     const amount = payment.amount / 100; // Convert from paise
-
+   console.log("payment details:",req.user);
     // Add to wallet
     const walletResult = await addToWallet(req.user.id, amount, razorpay_payment_id, 'razorpay');
 

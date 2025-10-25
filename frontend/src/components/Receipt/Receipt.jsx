@@ -4,6 +4,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import API_BASE_URL from "../../config/api";
 import EmptyBox from "../Common/EmptyBox";
+import { Calendar } from "lucide-react";
 
 function Receipt() {
   const { user } = useAuth();
@@ -54,10 +55,9 @@ function Receipt() {
     doc.setTextColor(100);
     doc.text("Recharge Wallet Receipt", 105, 25, { align: "center" });
 
-    const amountDisplay = receipt.payment_mode === 'usd' 
-      ? `$${(receipt.amount / 83).toFixed(2)} ($${receipt.amount})` 
-      : `$${receipt.amount}`;
-      
+    const amountDisplay = receipt.payment_mode === 'usd'
+  ? `₹${receipt.amount} (USD $${(receipt.amount / 83).toFixed(2)})`
+  : `₹${receipt.amount}`;
 
     autoTable(doc, {
       startY: 40,
@@ -185,10 +185,17 @@ return (
         <tr key={receipt.receipt_id || receipt.txn_id} className="text-sm text-gray-600">
           <td className="px-4 py-2 border">{index + 1}</td>
           <td className="px-4 py-2 border">
-            {new Date(receipt.receipt_date).toLocaleDateString("en-IN")}
+            <div className="flex items-center space-x-1 text-gray-700 text-sm">
+              <Calendar className="h-4 w-4 text-indigo-500" />
+              <span>
+                {receipt.receipt_date
+                  ? new Date(receipt.receipt_date).toLocaleDateString("en-IN")
+                  : "—"}
+              </span>
+            </div>
           </td>
           <td className="px-4 py-2 border">
-            {receipt.payment_mode === 'usd' ? `$${(receipt.amount / 83).toFixed(2)} ($${receipt.amount})` : `$${receipt.amount}`}
+            {receipt.payment_mode === 'usd' ? `{(receipt.amount / 83).toFixed(2)} (${receipt.amount})` : `₹${receipt.amount}`}
           </td>
           <td className="px-4 py-2 border break-all">
             {receipt.transaction_id || receipt.txn_ref || receipt.receipt_id}

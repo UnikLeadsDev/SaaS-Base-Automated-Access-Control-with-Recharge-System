@@ -125,7 +125,7 @@ const downloadPDF = async (invoiceId, invoiceNumber) => {
                     <td className="px-4 py-3 font-medium">{invoice.invoice_number}</td>
                     <td className="px-4 py-3">{new Date(invoice.invoice_date).toLocaleDateString()}</td>
                     <td className="px-4 py-3">{new Date(invoice.due_date).toLocaleDateString()}</td>
-                    <td className="px-4 py-3">${invoice.total_amount}</td>
+                    <td className="px-4 py-3">₹{invoice.total_amount}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(invoice.status)}`}>
                         {invoice.status.toUpperCase()}

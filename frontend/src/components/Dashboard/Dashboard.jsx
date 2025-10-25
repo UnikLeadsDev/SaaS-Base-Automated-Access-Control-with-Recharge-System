@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useWallet } from '../../context/WalletContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { Wallet, FileText, AlertCircle, TrendingUp } from 'lucide-react';
+import { Wallet,  Calendar, FileText, AlertCircle, TrendingUp } from 'lucide-react';
 import apiWrapper from '../../utils/apiWrapper.js';
 import toast from 'react-hot-toast';
 import API_BASE_URL from '../../config/api';
@@ -99,7 +99,7 @@ const Dashboard = () => {
           <Wallet className="h-5 w-5 sm:h-6 sm:w-6" />
           <span className="text-xs sm:text-sm">Wallet Balance</span>
         </div>
-        <p className="text-lg sm:text-xl lg:text-2xl font-bold mt-1 sm:mt-2">$ {stats.balance}</p>
+        <p className="text-lg sm:text-xl lg:text-2xl font-bold mt-1 sm:mt-2">₹ {stats.balance}</p>
       </div>
 
       <div className="bg-gradient-to-r from-green-400 to-teal-500 text-white p-3 sm:p-4 lg:p-5 rounded-xl shadow-md">
@@ -148,7 +148,7 @@ const Dashboard = () => {
         <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Form Access Status</h3>
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <span className="text-gray-700">Basic Form (${stats.rates?.basic})</span>
+            <span className="text-gray-700">Basic Form (₹{stats.rates?.basic})</span>
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${
               stats.canSubmitBasic ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
             }`}>
@@ -156,7 +156,7 @@ const Dashboard = () => {
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-gray-700">Realtime Validation (${stats.rates?.realtime})</span>
+            <span className="text-gray-700">Realtime Validation (₹{stats.rates?.realtime})</span>
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${
               stats.canSubmitRealtime ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
             }`}>
@@ -175,11 +175,12 @@ const Dashboard = () => {
               <div key={txn.txn_id} className="flex justify-between items-center border-b pb-2">
                 <div>
                   <p className="text-sm font-medium text-gray-800">
-                    {txn.type === 'credit' ? '+' : '-'}${txn.amount}
+                    {txn.type === 'credit' ? '+' : '-'}₹{txn.amount}
                   </p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(txn.date).toLocaleDateString()}
-                  </p>
+                 <p className="flex items-center space-x-1 text-xs text-gray-500">
+  <Calendar className="h-3 w-3 text-indigo-500" />
+  <span>{txn.date ? new Date(txn.date).toLocaleDateString("en-IN") : "—"}</span>
+</p>
                 </div>
                 <span className={`px-2 py-1 rounded text-xs font-medium ${
                   txn.type === 'credit' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
