@@ -42,6 +42,7 @@ export const WalletProvider = ({ children }) => {
       const balanceRes = await axios.get(`${API_BASE_URL}/wallet/balance`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log("Loaded wallet balance:", balanceRes.data.balance);
       setBalance(parseFloat(balanceRes.data.balance) || 0);
 
       // transactions

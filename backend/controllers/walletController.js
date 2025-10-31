@@ -21,10 +21,11 @@ const ensureWalletForUser = async (userId) => {
   return wallet[0];
 };
 
+
 // Cached rates
 const getRates = () => ({
   basic: parseFloat(process.env.BASIC_FORM_RATE) || 5,
-  realtime: parseFloat(process.env.REALTIME_VALIDATION_RATE) || 50
+  realtime: parseFloat(process.env.REALTIME_VALIDATION_RATE) || 50,
 });
 
 // Common wallet response builder
@@ -38,7 +39,7 @@ const buildWalletResponse = (wallet, includeAccess = false) => {
   if (includeAccess) {
     const rates = getRates();
     Object.assign(response, {
-      accessType: 'prepaid',
+      accessType: 'subscription',
       canSubmitBasic: wallet.balance >= rates.basic,
       canSubmitRealtime: wallet.balance >= rates.realtime,
       demoMode: false,
@@ -64,13 +65,26 @@ export const getWalletBalance = async (req, res) => {
 // Get wallet balance with access check for dashboard
 export const getWalletBalanceCheck = async (req, res) => {
   try {
-    const wallet = await ensureWalletForUser(req.user.id);
-    res.json(buildWalletResponse(wallet, true));
+    const userId =
+      req.user?.id ||
+      req.user?.user_id ||
+      req.user?.data?.id ||
+      req.user?.data?.user_id;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID missing in request" });
+    }
+
+    await ensureWalletForUser(userId);
+    const response = await buildWalletResponse(userId);
+
+    res.json(response);
   } catch (error) {
     console.error("Get Wallet Balance Check Error:", error);
-    res.status(500).json({ message: req.t('error.server') });
+    res.status(500).json({ message: "Server error while checking subscription" });
   }
 };
+
 
 // Deduct amount from wallet (idempotent & atomic)
 export const deductFromWallet = async (userId, amount, txnRef, description = null) => {

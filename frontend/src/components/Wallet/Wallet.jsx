@@ -282,59 +282,6 @@ const Wallet = () => {
         </div>
       </div>
 
-<<<<<<< HEAD
-     {/* Recharge Modal */}
-{showRecharge && (
-  <div 
-    className="fixed bg-black bg-opacity-50 flex justify-center items-center"
-    style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      width: '100vw',
-      height: '100vh',
-      zIndex: 99999,
-      margin: 0,
-      padding: 0
-    }}
-  >
-    <div className="bg-white rounded-md shadow-lg p-6 w-11/12 sm:w-96">
-      <h3 className="text-lg font-medium mb-4">Recharge Wallet</h3>
-      <input
-        type="number"
-        value={rechargeAmount}
-        onChange={(e) => setRechargeAmount(e.target.value)}
-        className="w-full px-3 py-2 border rounded-md mb-4"
-        placeholder="Enter amount"
-        min="1"
-      />
-      <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
-        <button
-          onClick={handleRecharge}
-          disabled={loading || isDemoMode}
-          className={`flex-1 px-4 py-2 rounded-md disabled:opacity-50 flex items-center justify-center ${
-            isDemoMode
-              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-              : "bg-indigo-600 text-white hover:bg-indigo-700"
-          }`}
-        >
-          <CreditCard className="h-4 w-4 mr-2" />
-          {loading ? "Processing..." : isDemoMode ? "Demo Mode" : "Pay Now"}
-        </button>
-        <button
-          onClick={() => setShowRecharge(false)}
-          className="px-4 py-2 border rounded-md bg-white"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
-=======
       {/* Recharge Modal */}
       {showRecharge && (
         <div
@@ -384,7 +331,6 @@ const Wallet = () => {
           </div>
         </div>
       )}
->>>>>>> a21518b650b1ec36577379fe80f0be02bcd95ba0
 
       {/* Transaction History */}
       <div className="bg-white shadow rounded-lg p-4 sm:p-6">

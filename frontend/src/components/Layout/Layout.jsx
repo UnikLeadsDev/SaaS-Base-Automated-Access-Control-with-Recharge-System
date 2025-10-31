@@ -61,7 +61,7 @@ if (user?.role === 'admin') {
       icon: FileText, 
       isDropdown: true,
       subItems: [
-        { name: 'Loan Forms', href: '/forms' }
+        { name: 'Application Dashboards', href: '/forms' }
       ]
     },
     { name: 'Wallet', href: '/wallet', icon: Wallet },

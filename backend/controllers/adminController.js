@@ -683,6 +683,7 @@ export const getApiKeys = async (req, res) => {
 export const updateApiKeys = async (req, res) => {
   try {
     const { razorpayKeyId, razorpayKeySecret, msg91AuthKey, msg91OtpTemplateId } = req.body;
+    console.log('Updating API keys', req.body);
 
     const updates = {};
     if (razorpayKeyId) updates.RAZORPAY_KEY_ID = razorpayKeyId;
@@ -801,11 +802,11 @@ export const overrideSubscription = async (req, res) => {
     
     await db.query(updateQuery, params);
     
-    // Log admin action
-    await db.query(
-      "INSERT INTO admin_actions (admin_id, action_type, target_id, description) VALUES (?, 'subscription_override', ?, ?)",
-      [req.user.id, subscriptionId, reason || `Status changed to ${status}`]
-    );
+    // // Log admin action
+    // await db.query(
+    //   "INSERT INTO admin_actions (admin_id, action_type, target_id, description) VALUES (?, 'subscription_override', ?, ?)",
+    //   [req.user.id, subscriptionId, reason || `Status changed to ${status}`]
+    // );
     
     res.json({ message: "Subscription updated successfully" });
   } catch (error) {

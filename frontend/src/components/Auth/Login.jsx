@@ -214,26 +214,22 @@ const handleSubmit = async (e) => {
               )}
             </button>
             
-            <div className="divider">
-              <span>or</span>
-            </div>
+          
             
-            <button 
+            {/* <button 
               type="button"
               onClick={() => setShowOTPLogin(true)}
               className="otp-login-button"
             >
               <Smartphone size={20} />
               Login with OTP
-            </button>
+            </button> */}
             
-            <div className="divider">
-              <span>or</span>
-            </div>
+           
             
-            <div className="flex justify-center">
+            {/* <div className="flex justify-center">
               <div id="google-signin-btn"></div>
-            </div>
+            </div> */}
             
             <div className="signup-section">
               <p className="signup-text">

@@ -98,7 +98,7 @@ const Register = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Mobile Number
+                Mobile Number<span className="text-red-500">*</span>
               </label>
               <input
                 name="mobile"
@@ -108,6 +108,7 @@ const Register = () => {
                 placeholder="Enter your mobile number"
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 disabled={loading}
+                required
               />
             </div>
 

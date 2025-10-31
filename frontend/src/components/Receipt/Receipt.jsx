@@ -61,16 +61,10 @@ function Receipt() {
     doc.setTextColor(100);
     doc.text("Recharge Wallet Receipt", 105, 25, { align: "center" });
 
-<<<<<<< HEAD
-    const amountDisplay = receipt.payment_mode === 'usd'
-  ? `₹${receipt.amount} (USD $${(receipt.amount / 83).toFixed(2)})`
-  : `₹${receipt.amount}`;
-=======
     const amountDisplay = receipt.payment_mode === 'usd' 
       ? `Rs. ${(receipt.amount / 83).toFixed(2)} (Rs. ${receipt.amount})` 
       : `Rs. ${receipt.amount}`;
       
->>>>>>> a21518b650b1ec36577379fe80f0be02bcd95ba0
 
     autoTable(doc, {
       startY: 40,
@@ -208,11 +202,7 @@ return (
             </div>
           </td>
           <td className="px-4 py-2 border">
-<<<<<<< HEAD
-            {receipt.payment_mode === 'usd' ? `{(receipt.amount / 83).toFixed(2)} (${receipt.amount})` : `₹${receipt.amount}`}
-=======
             {receipt.payment_mode === 'usd' ? `₹${(receipt.amount / 83).toFixed(2)} (₹${receipt.amount})` : `₹${receipt.amount}`}
->>>>>>> a21518b650b1ec36577379fe80f0be02bcd95ba0
           </td>
           <td className="px-4 py-2 border break-all">
             {receipt.transaction_id || receipt.txn_ref || receipt.receipt_id}

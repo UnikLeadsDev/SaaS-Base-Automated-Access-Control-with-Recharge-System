@@ -45,7 +45,7 @@ export const createInvoiceDirect = async (req, res) => {
     await connection.beginTransaction();
 
     const [lastInvoice] = await connection.query(
-      `SELECT invoice_number FROM invoices ORDER BY id DESC LIMIT 1`
+      `SELECT invoice_number FROM invoices ORDER BY invoice_id DESC LIMIT 1`
     );
     let newInvoiceNumber;
     if (lastInvoice.length > 0) {

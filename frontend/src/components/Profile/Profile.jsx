@@ -4,6 +4,47 @@ import { Settings } from "lucide-react";
 import API_BASE_URL from "../../config/api";
 import SubscriptionPreferences from "../Subscriptions/SubscriptionPreferences";
 
+
+// ✅ Move InputField OUTSIDE the Profile component
+const InputField = ({
+  label,
+  name,
+  value,
+  onChange,
+  type = "text",
+  disabled = false,
+  rows,
+  required = false,
+}) => {
+  return (
+    <div>
+      <label className="block mb-1 text-sm font-medium">{label}</label>
+      {rows ? (
+        <textarea
+          name={name}
+          value={value}
+          onChange={onChange}
+          rows={rows}
+          disabled={disabled}
+          required={required}
+          className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+        />
+      ) : (
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          disabled={disabled}
+          required={required}
+          className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+        />
+      )}
+    </div>
+  );
+};
+
+
 const Profile = () => {
   const [profile, setProfile] = useState({ name: "", email: "", phone: "" });
   const [company, setCompany] = useState({
@@ -20,19 +61,6 @@ const Profile = () => {
     const { name, value } = e.target;
     setter(prev => ({ ...prev, [name]: value }));
   };
-
-  const InputField = ({ label, name, value, onChange, type = "text", disabled = false, rows }) => (
-    <div>
-      <label className="block mb-1 text-sm font-medium">{label}</label>
-      {rows ? (
-        <textarea name={name} value={value} onChange={onChange} rows={rows} 
-          className="w-full border rounded-md px-3 py-2" />
-      ) : (
-        <input type={type} name={name} value={value} onChange={onChange} disabled={disabled}
-          className="w-full border rounded-md px-3 py-2" required={type === "password"} />
-      )}
-    </div>
-  );
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -53,8 +81,14 @@ const Profile = () => {
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     try {
-      const payload = { ...company, pincode: company.zipcode, gstin: company.gst_no, 
-        pan: company.pan_no, email: profile.email, phone: profile.phone };
+      const payload = { 
+        ...company, 
+        pincode: company.zipcode, 
+        gstin: company.gst_no, 
+        pan: company.pan_no, 
+        email: profile.email, 
+        phone: profile.phone 
+      };
       await axios.post(`${API_BASE_URL}/profile/profile/company`, payload, { headers: getAuthHeaders() });
       alert("Profile saved successfully!");
     } catch (error) {
@@ -132,9 +166,30 @@ const Profile = () => {
           <div>
             <h2 className="text-lg font-semibold mb-4 border-b pb-2">Update Password</h2>
             <form onSubmit={handleUpdatePassword} className="space-y-4">
-              <InputField label="Current Password" name="oldPassword" value={passwords.oldPassword} onChange={handleChange(setPasswords)} type="password" />
-              <InputField label="New Password" name="newPassword" value={passwords.newPassword} onChange={handleChange(setPasswords)} type="password" />
-              <InputField label="Confirm New Password" name="confirmPassword" value={passwords.confirmPassword} onChange={handleChange(setPasswords)} type="password" />
+              <InputField
+                label="Current Password"
+                name="oldPassword"
+                value={passwords.oldPassword}
+                onChange={handleChange(setPasswords)}
+                type="password"
+                required
+              />
+              <InputField
+                label="New Password"
+                name="newPassword"
+                value={passwords.newPassword}
+                onChange={handleChange(setPasswords)}
+                type="password"
+                required
+              />
+              <InputField
+                label="Confirm New Password"
+                name="confirmPassword"
+                value={passwords.confirmPassword}
+                onChange={handleChange(setPasswords)}
+                type="password"
+                required
+              />
               <button type="submit" className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700">
                 Update Password
               </button>

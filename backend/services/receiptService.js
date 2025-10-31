@@ -65,7 +65,7 @@ import db from "../config/db.js";
 
 export const createReceipt = async ({ userId, txnRef, amount, paymentMode }) => {
   const [result] = await db.query(
-    `INSERT INTO receipts (user_id, txn_ref, amount, payment_mode, status, receipt_date, created_at) 
+    `INSERT INTO receipts (user_id, txn_id, amount, payment_mode, status, receipt_date, created_at) 
      VALUES (?, ?, ?, ?, 'success', NOW(), NOW())`,
     [userId, txnRef, amount, paymentMode]
   );

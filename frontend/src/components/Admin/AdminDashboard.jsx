@@ -334,20 +334,39 @@
   };
 
   const handleUpdateEnvKeys = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      await axios.put(
-        `${API_BASE_URL}/admin/api-keys`,
-        keys,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      toast.success("API Keys updated successfully!");
-      fetchEnvKeys();
-    } catch (err) {
-      console.error("Error updating keys:", err);
-      toast.error("Failed to update keys");
-    }
-  };
+  try {
+    const token = localStorage.getItem("token");
+
+    // ✅ Only send the new values entered by user
+    const payload = {
+      razorpayKeyId: newKeys.razorpayKeyId?.trim(),
+      razorpayKeySecret: newKeys.razorpayKeySecret?.trim(),
+      msg91AuthKey: newKeys.msg91AuthKey?.trim(),
+      msg91OtpTemplateId: newKeys.msg91OtpTemplateId?.trim(),
+    };
+
+    // ✅ Remove empty fields so backend doesn't overwrite with blanks
+    const filteredPayload = Object.fromEntries(
+      Object.entries(payload).filter(([_, v]) => v)
+    );
+
+    await axios.put(`${API_BASE_URL}/admin/api-keys`, filteredPayload, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    toast.success("API Keys updated successfully!");
+
+    // ✅ Refresh current env keys display
+    fetchEnvKeys();
+
+    // ✅ Reset update fields
+    setNewKeys({});
+  } catch (err) {
+    console.error("Error updating keys:", err);
+    toast.error("Failed to update keys");
+  }
+};
+
 
 
   //   const fetchApiKeys = async () => {
