@@ -5,7 +5,8 @@ import { validate } from "../middleware/validation.js";
 import { 
   createPaymentOrder, 
   verifyPayment, 
-  handleWebhook 
+  handleWebhook,
+  createQrPayment
 } from "../controllers/paymentController.js";
 
 const router = express.Router();
@@ -16,5 +17,6 @@ router.use(paymentRateLimit);
 router.post("/create-order", verifyToken, validate('payment'), createPaymentOrder);
 router.post("/verify", verifyToken, verifyPayment);
 router.post("/webhook", handleWebhook); // No auth needed for webhook
+router.post("/create-qr", verifyToken, createQrPayment);
 
 export default router;

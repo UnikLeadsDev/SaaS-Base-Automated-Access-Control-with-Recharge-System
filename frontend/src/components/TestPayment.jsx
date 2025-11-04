@@ -2,6 +2,23 @@ import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import API_BASE_URL from '../config/api.js';
+const testQrPayment = async () => {
+  setLoading(true);
+  try {
+    const token = localStorage.getItem('token');
+    const qrRes = await axios.post(`${API_BASE_URL}/payment/create-qr`,
+      { amount: 100 },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    toast.success("QR created! Scan to test payment.");
+    window.open(qrRes.data.imageUrl, '_blank');
+  } catch (err) {
+    toast.error("QR test failed");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
 const TestPayment = () => {
   const [loading, setLoading] = useState(false);
@@ -10,7 +27,7 @@ const TestPayment = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       // Create order
       const response = await axios.post(
         `${API_BASE_URL}/payment/create-order`,
@@ -57,7 +74,7 @@ const TestPayment = () => {
 
       const rzp = new window.Razorpay(options);
       rzp.open();
-      
+
     } catch (error) {
       toast.error('Failed to create payment order');
       console.error('Payment error:', error);
@@ -75,6 +92,14 @@ const TestPayment = () => {
       >
         {loading ? 'Processing...' : 'Test Payment $100'}
       </button>
+      <button
+        onClick={testQrPayment}
+        disabled={loading}
+        className="ml-3 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50"
+      >
+        {loading ? "Creating QR..." : "Test QR Payment"}
+      </button>
+
     </div>
   );
 };

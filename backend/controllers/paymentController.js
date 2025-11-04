@@ -296,6 +296,35 @@ export const updateManualPayment = async (req, res) => {
   }
 };
 
+export const createQrPayment = async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET
+    });
+
+    const qr = await razorpay.qrCode.create({
+      type: "upi_qr",
+      name: "Wallet Recharge QR",
+      usage: "single_use",
+      fixed_amount: true,
+      payment_amount: amount * 100,
+      description: "Scan to Recharge Wallet"
+    });
+
+    res.json({
+      qrId: qr.id,
+      imageUrl: qr.image_url,
+      amount: amount
+    });
+  } catch (error) {
+    console.error("QR Payment creation failed:", error);
+    res.status(500).json({ error: "Failed to create QR payment" });
+  }
+};
+
+
 // Helper function to send payment notifications
 const sendPaymentNotification = async (userId, amount, type) => {
   try {

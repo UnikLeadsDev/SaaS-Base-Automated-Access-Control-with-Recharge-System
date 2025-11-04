@@ -9,6 +9,8 @@ import API_BASE_URL from "../../config/api";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import EmptyBox from "../Common/EmptyBox";
+import { QrCode } from "lucide-react";
+import PaymentQR from "../../assets/PaymentQR.jpeg";
 
 const Wallet = () => {
   const { user } = useAuth();
@@ -16,6 +18,9 @@ const Wallet = () => {
   const [rechargeAmount, setRechargeAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [showRecharge, setShowRecharge] = useState(false);
+  const [qrPayment, setQrPayment] = useState({ open: false, imageUrl: null, amount: null });
+  const [showQRModal, setShowQRModal] = useState(false);
+
   const navigate = useNavigate();
 
   // Dialog state
@@ -150,21 +155,21 @@ const Wallet = () => {
             const userEmail = localStorage.getItem('userEmail');
             const userRole = localStorage.getItem('userRole');
             const requestBody = {
-                  userId: parseInt(userId),
-                  userName: userName || "N/A",
-                  userEmail: userEmail || "N/A",
-                  invoiceNumber: "INV-" + Date.now(),
-                  invoiceDate: new Date().toISOString().slice(0, 10),
-                  dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-                  subtotal: parseFloat(amount) / 100,
-                  gstRate: 18.0,
-                  gstAmount: ((parseFloat(amount) / 100) * 18 / 100).toFixed(2),
-                  totalAmount: ((parseFloat(amount) / 100) * 1.18).toFixed(2),
-                  status: "paid",
-                  paymentTerms: "Net 30",
-                  notes: "Wallet Recharge via Razorpay",
-                }
-                console.log("Request Body :: ", requestBody);
+              userId: parseInt(userId),
+              userName: userName || "N/A",
+              userEmail: userEmail || "N/A",
+              invoiceNumber: "INV-" + Date.now(),
+              invoiceDate: new Date().toISOString().slice(0, 10),
+              dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+              subtotal: parseFloat(amount) / 100,
+              gstRate: 18.0,
+              gstAmount: ((parseFloat(amount) / 100) * 18 / 100).toFixed(2),
+              totalAmount: ((parseFloat(amount) / 100) * 1.18).toFixed(2),
+              status: "paid",
+              paymentTerms: "Net 30",
+              notes: "Wallet Recharge via Razorpay",
+            }
+            console.log("Request Body :: ", requestBody);
             try {
               await axios.post(
                 `${API_BASE_URL}/billing/invoice`,
@@ -309,7 +314,26 @@ const Wallet = () => {
               placeholder="Enter amount"
               min="1"
             />
-            <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+            {/* GST Calculation Display */}
+            {rechargeAmount && parseFloat(rechargeAmount) > 0 && (
+              <div className="bg-gray-50 p-3 rounded-md mb-4 text-sm border border-gray-200">
+                <div className="flex justify-between mb-1">
+                  <span>Subtotal:</span>
+                  <span>₹ {Number(rechargeAmount).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between mb-1">
+                  <span>GST (18%):</span>
+                  <span>₹ {(Number(rechargeAmount) * 0.18).toFixed(2)}</span>
+                </div>
+                <hr className="my-1" />
+                <div className="flex justify-between font-semibold">
+                  <span>Total Payable:</span>
+                  <span>₹ {(Number(rechargeAmount) * 1.18).toFixed(2)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
               <button
                 onClick={handleRecharge}
                 disabled={loading || isDemoMode}
@@ -327,7 +351,79 @@ const Wallet = () => {
               >
                 Cancel
               </button>
+            </div> */}
+            {/* --- 🔧 CHANGED SECTION: Payment Options --- */}
+            <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+              <button
+                // onClick={async () => {
+                //   try {
+                //     setLoading(true);
+                //     const token = localStorage.getItem("token");
+                //     const qrRes = await axios.post(
+                //       `${API_BASE_URL}/payment/create-qr`,
+                //       { amount: parseFloat(rechargeAmount) },
+                //       { headers: { Authorization: `Bearer ${token}` } }
+                //     );
+                //     setQrPayment({
+                //       open: true,
+                //       imageUrl: qrRes.data.imageUrl,
+                //       amount: qrRes.data.amount
+                //     });
+                //   } catch (err) {
+                //     toast.error("Failed to create QR code");
+                //   } finally {
+                //     setLoading(false);
+                //   }
+                // }}
+                // disabled={loading || isDemoMode}
+                onClick={() => setShowQRModal(true)}
+                className="flex-1 px-4 py-2 rounded-md border border-gray-400 flex items-center justify-center text-gray-700 hover:bg-gray-50"
+              >
+                <QrCode className="h-4 w-4 mr-2 text-gray-700" />
+
+                Pay via QR
+              </button>
+              <button
+                onClick={handleRecharge}
+                disabled={loading || isDemoMode}
+                className={`flex-1 px-4 py-2 rounded-md disabled:opacity-50 flex items-center justify-center ${isDemoMode
+                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                  : "bg-indigo-600 text-white hover:bg-indigo-700"
+                  }`}
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                {loading ? "Processing..." : "Pay via Razorpay"}
+              </button>
+
+              {/* --- NEW BUTTON: Pay via QR --- */}
+              
+
+              {/* <button
+                onClick={() => setShowRecharge(false)}
+                className="px-4 py-2 border rounded-md bg-white"
+              >
+              </button> */}
             </div>
+            {/* --- NEW QR Payment Modal --- */}
+            {qrPayment.open && (
+              <div className="fixed bg-black bg-opacity-50 flex justify-center items-center"
+                style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 }}>
+                <div className="bg-white p-6 rounded-xl shadow-lg text-center">
+                  <h3 className="text-lg font-medium mb-3">Scan to Pay ₹{qrPayment.amount}</h3>
+                  <img src={qrPayment.imageUrl} alt="QR Payment" className="mx-auto mb-4 w-48 h-48" />
+                  <p className="text-sm text-gray-500 mb-4">Use any UPI app to complete the payment.</p>
+                  <button
+                    onClick={() => {
+                      setQrPayment({ open: false, imageUrl: null, amount: null });
+                      fetchWalletData();
+                    }}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -418,7 +514,28 @@ const Wallet = () => {
           <EmptyBox message="" size={100} />
         )}
       </div>
-
+      {showQRModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-[9999]">
+          <div className="bg-white p-6 rounded-xl shadow-lg text-center w-80">
+            <h3 className="text-lg font-semibold mb-3">Scan to Pay</h3>
+            <img
+              src={PaymentQR}
+              alt="Payment QR"
+              className="mx-auto mb-4 w-48 h-48 border rounded-lg object-contain"
+            />
+            <p className="text-sm text-gray-600 mb-4">
+              Use any UPI app to scan this code and complete your payment.
+            </p>
+            <button
+              onClick={() => setShowQRModal(false)}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+      
       {/* Payment Result Dialog */}
       {paymentDialog.open && (
         <div
