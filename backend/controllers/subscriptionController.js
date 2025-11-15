@@ -11,36 +11,58 @@ export const createSubscription = async (req, res) => {
   const { planId } = req.body;
 
   try {
+    // 🧩 Step 1: Check if the plan exists and is active
     const [plans] = await db.query(
       "SELECT * FROM subscription_plans WHERE plan_id = ? AND status = 'active'",
       [planId]
     );
 
-    if (!plans.length) return res.status(404).json({ message: "Plan not found" });
+    if (!plans.length) {
+      return res.status(404).json({ message: "Plan not found or inactive" });
+    }
 
     const plan = plans[0];
 
+    // 🧩 Step 2: Check if user already has an active subscription
+    const [activeSubs] = await db.query(
+      `SELECT * FROM subscriptions 
+       WHERE user_id = ? 
+       AND status = 'active' 
+       AND end_date > NOW()`,
+      [req.user.id]
+    );
+
+    if (activeSubs.length > 0) {
+      const activePlan = activeSubs[0];
+      return res.status(400).json({
+        message: `You already have an active subscription (${activePlan.plan_name || 'Current Plan'}) valid until ${new Date(activePlan.expiry_date).toLocaleDateString()}.`,
+      });
+    }
+
+    // 🧩 Step 3: Create Razorpay order (since no active subscription)
     const order = await razorpay.orders.create({
-      amount: plan.amount * 100, // in paise
+      amount: plan.amount * 100, // amount in paise
       currency: "INR",
       receipt: `sub_${req.user.id}_${Date.now()}`,
-      notes: { user_id: req.user.id, plan_id: planId }
+      notes: { user_id: req.user.id, plan_id: planId },
     });
 
+    // 🧩 Step 4: Send response
     res.json({
       success: true,
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
       key: process.env.RAZORPAY_KEY_ID,
-      plan
+      plan,
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("Subscription creation error:", err);
     res.status(500).json({ message: "Failed to create subscription order" });
   }
 };
+
 
 
 // Verify subscription payment

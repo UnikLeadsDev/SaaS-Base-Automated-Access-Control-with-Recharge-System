@@ -36,6 +36,9 @@ const LoanForm = () => {
     } else if (dashboard === 'crm') {
       window.open('http://44.193.214.12/admin/', '_blank');
     }
+    else if(dashboard === 'loan'){
+      window.open('https://54.145.202.204/admin-login', '_blank');
+    }
   };
 
   return (
@@ -102,6 +105,35 @@ const LoanForm = () => {
                     {!canAccessDashboard() && <Lock className="h-5 w-5 text-red-500" />}
                   </div>
                 </div>
+                 {/* Loan Orientation Dashboard */}
+                <div
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                    canAccessDashboard()
+                      ? 'hover:border-blue-500 hover:bg-blue-50'
+                      : 'opacity-50 cursor-not-allowed'
+                  }`}
+                  onClick={() => canAccessDashboard() && handleDashboardRedirect('loan')}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium text-lg text-gray-800">
+                        Loan Origination System [LOS] Dashboard
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Manage Loan applications
+                      </p>
+                    </div>
+                    {!canAccessDashboard() && <Lock className="h-5 w-5 text-red-500" />}
+                  </div>
+                </div>
+
+
+
+
+
+
+
+
               </div>
             </div>
           </>

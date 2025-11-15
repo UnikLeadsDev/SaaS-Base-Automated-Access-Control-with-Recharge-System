@@ -8,6 +8,7 @@ import EmptyBox from '../Common/EmptyBox';
 import SubscriptionUsage from './SubscriptionUsage';
 import SubscriptionPreferences from './SubscriptionPreferences';
 import PlanChangeFlow from './PlanChangeFlow';
+import { useNavigate } from "react-router-dom";
 
 const Subscriptions = () => {
   const [subscriptions, setSubscriptions] = useState([]);
@@ -20,6 +21,7 @@ const Subscriptions = () => {
   const [loading, setLoading] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const { balance, deductAmount, fetchWalletData } = useWallet();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPlans();
@@ -109,11 +111,18 @@ const subscribeToPlan = async (plan) => {
     // 1️⃣ Check wallet balance first
     if (balance >= plan.amount) {
   try {
-    const { data } = await axios.put(
-      `${API_BASE_URL}/wallet/deduct`,
-      { amount: plan.amount, description: `Subscription: ${plan.plan_name}` },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+   const { data } = await axios.put(
+  `${API_BASE_URL}/wallet/deduct`,
+  {
+    amount: plan.amount,
+    plan_id: plan.plan_id,
+    plan_name: plan.plan_name,
+    duration_days: plan.duration_days,
+    grace_period_days: plan.grace_period_days,
+    description: `Subscription: ${plan.plan_name}`,
+  },
+  { headers: { Authorization: `Bearer ${token}` } }
+);
 
     if (data.success) {
       toast.success('Subscription activated via wallet!');
@@ -202,10 +211,10 @@ const subscribeToPlan = async (plan) => {
             <h2 className="text-xl font-bold">Current Subscription</h2>
             <div className="flex space-x-2">
               <button
-                onClick={() => setShowUsage(true)}
+                onClick={() => navigate('/receipt'  )}
                 className="inline-flex items-center px-3 py-2 text-sm bg-blue-100 hover:bg-blue-200 rounded-md"
               >
-                <BarChart3 className="h-4 w-4 mr-1" /> Usage
+                <BarChart3 className="h-4 w-4 mr-1" /> Receipt
               </button>
               <button
                 onClick={() => setShowPlanChange(true)}
@@ -259,11 +268,47 @@ const subscribeToPlan = async (plan) => {
         </div>
       )}
 
+      {/* User Subscriptions */}
+      {subscriptions?.length > 0 && (
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-4">Your Subscriptions</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Start Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">End Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {subscriptions?.map(sub => (
+                  <tr key={sub.sub_id}>
+                    <td className="px-6 py-4 text-sm font-medium">{sub.plan_name}</td>
+                    <td className="px-6 py-4 text-sm">₹{sub.amount}</td>
+                    <td className="px-6 py-4 text-sm">{new Date(sub.start_date).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-sm">{new Date(sub.end_date).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-sm">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        sub.status === 'active' ? 'bg-green-100 text-green-800' : 
+                        sub.status === 'grace' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                      }`}>{sub.status}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Available Plans */}
       <div className="bg-white shadow rounded-lg p-6">
         <h2 className="text-2xl font-bold mb-6">Subscription Plans</h2>
         {plans?.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {plans.map(plan => {
               const isCurrentPlan = currentSubscription?.plan_id === plan.plan_id;
               const features = [
@@ -281,7 +326,7 @@ const subscribeToPlan = async (plan) => {
                       <h3 className="font-semibold">{plan.plan_name}</h3>
                       {isCurrentPlan && <span className="text-xs text-green-600 font-medium">Current Plan</span>}
                     </div>
-                    <span className="text-indigo-600 font-bold">${plan.amount}</span>
+                    <span className="text-indigo-600 font-bold">₹{plan.amount}</span>
                   </div>
                   <div className="mb-4">
                     <ul className="space-y-1">
@@ -311,42 +356,6 @@ const subscribeToPlan = async (plan) => {
           <EmptyBox message="" size={100} />
         )}
       </div>
-
-      {/* User Subscriptions */}
-      {subscriptions?.length > 0 && (
-        <div className="bg-white shadow rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-4">Your Subscriptions</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Start Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">End Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {subscriptions?.map(sub => (
-                  <tr key={sub.sub_id}>
-                    <td className="px-6 py-4 text-sm font-medium">{sub.plan_name}</td>
-                    <td className="px-6 py-4 text-sm">${sub.amount}</td>
-                    <td className="px-6 py-4 text-sm">{new Date(sub.start_date).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-sm">{new Date(sub.end_date).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        sub.status === 'active' ? 'bg-green-100 text-green-800' : 
-                        sub.status === 'grace' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
-                      }`}>{sub.status}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
       {/* Usage Modal */}
       {showUsage && (

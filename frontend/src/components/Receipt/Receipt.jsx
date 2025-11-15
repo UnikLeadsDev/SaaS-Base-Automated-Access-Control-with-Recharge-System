@@ -193,12 +193,14 @@ return (
           <td className="px-4 py-2 border">{index + 1}</td>
           <td className="px-4 py-2 border">
             <div className="flex items-center space-x-1 text-gray-700 text-sm">
-              <Calendar className="h-4 w-4 text-indigo-500" />
-              <span>
-                {receipt.receipt_date
-                  ? new Date(receipt.receipt_date).toLocaleDateString("en-IN")
-                  : "—"}
-              </span>
+               <Calendar className="h-4 w-4 text-indigo-500" />
+                  <span>{new Date(receipt.created_at).toLocaleString("en-GB", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  })}</span>
             </div>
           </td>
           <td className="px-4 py-2 border">

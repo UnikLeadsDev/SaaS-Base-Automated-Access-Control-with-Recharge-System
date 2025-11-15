@@ -156,3 +156,39 @@ export const updatePassword = async (req, res) => {
   }
 };
 
+
+
+export const getCompanyProfile = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const [rows] = await db.query(
+      `SELECT 
+         company_name, industry, address, city, state, pincode,
+         gstin, pan, email, phone, website, logo_url, is_active
+       FROM company_details
+       WHERE user_id = ?`,
+      [userId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Company details not found for this user.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      company: rows[0],
+    });
+  } catch (error) {
+    console.error("❌ Error fetching company profile:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching company details.",
+    });
+  }
+};
+
+

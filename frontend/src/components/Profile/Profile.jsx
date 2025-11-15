@@ -27,7 +27,7 @@ const InputField = ({
           rows={rows}
           disabled={disabled}
           required={required}
-          className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+          className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       ) : (
         <input
@@ -37,7 +37,7 @@ const InputField = ({
           onChange={onChange}
           disabled={disabled}
           required={required}
-          className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+          className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       )}
     </div>
@@ -48,7 +48,7 @@ const InputField = ({
 const Profile = () => {
   const [profile, setProfile] = useState({ name: "", email: "", phone: "" });
   const [company, setCompany] = useState({
-    company_name: "", industry: "", country: "", state: "", zipcode: "",
+    company_name: "", industry: "", country: "India", state: "", zipcode: "",
     city: "", address: "", gst_no: "", pan_no: "", website: "", logo_url: ""
   });
   const [passwords, setPasswords] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
@@ -71,6 +71,31 @@ const Profile = () => {
           email: res.data.user?.email || "",
           phone: res.data.user?.mobile || ""
         });
+
+         // Fetch company profile
+      const companyRes = await axios.get(`${API_BASE_URL}/profile/profile/company`, {
+        headers: getAuthHeaders(),
+      });
+
+      if (companyRes.data?.company) {
+        const c = companyRes.data.company;
+        setCompany({
+          company_name: c.company_name || "",
+          industry: c.industry || "",
+          country: c.country || "",
+          state: c.state || "",
+          zipcode: c.pincode || "",
+          city: c.city || "",
+          address: c.address || "",
+          gst_no: c.gstin || "",
+          pan_no: c.pan || "",
+          website: c.website || "",
+          logo_url: c.logo_url || "",
+        });
+      }
+
+
+
       } catch (error) {
         console.error("Error fetching profile:", error);
       }
@@ -78,24 +103,34 @@ const Profile = () => {
     fetchProfile();
   }, []);
 
-  const handleSaveProfile = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = { 
-        ...company, 
-        pincode: company.zipcode, 
-        gstin: company.gst_no, 
-        pan: company.pan_no, 
-        email: profile.email, 
-        phone: profile.phone 
-      };
-      await axios.post(`${API_BASE_URL}/profile/profile/company`, payload, { headers: getAuthHeaders() });
-      alert("Profile saved successfully!");
-    } catch (error) {
-      console.error("Error saving profile:", error);
-      alert("Failed to save profile!");
-    }
-  };
+ const handleSaveProfile = async (e) => {
+  e.preventDefault();
+  try {
+    const payload = { 
+      ...company, 
+      pincode: company.zipcode, 
+      gstin: company.gst_no, 
+      pan: company.pan_no, 
+      email: profile.email, 
+      phone: profile.phone 
+    };
+
+    await axios.post(`${API_BASE_URL}/profile/profile/company`, payload, {
+      headers: getAuthHeaders(),
+    });
+
+    alert("Profile saved successfully!");
+    // ✅ Re-fetch updated data
+    const companyRes = await axios.get(`${API_BASE_URL}/profile/profile/company`, {
+      headers: getAuthHeaders(),
+    });
+    setCompany(companyRes.data.company || {});
+  } catch (error) {
+    console.error("Error saving profile:", error);
+    alert("Failed to save profile!");
+  }
+};
+
 
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
@@ -120,7 +155,7 @@ const Profile = () => {
             <InputField label="Company Name" name="company_name" value={company.company_name} onChange={handleChange(setCompany)} />
             <InputField label="Industry" name="industry" value={company.industry} onChange={handleChange(setCompany)} />
             <div className="grid grid-cols-2 gap-4">
-              <InputField label="Country" name="country" value={company.country} onChange={handleChange(setCompany)} />
+              <InputField label="Country" name="country" value="India" onChange={handleChange(setCompany)} />
               <InputField label="State" name="state" value={company.state} onChange={handleChange(setCompany)} />
             </div>
             <div className="grid grid-cols-2 gap-4">

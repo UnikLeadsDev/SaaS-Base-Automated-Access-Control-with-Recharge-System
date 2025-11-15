@@ -65,8 +65,8 @@ if (user?.role === 'admin') {
       ]
     },
     { name: 'Wallet', href: '/wallet', icon: Wallet },
-    { name: 'Billing', href: '/billing', icon: Calculator },
-    { name: 'Receipt', href: '/receipt', icon: IndianRupee }, 
+    { name: 'Billing & Invoices', href: '/billing', icon: Calculator },
+    // { name: 'Receipt', href: '/receipt', icon: IndianRupee }, 
     { name: 'Subscriptions', href: '/subscriptions', icon: CreditCard },
     { name: 'Profile Settings', href: '/profile', icon: User },
     { name: 'Support', href: '/support', icon: HelpCircle },

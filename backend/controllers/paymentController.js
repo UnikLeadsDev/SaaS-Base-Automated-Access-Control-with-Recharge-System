@@ -2,6 +2,11 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import { addToWallet } from "./walletController.js";
 import db from "../config/db.js";
+import https from "https";
+import PaytmChecksum from "paytmchecksum";
+import nodemailer from "nodemailer";
+
+
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -308,3 +313,206 @@ const sendPaymentNotification = async (userId, amount, type) => {
     console.error("Notification Error:", error);
   }
 };
+
+
+
+// export const verifyQRPayment = async (req, res) => {
+//   try {
+//     const { orderId } = req.body; // from frontend form (Transaction ID)
+
+//     if (!orderId) {
+//       return res.status(400).json({ error: "Order ID is required" });
+//     }
+
+//     const paytmParams = {
+//       body: {
+//         mid: process.env.PAYTM_MID,   // your MID
+//         orderId: orderId,
+//       },
+//     };
+
+//     // ✅ Generate checksum using merchant key
+//     const checksum = await PaytmChecksum.generateSignature(
+//       JSON.stringify(paytmParams.body),
+//       process.env.PAYTM_MERCHANT_KEY
+//     );
+
+//     paytmParams.head = {
+//       signature: checksum,
+//     };
+
+//     const post_data = JSON.stringify(paytmParams);
+
+//     const options = {
+//       hostname: "secure.paytm.in", // for Production (use securestage.paytm.in for staging)
+//       port: 443,
+//       path: "/v3/order/status",
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         "Content-Length": post_data.length,
+//       },
+//     };
+
+//     // ✅ Make HTTPS request
+//     let response = "";
+//     const post_req = https.request(options, function (post_res) {
+//       post_res.on("data", function (chunk) {
+//         response += chunk;
+//       });
+
+//       post_res.on("end", function () {
+//         try {
+//           const parsed = JSON.parse(response);
+//           console.log("Paytm Response:", parsed);
+
+//           if (parsed?.body?.resultInfo?.resultStatus === "TXN_SUCCESS") {
+//             res.json({
+//               success: true,
+//               status: parsed.body.resultInfo.resultStatus,
+//               orderId: parsed.body.orderId,
+//               txnId: parsed.body.txnId,
+//               amount: parsed.body.txnAmount,
+//               message: parsed.body.resultInfo.resultMsg,
+//             });
+//           } else {
+//             res.json({
+//               success: false,
+//               status: parsed.body.resultInfo.resultStatus,
+//               message: parsed.body.resultInfo.resultMsg,
+//             });
+//           }
+//         } catch (err) {
+//           console.error("Error parsing Paytm response:", err);
+//           res.status(500).json({ error: "Invalid Paytm response" });
+//         }
+//       });
+//     });
+
+//     post_req.on("error", (err) => {
+//       console.error("Paytm API request failed:", err);
+//       res.status(500).json({ error: "Paytm request failed" });
+//     });
+
+//     post_req.write(post_data);
+//     post_req.end();
+//   } catch (error) {
+//     console.error("Verification Error:", error);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// };
+
+export const requestVerificationOtp = async (req, res) => {
+  try {
+    const { txnId, txnAmount, upiId, txnDate } = req.body;
+    const userEmail = req.user.email;
+    const adminEmail = process.env.ADMIN_EMAIL;
+
+    if (!txnId || !upiId || !txnAmount || !txnDate) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes from now
+
+    // Save OTP record
+    await db.query(
+      `INSERT INTO otp_verifications (txn_id, otp, expires_at, status)
+       VALUES (?, ?, ?, 'pending')`,
+      [txnId, otp, expiresAt]
+    );
+
+    // Configure mailer
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    // Email to both user and admin
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: [userEmail, adminEmail],
+      subject: "Paytm QR Payment Verification Request",
+      html: `
+        <h2>Payment Verification Request</h2>
+        <p><b>Transaction ID:</b> ${txnId}</p>
+        <p><b>UPI ID:</b> ${upiId}</p>
+        <p><b>Amount:</b> ₹${txnAmount}</p>
+        <p><b>Date:</b> ${txnDate}</p>
+        <hr/>
+        <p><b>One-Time Password (OTP):</b> 
+        <span style="font-size:18px; color:blue;">${otp}</span></p>
+        <p>This OTP is valid for 5 minutes.</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({
+      success: true,
+      message: "OTP sent successfully to user and admin email.",
+    });
+  } catch (error) {
+    console.error("OTP Generation Error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
+
+
+export const verifyOtp = async (req, res) => {
+  try {
+    const { txnId, txnDate, otp } = req.body;
+    console.log("Verifying OTP:", { txnId, txnDate, otp });
+
+    if (!txnId || !txnDate || !otp) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
+    }
+
+    // Fetch the latest pending OTP for this transaction
+    const [rows] = await db.query(
+      `SELECT * FROM otp_verifications 
+       WHERE txn_id = ? AND status = 'pending' 
+       ORDER BY created_at DESC LIMIT 1`,
+      [txnId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(400).json({ success: false, message: "No pending OTP found for this transaction" });
+    }
+
+    const record = rows[0];
+
+    // Check expiration
+    if (new Date(record.expires_at) < new Date()) {
+      await db.query(`UPDATE otp_verifications SET status = 'expired' WHERE otp_id = ?`, [record.otp_id]);
+      return res.status(400).json({ success: false, message: "OTP has expired" });
+    }
+
+    // Check OTP match
+    if (record.otp !== otp) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
+    // OTP valid → mark verified
+    await db.query(`UPDATE otp_verifications SET status = 'verified' WHERE otp_id = ?`, [record.otp_id]);
+
+    res.status(200).json({
+      success: true,
+      message: "OTP verified successfully",
+      data: {
+        txnId: record.txn_id,
+        txnDate,
+      },
+    });
+  } catch (error) {
+    console.error("OTP Verify Error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+

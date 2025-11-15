@@ -1,5 +1,5 @@
 import express from "express";
-import { registerUser, loginUser, googleLogin, getUserProfile } from "../controllers/authController.js";
+import { registerUser, loginUser, googleLogin, getUserProfile,sendForgotPasswordOTP,verifyForgotPasswordOTP,resetPassword } from "../controllers/authController.js";
 import { sendLoginOTP, verifyLoginOTP, resendOTP } from "../controllers/otpController.js";
 import { verifyToken } from "../middleware/auth.js";
 import { authRateLimit } from "../middleware/security.js";
@@ -14,8 +14,13 @@ router.post("/register", validate('register'), registerUser);
 router.post("/login", validate('login'), loginUser);
 router.post("/google-login", googleLogin);
 router.post("/send-otp", sendLoginOTP);
-router.post("/verify-otp", verifyLoginOTP);
+// router.post("/verify-otp", verifyLoginOTP);
 router.post("/resend-otp", resendOTP);
 router.get("/profile", verifyToken, getUserProfile);
+
+//forget password route can be added here
+router.post("/forgot-password", sendForgotPasswordOTP);
+router.post("/verify-otp", verifyForgotPasswordOTP);
+router.post("/reset-password", resetPassword);
 
 export default router;

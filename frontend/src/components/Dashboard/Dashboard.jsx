@@ -23,6 +23,7 @@ const Dashboard = () => {
     rates: { basic: 5, realtime: 50 }
   });
   const [loading, setLoading] = useState(true);
+  const [dateTime, setDateTime] = useState(new Date());
 
   const isMockToken = () => {
     const token = localStorage.getItem('token');
@@ -36,6 +37,9 @@ const Dashboard = () => {
     } else {
       setLoading(false);
     }
+
+    const interval = setInterval(() => setDateTime(new Date()), 1000);
+    return () => clearInterval(interval);
   }, [transactions, user]); // re-run when transactions change
 
   const fetchDashboardData = async () => {
@@ -121,7 +125,7 @@ const Dashboard = () => {
       <div className={`p-3 sm:p-4 lg:p-5 rounded-xl shadow-md ${stats.canSubmitBasic ? 'bg-green-100' : 'bg-red-100'}`}>
         <div className="flex items-center gap-2 sm:gap-4">
           <AlertCircle className={`h-5 w-5 sm:h-6 sm:w-6 ${stats.canSubmitBasic ? 'text-green-600' : 'text-red-600'}`} />
-          <span className="text-xs sm:text-sm text-gray-700">Form Access</span>
+          <span className="text-xs sm:text-sm text-gray-700">Application Dashboard Access</span>
         </div>
         <p className={`text-base sm:text-lg font-bold mt-1 sm:mt-2 ${stats.canSubmitBasic ? 'text-green-700' : 'text-red-700'}`}>
           {stats.canSubmitBasic ? 'Active' : 'Blocked'}
@@ -133,38 +137,6 @@ const Dashboard = () => {
         )}
       </div>
     </div>
-
-    {/* Subscription Usage Analytics */}
-    {hasActiveSubscription && (
-      <div className="mb-6 sm:mb-8">
-        <SubscriptionUsage />
-      </div>
-    )}
-
-    {/* Two-Column Section */}
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-      {/* Form Access Status */}
-      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md">
-        <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Form Access Status</h3>
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-700">Basic Form (₹{stats.rates?.basic})</span>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              stats.canSubmitBasic ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-            }`}>
-              {stats.canSubmitBasic ? 'Available' : 'Blocked'}
-            </span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-700">Realtime Validation (₹{stats.rates?.realtime})</span>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              stats.canSubmitRealtime ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-            }`}>
-              {stats.canSubmitRealtime ? 'Available' : 'Blocked'}
-            </span>
-          </div>
-        </div>
-      </div>
 
       {/* Recent Transactions */}
       <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md">
@@ -178,9 +150,16 @@ const Dashboard = () => {
                     {txn.type === 'credit' ? '+' : '-'}₹{txn.amount}
                   </p>
                  <p className="flex items-center space-x-1 text-xs text-gray-500">
-  <Calendar className="h-3 w-3 text-indigo-500" />
-  <span>{txn.date ? new Date(txn.date).toLocaleDateString("en-IN") : "—"}</span>
-</p>
+                  <Calendar className="h-4 w-4 text-indigo-500" />
+                  <span>{new Date(txn.created_at).toLocaleString("en-GB", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  })}</span>
+
+                </p>
                 </div>
                 <span className={`px-2 py-1 rounded text-xs font-medium ${
                   txn.type === 'credit' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -195,7 +174,7 @@ const Dashboard = () => {
         </div>
       </div>
     </div>
-  </div>
+  
 );
 
 };

@@ -99,53 +99,41 @@ export const AuthProvider = ({ children }) => {
     return { success: true, token: mockToken, user: userData };
   };
 
-  const login = async (email, password) => {
-    try {
-      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
-        email,
-        password
-      });
-      
-      const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('userId', user.id);
-      localStorage.setItem('userName', user.name);
-      localStorage.setItem('userEmail', user.email);
-      localStorage.setItem('userRole', user.role);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser(user);
-      
-      return response.data;
-    } catch (error) {
-      // Mock login
-      if (
-        error.code === 'ERR_NETWORK' ||
-        [400, 401, 404, 429, 500].includes(error.response?.status) ||
-        !error.response
-      ) {
-        const isAdmin = email.toLowerCase().includes('admin');
-        const mockUser = {
-          id: 1,
-          name: isAdmin ? 'Admin User' : 'Demo User',
-          email: email,
-          role: isAdmin ? 'admin' : 'DSA'
-        };
-        const mockToken = 'mock_jwt_token_' + Date.now();
-        
-        localStorage.setItem('token', mockToken);
-        localStorage.setItem('userId', mockUser.id);
-        localStorage.setItem('userName', mockUser.name);
-        localStorage.setItem('userEmail', mockUser.email);
-        localStorage.setItem('userRole', mockUser.role);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${mockToken}`;
-        console.log('Mock login - User created:', mockUser);
-        setUser(mockUser);
-        
-        return { success: true, token: mockToken, user: mockUser };
-      }
-      throw error;
+ const login = async (email, password) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+      email,
+      password,
+    });
+
+    const { token, user } = response.data;
+
+    // ✅ Store user data in localStorage
+    localStorage.setItem("token", token);
+    localStorage.setItem("userId", user.id);
+    localStorage.setItem("userName", user.name);
+    localStorage.setItem("userEmail", user.email);
+    localStorage.setItem("userRole", user.role);
+
+    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    setUser(user);
+
+    return response.data;
+  } catch (error) {
+    // 🚫 Handle real API errors
+    if (error.response?.status === 400 || error.response?.status === 401) {
+      toast.error("Invalid email or password");
+    } else if (error.code === "ERR_NETWORK") {
+      toast.error("Network error. Please check your connection.");
+    } else {
+      toast.error("Login failed. Please try again later.");
     }
-  };
+
+    console.error("Login Error:", error);
+    throw error;
+  }
+};
+
 
   const googleLogin = async (googleUser) => {
     try {

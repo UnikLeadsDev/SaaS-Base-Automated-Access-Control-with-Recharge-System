@@ -117,47 +117,51 @@ const deductAmount = async (amount, description = "Deduction", paymentTxnId) => 
 
 
   // ✅ Add amount - only update after backend success
-const addAmount = async (amount, description = "Top-up", txnRef) => {
+const addAmount = async (
+  amount,                     // base amount (e.g., 100)
+  description = "Top-up", 
+  txnRef, 
+  totalAmountPaid   // full paid amount (e.g., 118)
+) => {
+  // amount=amount-18%;
+  // amount=amount()
   const token = localStorage.getItem("token");
-  
-  // In demo mode, update locally
-  if (!token || isMockToken()) {
-    setBalance((prev) => prev + amount);
-    const newTxn = {
-      type: "credit",
-      amount,
-      description,
-      date: new Date().toISOString(),
-      txnRef: txnRef || `demo_${Date.now()}`,
-    };
-    setTransactions((prev) => [newTxn, ...prev]);
-    return true;
-  }
+  const creditAmount = parseFloat(amount);
+  console.log("Adding amount:", creditAmount, "Description:", description, "Total Paid:", totalAmountPaid, "TxnRef:", txnRef);
 
-  // For real payments, only update after backend confirms
+  const newTxn = {
+    type: "credit",
+    amount: creditAmount,           // ✅ only base amount (100)
+    totalPaid: parseFloat(totalAmountPaid), // ✅ full payment (118)
+    description,
+    date: new Date().toISOString(),
+    txnRef: txnRef || `txn_${Date.now()}`,
+  };
+
   try {
-    const newTxn = {
-      type: "credit",
-      amount,
-      description,
-      date: new Date().toISOString(),
-      txnRef: txnRef,
-    };
+    // In demo/mock mode
+    if (!token || isMockToken()) {
+      setBalance((prev) => prev + creditAmount);
+      setTransactions((prev) => [newTxn, ...prev]);
+      return true;
+    }
+   
 
-    // First save to backend
+    // Save transaction to backend
     await axios.post(`${API_BASE_URL}/wallet/transactions`, newTxn, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    // Only update local state after backend success
-    setBalance((prev) => prev + amount);
+    // Update local wallet state
+    setBalance((prev) => prev + creditAmount);
     setTransactions((prev) => [newTxn, ...prev]);
     return true;
   } catch (err) {
-    console.error("Failed to save transaction:", err);
-    throw err; // Re-throw to let caller handle the error
+    console.error("❌ Failed to save transaction:", err);
+    throw err;
   }
 };
+
 
 
   // Check if user has access (subscription or sufficient balance)

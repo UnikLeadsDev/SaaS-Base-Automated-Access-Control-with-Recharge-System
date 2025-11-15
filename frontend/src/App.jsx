@@ -18,6 +18,7 @@ import Layout from './components/Layout/Layout';
 import EmptyBoxDemo from './components/Demo/EmptyBoxDemo';
 import Profile from './components/Profile/Profile';
 import AdminLayout from './components/Admin/AdminLayout';
+import ForgotPassword from './components/Auth/ForgotPassword';
 import './App.css';
 
 // Suppress console errors
@@ -52,6 +53,7 @@ function App() {
           <Routes>
 
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/register" element={<Register />} />
             <Route path="/" element={<Navigate to="/dashboard" />} />
             

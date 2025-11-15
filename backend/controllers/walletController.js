@@ -2,6 +2,7 @@ import db from "../config/db.js";
 import notificationService from "../services/notificationService.js";
 import { withTransaction } from "../utils/transaction.js";
 import { v4 as uuidv4 } from "uuid";
+import crypto from "crypto";
 
 // Ensure wallet exists for a user and return current wallet row
 const ensureWalletForUser = async (userId) => {
@@ -153,12 +154,16 @@ export const deductFromWallet = async (userId, amount, txnRef, description = nul
 
 // Add amount to wallet (atomic & idempotent)
 export const addToWallet = async (userId, amount, txnRef, paymentMode = 'razorpay') => {
+  console.log("Adding to wallet:", { userId, amount, txnRef, paymentMode });
+
   if (!userId || amount <= 0 || isNaN(amount) || !txnRef) {
     throw new Error('Invalid input: userId required and amount must be positive');
   }
 
+  const creditAmount = parseFloat(amount); // ✅ Only base amount (no GST)
+
   return await withTransaction(async (connection) => {
-    // Check for existing transaction
+    // 🧩 Step 1: Prevent duplicate transaction entries
     const [existing] = await connection.query(
       "SELECT amount FROM transactions WHERE txn_ref = ? AND type = 'credit'",
       [txnRef]
@@ -168,10 +173,14 @@ export const addToWallet = async (userId, amount, txnRef, paymentMode = 'razorpa
         "SELECT balance FROM wallets WHERE user_id = ?",
         [userId]
       );
-      return { success: true, newBalance: wallet[0].balance, message: 'Transaction already processed' };
+      return { 
+        success: true, 
+        newBalance: wallet[0].balance, 
+        message: 'Transaction already processed' 
+      };
     }
 
-    // Ensure wallet exists
+    // 🧩 Step 2: Ensure wallet exists before update
     const [wallet] = await connection.query(
       "SELECT wallet_id FROM wallets WHERE user_id = ? FOR UPDATE",
       [userId]
@@ -183,33 +192,38 @@ export const addToWallet = async (userId, amount, txnRef, paymentMode = 'razorpa
       );
     }
 
-    // Add balance
+    // 🧩 Step 3: Update wallet balance (only add base amount)
     await connection.query(
       "UPDATE wallets SET balance = balance + ?, updated_at = NOW() WHERE user_id = ?",
-      [amount, userId]
+      [creditAmount, userId]
     );
 
-    // Record transaction
+    // 🧩 Step 4: Record the transaction
     await connection.query(
       "INSERT INTO transactions (user_id, amount, type, txn_ref, payment_mode) VALUES (?, ?, 'credit', ?, ?)",
-      [userId, amount, txnRef, paymentMode]
+      [userId, creditAmount, txnRef, paymentMode]
     );
 
-    // Updated balance
+    // 🧩 Step 5: Fetch updated balance
     const [updatedWallet] = await connection.query(
       "SELECT balance FROM wallets WHERE user_id = ?",
       [userId]
     );
 
-    // Send payment success notification
+    // 🧩 Step 6: Notify user (optional)
     const [user] = await connection.query(
       "SELECT mobile FROM users WHERE user_id = ?",
       [userId]
     );
     if (user[0]?.mobile) {
-      await notificationService.sendPaymentSuccess(user[0].mobile, amount, updatedWallet[0].balance);
+      await notificationService.sendPaymentSuccess(
+        user[0].mobile,
+        creditAmount,
+        updatedWallet[0].balance
+      );
     }
 
+    // ✅ Step 7: Return success
     return { success: true, newBalance: updatedWallet[0].balance };
   });
 };
@@ -237,5 +251,63 @@ export const getTransactionHistory = async (req, res) => {
   } catch (error) {
     console.error("Transaction History Error:", error);
     res.status(500).json({ message: req.t('error.server') });
+  }
+};
+
+
+export const deductWalletAmount = async (req, res) => {
+  const userId = req.user.id; // comes from verifyToken middleware
+  const { amount, description } = req.body;
+
+  if (!amount || amount <= 0)
+    return res.status(400).json({ success: false, message: "Invalid amount." });
+
+  try {
+    // 1️⃣ Fetch user's wallet
+    const [walletRows] = await db.query(
+      "SELECT balance, status, valid_until FROM wallets WHERE user_id = ?",
+      [userId]
+    );
+
+    if (walletRows.length === 0)
+      return res.status(404).json({ success: false, message: "Wallet not found." });
+
+    const wallet = walletRows[0];
+
+    if (wallet.status !== "active")
+      return res.status(400).json({ success: false, message: "Wallet is not active." });
+
+    if (wallet.valid_until && new Date(wallet.valid_until) < new Date())
+      return res.status(400).json({ success: false, message: "Wallet validity expired." });
+
+    const currentBalance = parseFloat(wallet.balance);
+    if (currentBalance < amount)
+      return res.status(400).json({ success: false, message: "Insufficient balance." });
+
+    // 2️⃣ Deduct balance
+    const newBalance = currentBalance - amount;
+    await db.query("UPDATE wallets SET balance = ? WHERE user_id = ?", [
+      newBalance,
+      userId,
+    ]);
+
+    // 3️⃣ Log transaction
+    const txn_ref = `TXN-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
+    await db.query(
+      `INSERT INTO transactions 
+       (user_id, amount, type, payment_mode, txn_ref)
+       VALUES (?, ?, 'debit', 'wallet', ?)`,
+      [userId, amount, txn_ref]
+    );
+
+    res.json({
+      success: true,
+      message: description || "Amount deducted successfully.",
+      newBalance,
+      txn_ref,
+    });
+  } catch (err) {
+    console.error("❌ Wallet deduction error:", err);
+    res.status(500).json({ success: false, message: "Server error during deduction." });
   }
 };
