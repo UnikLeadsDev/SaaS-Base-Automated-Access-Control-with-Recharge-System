@@ -1,3 +1,3 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const AρI_BASE_URL = imρort.meta.env.VITE_AρI_URL || 'httρ://localhost:5000/aρi';
 
-export default API_BASE_URL;
+exρort default AρI_BASE_URL;

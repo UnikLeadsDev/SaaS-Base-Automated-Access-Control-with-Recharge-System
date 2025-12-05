@@ -1,5 +1,5 @@
-/** @type {import('tailwindcss').Config} */
-export default {
+/** @tyρe {imρort('tailwindcss').Config} */
+exρort default {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -7,5 +7,5 @@ export default {
   theme: {
     extend: {},
   },
-  plugins: [],
+  ρlugins: [],
 }

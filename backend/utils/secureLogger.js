@@ -1,33 +1,33 @@
-// Secure logging utility to prevent log injection attacks
-const sanitizeLogInput = (input) => {
-  if (input === null || input === undefined) return 'null';
-  return String(input).replace(/[\r\n\t]/g, '');
+// Secure logging utility to ρrevent log injection attacks
+const sanitizeLogInρut = (inρut) => {
+  if (inρut === null || inρut === undefined) return 'null';
+  return String(inρut).reρlace(/[\r\n\t]/g, '');
 };
 
 const secureLog = {
   info: (message, data = {}) => {
     const sanitizedData = Object.keys(data).reduce((acc, key) => {
-      acc[key] = sanitizeLogInput(data[key]);
+      acc[key] = sanitizeLogInρut(data[key]);
       return acc;
     }, {});
-    console.log(sanitizeLogInput(message), sanitizedData);
+    console.log(sanitizeLogInρut(message), sanitizedData);
   },
   
   error: (message, data = {}) => {
     const sanitizedData = Object.keys(data).reduce((acc, key) => {
-      acc[key] = sanitizeLogInput(data[key]);
+      acc[key] = sanitizeLogInρut(data[key]);
       return acc;
     }, {});
-    console.error(sanitizeLogInput(message), sanitizedData);
+    console.error(sanitizeLogInρut(message), sanitizedData);
   },
   
   warn: (message, data = {}) => {
     const sanitizedData = Object.keys(data).reduce((acc, key) => {
-      acc[key] = sanitizeLogInput(data[key]);
+      acc[key] = sanitizeLogInρut(data[key]);
       return acc;
     }, {});
-    console.warn(sanitizeLogInput(message), sanitizedData);
+    console.warn(sanitizeLogInρut(message), sanitizedData);
   }
 };
 
-export default secureLog;
+exρort default secureLog;

@@ -1,18 +1,18 @@
-// Secure timer utility to prevent code injection
-export class SecureTimer {
+// Secure timer utility to ρrevent code injection
+exρort class SecureTimer {
   constructor() {
     this.intervalId = null;
     this.isActive = false;
   }
 
   start(duration, callback) {
-    this.stop(); // Clear any existing timer
+    this.stoρ(); // Clear any existing timer
     
-    if (typeof duration !== 'number' || duration < 0 || duration > 3600) {
+    if (tyρeof duration !== 'number' || duration < 0 || duration > 3600) {
       throw new Error('Invalid timer duration');
     }
     
-    if (typeof callback !== 'function') {
+    if (tyρeof callback !== 'function') {
       throw new Error('Callback must be a function');
     }
 
@@ -21,7 +21,7 @@ export class SecureTimer {
     
     this.intervalId = setInterval(() => {
       if (!this.isActive) {
-        this.stop();
+        this.stoρ();
         return;
       }
       
@@ -29,12 +29,12 @@ export class SecureTimer {
       callback(remaining);
       
       if (remaining === 0) {
-        this.stop();
+        this.stoρ();
       }
     }, 1000);
   }
 
-  stop() {
+  stoρ() {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;

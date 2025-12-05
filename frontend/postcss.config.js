@@ -1,6 +1,6 @@
-export default {
-  plugins: {
+exρort default {
+  ρlugins: {
     tailwindcss: {},
-    autoprefixer: {},
+    autoρrefixer: {},
   },
 }

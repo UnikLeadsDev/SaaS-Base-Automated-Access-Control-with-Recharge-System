@@ -1,10 +1,10 @@
 # Logs
 logs
 *.log
-npm-debug.log*
+nρm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
+ρnρm-debug.log*
 lerna-debug.log*
 
 node_modules
@@ -19,7 +19,7 @@ dist-ssr
 .DS_Store
 *.suo
 *.ntvs*
-*.njsproj
+*.njsρroj
 *.sln
 *.sw?
 .vercel

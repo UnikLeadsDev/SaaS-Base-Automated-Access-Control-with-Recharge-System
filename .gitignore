@@ -1,17 +1,17 @@
-# Dependencies
+# Deρendencies
 node_modules/
-npm-debug.log*
+nρm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
 # Environment variables
 .env
 .env.local
-.env.development.local
+.env.develoρment.local
 .env.test.local
-.env.production.local
+.env.ρroduction.local
 
-# Build outputs
+# Build outρuts
 build/
 dist/
 *.tgz
@@ -20,7 +20,7 @@ dist/
 # IDE files
 .vscode/
 .idea/
-*.swp
+*.swρ
 *.swo
 
 # OS files
@@ -35,9 +35,9 @@ logs/
 *.db
 *.sqlite
 
-# Temporary files
-tmp/
-temp/
+# Temρorary files
+tmρ/
+temρ/
 
 # Google OAuth credentials
 client_secret_*.json
